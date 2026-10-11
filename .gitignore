@@ -1,0 +1,9 @@
+.env
+.venv/
+__pycache__/
+.pytest_cache/
+*.pyc
+runtime/
+*.sqlite3
+*.sqlite3-*
+local-audio/
