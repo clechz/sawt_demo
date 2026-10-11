@@ -1,0 +1,498 @@
+{
+  "recorded_at": "2026-10-11T20:41:10.083867+00:00",
+  "models": {
+    "llm": "gpt-4.1",
+    "stt": "gpt-4o-transcribe",
+    "tts": "gpt-4o-mini-tts",
+    "voice": "coral"
+  },
+  "audio_source": "synthetic TTS customer, not human",
+  "cases": [
+    {
+      "name": "delivery_complete",
+      "turns": [
+        {
+          "input": "أبي توصيل للرياض حي النرجس شارع التجربة مبنى ١٢. أبي شكشوكة حجم كبير مع تميس بدون إضافات، الكمية ٢. هذا كل طلبي.",
+          "transcript": "أبي توصيل للرياض حي النرجس شارع التجربة مبنى 12. أبي شكشوكة حجم كبير مع تميس بدون إضافات. الكمية اثنين. هذا كل طلبي.",
+          "reply": "طلبك: 2 من شكشوكة، كبير، تميس، ملاحظات: بدون إضافات، بسعر 60.00 ريال. توصيل إلى شارع التجربة مبنى 12، فرع النرجس بالرياض. رسوم التوصيل 15.00 ريال. الإجمالي 75.00 ريال. الوقت المتوقع 40 دقيقة. هل تؤكد الطلب؟",
+          "state": {
+            "revision": 3,
+            "status": "awaiting_confirmation",
+            "service": "delivery",
+            "location": {
+              "city": "الرياض",
+              "zone": "النرجس",
+              "address": "شارع التجربة مبنى 12"
+            },
+            "branch_id": "ruh_narjis",
+            "branch": {
+              "name": "فرع النرجس بالرياض",
+              "city": "الرياض",
+              "zones": [
+                "النرجس",
+                "الياسمين"
+              ],
+              "fee": 1500,
+              "eta": 40
+            },
+            "basket": [
+              {
+                "line_id": "9c076beb",
+                "item_id": "breakfast_01",
+                "quantity": 2,
+                "options": {
+                  "portion": [
+                    "large"
+                  ],
+                  "bread": [
+                    "tamees"
+                  ]
+                },
+                "notes": "بدون إضافات",
+                "name": "شكشوكة",
+                "option_names": [
+                  "كبير",
+                  "تميس"
+                ],
+                "unit_price": 3000,
+                "line_total": 6000,
+                "missing": [],
+                "available": true
+              }
+            ],
+            "subtotal": 6000,
+            "delivery_fee": 1500,
+            "total": 7500,
+            "eta_minutes": 40,
+            "issues": [],
+            "quote": {
+              "revision": 3,
+              "token": "eb83bce045604557bc701c7906102c2b",
+              "presented": true
+            },
+            "order_id": null,
+            "handoff": null
+          },
+          "events": [
+            {
+              "tool": "set_service",
+              "args": {
+                "service": "delivery"
+              },
+              "result": {
+                "revision": 1,
+                "status": "collecting",
+                "service": "delivery",
+                "location": null,
+                "branch_id": null,
+                "branch": null,
+                "basket": [],
+                "subtotal": 0,
+                "delivery_fee": 0,
+                "total": 0,
+                "eta_minutes": null,
+                "issues": [
+                  "حدد الفرع أو منطقة التوصيل.",
+                  "نحتاج عنوان التوصيل والمنطقة.",
+                  "السلة فارغة."
+                ],
+                "quote": null,
+                "order_id": null,
+                "handoff": null
+              }
+            },
+            {
+              "tool": "set_location",
+              "args": {
+                "city": "الرياض",
+                "zone": "النرجس",
+                "address": "شارع التجربة مبنى 12"
+              },
+              "result": {
+                "revision": 2,
+                "status": "collecting",
+                "service": "delivery",
+                "location": {
+                  "city": "الرياض",
+                  "zone": "النرجس",
+                  "address": "شارع التجربة مبنى 12"
+                },
+                "branch_id": "ruh_narjis",
+                "branch": {
+                  "name": "فرع النرجس بالرياض",
+                  "city": "الرياض",
+                  "zones": [
+                    "النرجس",
+                    "الياسمين"
+                  ],
+                  "fee": 1500,
+                  "eta": 40
+                },
+                "basket": [],
+                "subtotal": 0,
+                "delivery_fee": 1500,
+                "total": 1500,
+                "eta_minutes": 40,
+                "issues": [
+                  "السلة فارغة."
+                ],
+                "quote": null,
+                "order_id": null,
+                "handoff": null
+              }
+            },
+            {
+              "tool": "search_menu",
+              "args": {
+                "query": "شكشوكة"
+              },
+              "result": {
+                "total_matches": 1,
+                "items": [
+                  {
+                    "id": "breakfast_01",
+                    "name": "شكشوكة",
+                    "name_en": "Shakshuka",
+                    "category": "الفطور",
+                    "category_id": "breakfast",
+                    "base": 2200,
+                    "available": [
+                      "ruh_narjis",
+                      "ruh_malqa",
+                      "jed_rawdah"
+                    ],
+                    "groups": {
+                      "portion": {
+                        "name": "الحجم",
+                        "required": true,
+                        "min": 1,
+                        "max": 1,
+                        "options": {
+                          "regular": {
+                            "name": "عادي",
+                            "name_en": "Regular",
+                            "delta": 0
+                          },
+                          "large": {
+                            "name": "كبير",
+                            "name_en": "Large",
+                            "delta": 800
+                          }
+                        }
+                      },
+                      "bread": {
+                        "name": "اختيار الخبز",
+                        "required": true,
+                        "min": 1,
+                        "max": 1,
+                        "options": {
+                          "tamees": {
+                            "name": "تميس",
+                            "name_en": "Tamees",
+                            "delta": 0
+                          },
+                          "saj": {
+                            "name": "صاج",
+                            "name_en": "Saj",
+                            "delta": 0
+                          },
+                          "brown": {
+                            "name": "خبز أسمر",
+                            "name_en": "Brown bread",
+                            "delta": 200
+                          }
+                        }
+                      },
+                      "extras": {
+                        "name": "إضافات",
+                        "required": false,
+                        "min": 0,
+                        "max": 3,
+                        "options": {
+                          "cheese": {
+                            "name": "جبن",
+                            "name_en": "Cheese",
+                            "delta": 400
+                          },
+                          "honey": {
+                            "name": "عسل",
+                            "name_en": "Honey",
+                            "delta": 300
+                          },
+                          "cream": {
+                            "name": "قشطة",
+                            "name_en": "Cream",
+                            "delta": 500
+                          },
+                          "eggs": {
+                            "name": "بيضتان",
+                            "name_en": "Two eggs",
+                            "delta": 600
+                          }
+                        }
+                      }
+                    },
+                    "available_here": true
+                  }
+                ]
+              }
+            },
+            {
+              "tool": "add_item",
+              "args": {
+                "item_id": "breakfast_01",
+                "quantity": 2,
+                "options": {
+                  "portion": [
+                    "large"
+                  ],
+                  "bread": [
+                    "tamees"
+                  ]
+                },
+                "notes": "بدون إضافات"
+              },
+              "result": {
+                "revision": 3,
+                "status": "ready_for_readback",
+                "service": "delivery",
+                "location": {
+                  "city": "الرياض",
+                  "zone": "النرجس",
+                  "address": "شارع التجربة مبنى 12"
+                },
+                "branch_id": "ruh_narjis",
+                "branch": {
+                  "name": "فرع النرجس بالرياض",
+                  "city": "الرياض",
+                  "zones": [
+                    "النرجس",
+                    "الياسمين"
+                  ],
+                  "fee": 1500,
+                  "eta": 40
+                },
+                "basket": [
+                  {
+                    "line_id": "9c076beb",
+                    "item_id": "breakfast_01",
+                    "quantity": 2,
+                    "options": {
+                      "portion": [
+                        "large"
+                      ],
+                      "bread": [
+                        "tamees"
+                      ]
+                    },
+                    "notes": "بدون إضافات",
+                    "name": "شكشوكة",
+                    "option_names": [
+                      "كبير",
+                      "تميس"
+                    ],
+                    "unit_price": 3000,
+                    "line_total": 6000,
+                    "missing": [],
+                    "available": true
+                  }
+                ],
+                "subtotal": 6000,
+                "delivery_fee": 1500,
+                "total": 7500,
+                "eta_minutes": 40,
+                "issues": [],
+                "quote": null,
+                "order_id": null,
+                "handoff": null
+              }
+            },
+            {
+              "tool": "checkout",
+              "args": {},
+              "result": {
+                "terminal": true,
+                "reply": "طلبك: 2 من شكشوكة، كبير، تميس، ملاحظات: بدون إضافات، بسعر 60.00 ريال. توصيل إلى شارع التجربة مبنى 12، فرع النرجس بالرياض. رسوم التوصيل 15.00 ريال. الإجمالي 75.00 ريال. الوقت المتوقع 40 دقيقة. هل تؤكد الطلب؟",
+                "quote": {
+                  "revision": 3,
+                  "token": "eb83bce045604557bc701c7906102c2b",
+                  "presented": false
+                }
+              }
+            }
+          ],
+          "timing": {
+            "stt_ms": 1272,
+            "agent_ms": 3109,
+            "tts_ms": 4513
+          }
+        },
+        {
+          "input": "خلصت، عطيني ملخص الطلب",
+          "transcript": "خلصت، أعطيني ملخص الطلب.",
+          "reply": "طلبك: 2 من شكشوكة، كبير، تميس، ملاحظات: بدون إضافات، بسعر 60.00 ريال. توصيل إلى شارع التجربة مبنى 12، فرع النرجس بالرياض. رسوم التوصيل 15.00 ريال. الإجمالي 75.00 ريال. الوقت المتوقع 40 دقيقة. هل تؤكد الطلب؟",
+          "state": {
+            "revision": 3,
+            "status": "awaiting_confirmation",
+            "service": "delivery",
+            "location": {
+              "city": "الرياض",
+              "zone": "النرجس",
+              "address": "شارع التجربة مبنى 12"
+            },
+            "branch_id": "ruh_narjis",
+            "branch": {
+              "name": "فرع النرجس بالرياض",
+              "city": "الرياض",
+              "zones": [
+                "النرجس",
+                "الياسمين"
+              ],
+              "fee": 1500,
+              "eta": 40
+            },
+            "basket": [
+              {
+                "line_id": "9c076beb",
+                "item_id": "breakfast_01",
+                "quantity": 2,
+                "options": {
+                  "portion": [
+                    "large"
+                  ],
+                  "bread": [
+                    "tamees"
+                  ]
+                },
+                "notes": "بدون إضافات",
+                "name": "شكشوكة",
+                "option_names": [
+                  "كبير",
+                  "تميس"
+                ],
+                "unit_price": 3000,
+                "line_total": 6000,
+                "missing": [],
+                "available": true
+              }
+            ],
+            "subtotal": 6000,
+            "delivery_fee": 1500,
+            "total": 7500,
+            "eta_minutes": 40,
+            "issues": [],
+            "quote": {
+              "revision": 3,
+              "token": "e05533e427af4dbbaa8abedf2263f5b9",
+              "presented": true
+            },
+            "order_id": null,
+            "handoff": null
+          },
+          "events": [
+            {
+              "tool": "checkout",
+              "args": {},
+              "result": {
+                "terminal": true,
+                "reply": "طلبك: 2 من شكشوكة، كبير، تميس، ملاحظات: بدون إضافات، بسعر 60.00 ريال. توصيل إلى شارع التجربة مبنى 12، فرع النرجس بالرياض. رسوم التوصيل 15.00 ريال. الإجمالي 75.00 ريال. الوقت المتوقع 40 دقيقة. هل تؤكد الطلب؟",
+                "quote": {
+                  "revision": 3,
+                  "token": "e05533e427af4dbbaa8abedf2263f5b9",
+                  "presented": false
+                }
+              }
+            }
+          ],
+          "timing": {
+            "stt_ms": 840,
+            "agent_ms": 605,
+            "tts_ms": 3585
+          }
+        },
+        {
+          "input": "نعم",
+          "transcript": "نعم",
+          "reply": "تم تأكيد الطلب التجريبي. رقم طلبك إس، 2، 0، 6، 5، 1، 0. يعطيك العافية!",
+          "state": {
+            "revision": 3,
+            "status": "completed",
+            "service": "delivery",
+            "location": {
+              "city": "الرياض",
+              "zone": "النرجس",
+              "address": "شارع التجربة مبنى 12"
+            },
+            "branch_id": "ruh_narjis",
+            "branch": {
+              "name": "فرع النرجس بالرياض",
+              "city": "الرياض",
+              "zones": [
+                "النرجس",
+                "الياسمين"
+              ],
+              "fee": 1500,
+              "eta": 40
+            },
+            "basket": [
+              {
+                "line_id": "9c076beb",
+                "item_id": "breakfast_01",
+                "quantity": 2,
+                "options": {
+                  "portion": [
+                    "large"
+                  ],
+                  "bread": [
+                    "tamees"
+                  ]
+                },
+                "notes": "بدون إضافات",
+                "name": "شكشوكة",
+                "option_names": [
+                  "كبير",
+                  "تميس"
+                ],
+                "unit_price": 3000,
+                "line_total": 6000,
+                "missing": [],
+                "available": true
+              }
+            ],
+            "subtotal": 6000,
+            "delivery_fee": 1500,
+            "total": 7500,
+            "eta_minutes": 40,
+            "issues": [],
+            "quote": {
+              "revision": 3,
+              "token": "e05533e427af4dbbaa8abedf2263f5b9",
+              "presented": true
+            },
+            "order_id": "S-206510",
+            "handoff": null
+          },
+          "events": [
+            {
+              "tool": "confirm",
+              "args": {},
+              "result": {
+                "terminal": true,
+                "reply": "تم تأكيد الطلب التجريبي. رقم طلبك إس، 2، 0، 6، 5، 1، 0. يعطيك العافية!",
+                "order_id": "S-206510"
+              }
+            }
+          ],
+          "timing": {
+            "stt_ms": 499,
+            "agent_ms": 1,
+            "tts_ms": 2413
+          }
+        }
+      ],
+      "failures": [],
+      "passed": true,
+      "duration_s": 21.54
+    }
+  ]
+}

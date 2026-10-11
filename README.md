@@ -30,7 +30,7 @@ cp .env.example .env
 
 Open http://127.0.0.1:8765 in Chrome or Edge. Allow microphone access, press **تحدث بالعربي**, speak, then press the same button to finish and send. An audio-file upload and text diagnostic path are also available. API keys stay on the server and are excluded from Git. One OpenAI API key is needed; no Twilio, paid database, or GPU is required. `.env` changes are reloaded on the next provider call.
 
-Default models: `gpt-4o-mini-transcribe` → `gpt-4.1-mini` with tools → `gpt-4o-mini-tts` (coral). These are configurable in `.env`. They are separate from the open-weight research recommendations in [EVALUATION.md](EVALUATION.md). See the official [STT](https://developers.openai.com/api/docs/guides/speech-to-text), [TTS](https://developers.openai.com/api/docs/guides/text-to-speech), and [LLM](https://developers.openai.com/api/docs/models/gpt-4.1-mini) documentation. Account access and credit must be checked with live tests.
+Default models: `gpt-4o-transcribe` → `gpt-4.1` with tools → `gpt-4o-mini-tts` (coral). These are configurable in `.env`. They are separate from the open-weight research recommendations in [EVALUATION.md](EVALUATION.md). See the official [STT](https://developers.openai.com/api/docs/guides/speech-to-text), [TTS](https://developers.openai.com/api/docs/guides/text-to-speech), and [LLM](https://developers.openai.com/api/docs/models/gpt-4.1) documentation. Account access and credit must be checked with live tests.
 
 ## Demonstration
 

@@ -1,7 +1,7 @@
 import copy
 from pathlib import Path
 import pytest
-from sawt.domain import BRANCHES, Engine, Menu, RuleError, explicit_confirmation, new_state, normalize
+from sawt.domain import BRANCHES, Engine, Menu, RuleError, explicit_confirmation, new_state, normalize, requests_human
 
 @pytest.fixture(scope='session')
 def menu(): return Menu(Path(__file__).resolve().parents[1] / 'data/restaurant-menu-complex.csv')
@@ -137,3 +137,42 @@ def test_readback_contains_details_and_fee(engine):
 def test_delivery_branch_cannot_be_overridden(engine):
     s=ready(engine)
     with pytest.raises(RuleError):engine.act(s,'set_branch',{'branch_id':'jed_rawdah'})
+
+@pytest.mark.parametrize('text',['ما أبي موظف','لا تحولني','ما عندي شكوى','ما أبي أكلم موظف','بدون خدمة العملاء'])
+def test_negated_handoff_deferred_to_model(text):
+    assert not requests_human(text)
+
+@pytest.mark.parametrize('text',['أبي موظف','عندي شكوى','لو سمحت حولني','أبغى أكلم موظف'])
+def test_clear_handoff_shortcut(text):
+    assert requests_human(text)
+
+@pytest.mark.parametrize('city,zone,branch',[('مدينة الرياض','حي النرجس','ruh_narjis'),('الرياض','حَيّ العُلْيَا','ruh_olaya'),('مدينه جده','حي الروضه','jed_rawdah'),('الرياض','حي حطين','ruh_malqa')])
+def test_spoken_place_prefixes(engine,city,zone,branch):
+    s=new_state()
+    engine.act(s,'set_location',{'city':city,'zone':zone,'address':'شارع ١٢'})
+    assert s['branch']==branch
+    assert s['location']['zone'] in BRANCHES[branch]['zones']
+
+@pytest.mark.parametrize('city,zone',[('أبها','خارج النطاق'),('الرياض','الملقا')])
+def test_incomplete_address_correction_clears_previous_destination(engine,city,zone):
+    s=ready(engine);basket=copy.deepcopy(s['basket'])
+    result=engine.act(s,'set_location',{'city':city,'zone':zone,'address':''})
+    assert result['error'] and s['location'] is None and s['basket']==basket
+    assert 'error' in engine.act(s,'checkout',{})
+
+@pytest.mark.parametrize('size',['large_meal','large meal','Large','كبير','وجبة كبيرة'])
+def test_size_alias_and_sauce_removal_are_atomic(engine,size):
+    s=ready(engine,item_id='chicken_01');line=s['basket'][0]
+    engine.act(s,'update_item',{'line_id':line['line_id'],'options':{'sauce':['garlic']}})
+    result=engine.act(s,'update_item',{'line_id':line['line_id'],'options':{'portion':[size],'sauce':[]}})
+    assert result['basket'][0]['options']['portion']==['large']
+    assert result['basket'][0]['options']['sauce']==[]
+    assert result['basket'][0]['unit_price']==4600
+
+def test_model_confirmation_question_always_gets_authoritative_readback(engine):
+    from sawt.agent import Agent
+    s=ready(engine)
+    s,result=Agent(engine,None).finish(s,'هذا كل طلبي','المجموع 1 ريال. هل تؤكد الطلب؟',[])
+    assert s['quote'] and not s['quote']['presented']
+    assert result['reply']==engine.summary(s)
+    assert result['events'][-1]['source']=='readback_guard'

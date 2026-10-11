@@ -94,6 +94,24 @@ class Menu:
                     line_total=(item['base'] + delta) * quantity, missing=missing,
                     available=branch in item['available'] if branch else None)
 
+    def canonical_options(self, item_id, selections):
+        """Resolve known labels/size aliases only; never guess or fill a choice."""
+        item = self.get(item_id)
+        if not isinstance(selections, dict): return selections
+        result = copy.deepcopy(selections)
+        size_aliases = {'large meal': 'large', 'regular meal': 'regular', 'family meal': 'family',
+                        'وجبه كبيره': 'large', 'وجبه عاديه': 'regular', 'وجبه عائليه': 'family'}
+        for gid, chosen in result.items():
+            if gid not in item['groups'] or not isinstance(chosen, list): continue
+            options = item['groups'][gid]['options']
+            for index, value in enumerate(chosen):
+                if not isinstance(value, str) or value in options: continue
+                label = normalize(value.replace('_', ' '))
+                matches = [oid for oid, opt in options.items() if label in [normalize(opt['name']), normalize(opt['name_en'])]]
+                if gid == 'portion' and size_aliases.get(label) in options: matches.append(size_aliases[label])
+                if len(set(matches)) == 1: chosen[index] = matches[0]
+        return result
+
 def new_state():
     return {'revision': 0, 'service': None, 'location': None, 'branch': None, 'basket': [],
             'quote': None, 'order_id': None, 'handoff': None, 'history': [], 'events': [], 'offer': 'not_offered'}
@@ -157,15 +175,22 @@ class Engine:
                 self.touch(state)
         elif action == 'set_location':
             city, zone, address = [str(args.get(k, '')).strip() for k in ['city', 'zone', 'address']]
-            match = [bid for bid, b in BRANCHES.items() if normalize(city) == normalize(b['city']) and normalize(zone) in [normalize(z) for z in b['zones']]]
-            if not address or len(address) > 300: raise RuleError('اذكر عنوان التوصيل بوضوح.')
+            city_key = re.sub(r'^مدينه\s+', '', normalize(city))
+            zone_key = re.sub(r'^حي\s+', '', normalize(zone))
+            match = [bid for bid, b in BRANCHES.items() if city_key == normalize(b['city']) and zone_key in [normalize(z) for z in b['zones']]]
             if len(match) != 1:
                 # An unsupported correction must not leave the old delivery address active.
                 state['location'], state['branch'] = None, None
                 self.touch(state)
-                return {'error': 'المنطقة خارج نطاق التوصيل. تقدر تختار الاستلام.', 'state': self.view(state)}
+                return {'error': 'المنطقة خارج نطاق التوصيل. تقدر تختار الاستلام.', 'supported_branches': BRANCHES, 'state': self.view(state)}
+            if not address or len(address) > 300:
+                # A partial address correction cannot retain the previous destination.
+                state['service'], state['location'], state['branch'] = 'delivery', None, match[0]
+                self.touch(state)
+                return {'error': 'اذكر الشارع ورقم المبنى للعنوان الجديد. تم إلغاء العنوان السابق.', 'state': self.view(state)}
             state['service'] = 'delivery'
-            state['location'] = {'city': city, 'zone': zone, 'address': address}
+            branch = BRANCHES[match[0]]
+            state['location'] = {'city': branch['city'], 'zone': next(z for z in branch['zones'] if normalize(z) == zone_key), 'address': address}
             state['branch'] = match[0]
             self.touch(state)
         elif action == 'set_branch':
@@ -176,6 +201,7 @@ class Engine:
             if action == 'add_item':
                 if len(state['basket']) >= 30: raise RuleError('السلة كبيرة. نحتاج موظفاً لإكمال الطلب.')
                 line = {'line_id': uuid.uuid4().hex[:8], 'item_id': args['item_id'], 'quantity': args.get('quantity', 1), 'options': args.get('options', {}), 'notes': args.get('notes', '')}
+                line['options'] = self.menu.canonical_options(line['item_id'], line['options'])
                 self.menu.validate_line(line, state['branch'])
                 state['basket'].append(line)
             else:
@@ -185,7 +211,7 @@ class Engine:
                 for k in ['quantity', 'notes']:
                     if k in args: updated[k] = args[k]
                 # Supplied groups replace their selections; omitted groups are preserved.
-                updated['options'].update(args.get('options', {}))
+                updated['options'].update(self.menu.canonical_options(updated['item_id'], args.get('options', {})))
                 self.menu.validate_line(updated, state['branch'])
                 line.update(updated)
             self.touch(state)
@@ -214,4 +240,8 @@ def explicit_confirmation(text):
 
 def requests_human(text):
     text = normalize(text)
-    return any(normalize(x) in text for x in ['أبي موظف', 'أبغى موظف', 'اكلم موظف', 'أكلم انسان', 'خدمة العملاء', 'عندي شكوى', 'ابي اشتكي', 'أبغى اشتكي', 'حولني'])
+    # Negated or compound requests need semantic interpretation by the model.
+    # A substring shortcut must never turn "ما أبي موظف" into a handoff.
+    if set(text.split()) & {'ما', 'لا', 'مو', 'مش', 'مب', 'ماني', 'لست', 'ليس', 'بدون'}:
+        return False
+    return any(re.search(r'(?<!\w)' + re.escape(normalize(x)) + r'(?!\w)', text) for x in ['أبي موظف', 'أبغى موظف', 'اكلم موظف', 'أكلم انسان', 'خدمة العملاء', 'عندي شكوى', 'ابي اشتكي', 'أبغى اشتكي', 'حولني'])

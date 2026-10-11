@@ -49,6 +49,7 @@ The database stores service, current location, branch ID, basket lines (stable l
 | Pickup → delivery | Require a fresh address; do not silently reuse an older delivery address |
 | Delivery location | Select serving branch, recalculate fee/ETA and revalidate every basket line |
 | Unsupported new location | Clear old location/branch; block checkout instead of retaining old delivery details |
+| Supported zone with incomplete new address | Clear old address, retain the new serving branch, require street/building |
 | Pickup branch | Revalidate every item at the new branch |
 | Quantity, options, notes, removal | Increment revision and discard quote; reprice from CSV |
 | Interrupt | Stop client playback, increment cancellation epoch, clear quote |
@@ -58,6 +59,8 @@ Unavailable lines remain visible rather than being silently dropped or replaced.
 ## Confirmation and duplicates
 
 `checkout` emits an exact server-generated Arabic summary and stops the model loop. The summary is not rewritten by the LLM. A fresh token is tied to the current revision. The browser acknowledges that token only on audio `ended`; the explicitly labelled text test path can acknowledge a displayed summary. Replayed audio acknowledgements for old tokens fail.
+
+A secondary guard converts recognized model-authored confirmation invitations into the same authoritative checkout. It is a limited language heuristic, not a universal semantic verifier. Known option labels and size aliases are canonicalized only when they resolve uniquely to a real option; unknown values still fail. STT gets a bounded fixture vocabulary hint, while the conversational LLM receives only retrieved candidates, not the complete menu.
 
 Short confirmation phrases are accepted only after that acknowledged quote. Exact normalized phrases prevent «نعم بس احذف وجبة» from being treated as acceptance. Other utterances clear the old quote so a later yes cannot answer the wrong question. The model cannot set the confirmation flag. A narrower phrase whitelist can require clarification for uncommon valid expressions; that is safer than guessing and is a known conversational limitation.
 

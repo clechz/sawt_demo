@@ -7,6 +7,7 @@ import asyncio
 import json
 import sys
 import time
+from datetime import datetime, timezone
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from sawt.agent import Agent
@@ -27,6 +28,8 @@ CASES=[
  ('remove_after_total', ['أبي استلام من فرع النرجس، شكشوكة عادي مع تميس بدون إضافات. هذا كل طلبي.', 'عطني ملخص الطلب', 'احذف الشكشوكة من الطلب.'], {'empty':True,'order':False}),
  ('no_false_confirmation', ['أبي استلام من فرع النرجس، شكشوكة عادي مع تميس بدون إضافات. هذا كل طلبي.', 'عطني ملخص الطلب', 'نعم بس خلها وجبتين'], {'quantity':2,'order':False}),
  ('information_only', ['وش عندكم فطور؟'], {'empty':True,'order':False}),
+ ('short_answers', ['أبي شكشوكة عدد ١ واستلام من فرع النرجس.', 'كبير', 'تميس', 'خلصت عطني الملخص', 'نعم'], {'service':'pickup','branch_id':'ruh_narjis','quantity':1,'item':'breakfast_01','option':('portion','large'),'order':True}),
+ ('sauce_correction', ['أبي استلام من فرع النرجس. دجاج مسحب عدد ١ حجم عادي مع بطاطس بدون حار وصوص ثوم.', 'خله large meal بدون صوص. هذا كل طلبي.'], {'service':'pickup','quantity':1,'item':'chicken_01','option':('portion','large'),'no_sauce':True,'total':4600,'order':False}),
 ]
 
 def verify(view, expected):
@@ -38,20 +41,23 @@ def verify(view, expected):
     if expected.get('no_location') and view['location']:failures.append('old address retained')
     if expected.get('empty') and view['basket']:failures.append('basket should be empty')
     if 'fee' in expected and view['delivery_fee']!=expected['fee']:failures.append('wrong delivery fee')
+    if 'total' in expected and view['total']!=expected['total']:failures.append('wrong final total')
+    if expected.get('no_sauce') and (not view['basket'] or view['basket'][0]['options'].get('sauce')):failures.append('sauce selection was not removed')
     if 'quantity' in expected and (len(view['basket'])!=1 or view['basket'][0]['quantity']!=expected['quantity']):failures.append('wrong quantity or duplicate lines')
     if 'item' in expected and (not view['basket'] or view['basket'][0]['item_id']!=expected['item']):failures.append('wrong item')
     if 'option' in expected:
         group,opt=expected['option']
         if not view['basket'] or opt not in view['basket'][0]['options'].get(group,[]):failures.append('wrong option')
     if expected.get('unavailable') and not any(x['available'] is False for x in view['basket']):failures.append('availability not flagged')
-    if expected.get('missing') and not any(x['missing'] for x in view['basket']):failures.append('required choices silently filled')
+    if expected.get('missing') and not view['basket']:failures.append('requested draft item was not saved')
+    elif expected.get('missing') and not any(x['missing'] for x in view['basket']):failures.append('required choices silently filled')
     return failures
 
 async def main():
     parser=argparse.ArgumentParser();parser.add_argument('--audio',action='store_true');parser.add_argument('--case');args=parser.parse_args()
     if not config()['key']:raise SystemExit('BLOCKED: OPENAI_API_KEY is missing. No live tests were run.')
     provider=OpenAIProvider();engine=Engine(Menu(ROOT/'data/restaurant-menu-complex.csv'));agent=Agent(engine,provider)
-    report={'models':{k:v for k,v in config().items() if k!='key'},'audio_source':'synthetic TTS customer, not human' if args.audio else 'text','cases':[]}
+    report={'recorded_at':datetime.now(timezone.utc).isoformat(),'models':{k:v for k,v in config().items() if k!='key'},'audio_source':'synthetic TTS customer, not human' if args.audio else 'text','cases':[]}
     output=ROOT/'runtime';output.mkdir(exist_ok=True)
     for name,turns,expected in CASES:
         if args.case and name!=args.case:continue
@@ -59,13 +65,20 @@ async def main():
         try:
             for i,text in enumerate(turns):
                 transcript=text
+                timing={}
                 if args.audio:
                     audio=await provider.speak(text);(output/f'{name}-{i}-customer.mp3').write_bytes(audio)
+                    stage_start=time.perf_counter()
                     transcript=await provider.transcribe(audio,'customer.mp3')
+                    timing['stt_ms']=round((time.perf_counter()-stage_start)*1000)
+                stage_start=time.perf_counter()
                 state,result=await agent.turn(state,transcript)
-                record['turns'].append({'input':text,'transcript':transcript,**result})
+                timing['agent_ms']=round((time.perf_counter()-stage_start)*1000)
                 if args.audio:
+                    stage_start=time.perf_counter()
                     audio=await provider.speak(result['reply']);(output/f'{name}-{i}-assistant.mp3').write_bytes(audio)
+                    timing['tts_ms']=round((time.perf_counter()-stage_start)*1000)
+                record['turns'].append({'input':text,'transcript':transcript,**result,'timing':timing})
                 # Simulated listener consumes the full generated reply before next turn.
                 # Browser tests separately verify real audio-ended acknowledgement.
                 if state['quote']:state['quote']['presented']=True
