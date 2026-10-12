@@ -266,12 +266,40 @@ def simple_order(menu,state,text):
     return candidates[0] if len(candidates)==1 else None
 
 
+def stated_beverage_options(item, utterance):
+    """Complete English single-drink order only; every suffix word must match.
+
+    A model can omit 'half sugar' even with the correct transcript. Supplement
+    missing groups only when one named beverage and its entire modifier list
+    are unambiguous. Mixed dishes, questions and corrections do not match.
+    """
+    if item['category_id']!='beverages' or any(c in utterance for c in '?؟"«»“”'):
+        return {}
+    labels={normalize(item['name_en'])}
+    if 'karak' in labels or 'karak tea' in labels:labels.add('karak')
+    pattern='|'.join(re.escape(x) for x in sorted(labels,key=len,reverse=True))
+    match=re.fullmatch(r'(?:(?:and|add|i want)\s+)*(?:one|two|three|four|five|[1-9]\d?)\s+(?:'+pattern+r')\s+(.+)',normalize(utterance))
+    if not match:return {}
+    tail=match[1];covered=[False]*len(tail);options={}
+    for gid,group in item['groups'].items():
+        found=matches(tail,gid,group['options'])
+        selected={oid for _,_,oid in found}
+        if len(selected)>1:return {}
+        if selected:
+            options[gid]=list(selected)
+            for start,end,_ in found:covered[start:end]=[True]*(end-start)
+    remaining=''.join(' ' if covered[i] else c for i,c in enumerate(tail))
+    if re.sub(r'\band\b','',remaining).strip():return {}
+    return options
+
+
 def checked_options(menu, item, args, utterance, previous=None):
     args = copy.deepcopy(args)
     selections = menu.canonical_options(item['id'], args.get('options', {}))
     if not isinstance(selections, dict):
         return args, []  # Domain validator reports malformed data.
     previous = previous or {}
+    complete_beverage = stated_beverage_options(item, utterance)
     rejected = []
     # Include unavailable breads in recognition so brown can never become brioche.
     bread_catalog = bread_options(menu)
@@ -295,6 +323,8 @@ def checked_options(menu, item, args, utterance, previous=None):
                 'question': 'الخبز اللي طلبته مو متوفر لهذا الصنف. المتوفر: ' + '، '.join(o['name'] for o in group['options'].values()) + '. وش تختار؟'})
             continue
         chosen = selections.get(gid)
+        if chosen is None and gid in complete_beverage:
+            selections[gid]=chosen=complete_beverage[gid]
         if gid=='bread' and chosen is None:
             stated=stated_single_dish_bread(item,utterance,evidence)
             if stated in group['options']:

@@ -6,10 +6,7 @@ from pathlib import Path
 import httpx
 from .provider import OpenAIProvider, ProviderError, config
 
-STYLE = ('Speak clear, broadly Saudi Arabic with a light regional accent. Warm, calm restaurant employee; '
-         'natural medium pace, no exaggerated dialect or theatrical enthusiasm. Short pauses between items. '
-         'Read exactly the provided Arabic; preserve every quantity, option, amount and confirmation question. '
-         'Say ريال naturally. Do not add words, filler, greetings or music.')
+STYLE = 'Read the Arabic text exactly as written, in a clear Saudi accent at a natural pace.'
 
 CALLS_UNAVAILABLE = 'خدمة المكالمات غير متاحة حالياً. حاول لاحقاً.'
 
@@ -105,19 +102,38 @@ class V2Provider(OpenAIProvider):
             if cached is not None:
                 for offset in range(0,len(cached),4800):yield cached[offset:offset+4800]
                 return
-        try:
-            async with self.client().stream('POST', 'https://api.openai.com/v1/audio/speech', headers=self.headers(),
-                timeout=httpx.Timeout(8,connect=5),
-                json={'model': cfg['tts'], 'voice': voice_name(), 'input': spoken_amounts(text),
-                      'instructions': STYLE, 'response_format': response_format}) as response:
-                if response.status_code >= 400:
-                    await response.aread()
-                self.check(response)
-                async for chunk in response.aiter_bytes():
-                    if chunk:
-                        yield chunk
-        except httpx.HTTPError as exc:
-            raise ProviderError('تعذر تشغيل الملخص. حاول مرة ثانية.') from exc
+        # The provider can send a tiny initial PCM fragment and then stall.
+        # Hold only 250 ms of audio before exposing it. A single bounded retry
+        # is safe before ANY bytes escape; never splice/restart a partial reply.
+        for attempt in range(2 if response_format=='pcm' else 1):
+            emitted=False
+            try:
+                async with asyncio.timeout(3 if response_format=='pcm' else None) as startup:
+                    async with self.client().stream('POST', 'https://api.openai.com/v1/audio/speech', headers=self.headers(),
+                        timeout=httpx.Timeout(8,connect=5),
+                        json={'model': cfg['tts'], 'voice': voice_name(), 'input': spoken_amounts(text),
+                              'instructions': STYLE, 'response_format': response_format}) as response:
+                        if response.status_code >= 400:await response.aread()
+                        self.check(response)
+                        chunks=response.aiter_bytes()
+                        pending=bytearray()
+                        if response_format=='pcm':
+                            while len(pending)<12000:
+                                chunk=await anext(chunks,b'')
+                                if not chunk:break
+                                pending.extend(chunk)
+                        startup.reschedule(None)
+                        if pending:
+                            emitted=True
+                            yield bytes(pending)
+                        async for chunk in chunks:
+                            if chunk:
+                                emitted=True
+                                yield chunk
+                return
+            except (httpx.HTTPError,TimeoutError) as exc:
+                if response_format=='pcm' and not emitted and attempt==0:continue
+                raise ProviderError('تعذر تشغيل الملخص. حاول مرة ثانية.') from exc
 
     async def stream_speech(self, text):
         question='نأكد الطلب؟'

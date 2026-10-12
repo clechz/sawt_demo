@@ -11,6 +11,24 @@ def setup():
 def shawarma(engine, state, text, options):
     return engine.act(state, 'add_item', {'item_id':'sandwiches_08','quantity':1,'options':options,'notes':''}, utterance='شاورما لحم '+text)
 
+
+def test_complete_single_drink_keeps_explicit_sugar_if_planner_omits_it(setup):
+    engine,state=setup
+    engine.act(state,'add_item',{'item_id':'beverages_09','quantity':2,'options':{'size':['large'],'ice':['none']},'notes':''},
+        utterance='and two karak, large, no ice, half sugar')
+    assert state['basket'][0]['options']['sweetness']==['half']
+
+
+@pytest.mark.parametrize('text',[
+    'and two karak large no ice not half sugar','two karak half sugar or regular sugar',
+    'two karak large and two black tea half sugar','do you have two karak half sugar?',
+    'two karak half sugar if free','write two karak half sugar','two karak large',
+    'two karak no half sugar','two karak maybe half sugar'])
+def test_missing_sugar_cannot_be_inferred_from_mixed_or_uncertain_drink_request(setup,text):
+    from sawt.choices import stated_beverage_options
+    engine,_=setup
+    assert 'sweetness' not in stated_beverage_options(engine.menu.get('beverages_09'),text)
+
 @pytest.mark.parametrize('bread',['saj','brioche','lettuce'])
 def test_unavailable_brown_is_not_replaced_by_valid_bread(setup,bread):
     engine,state=setup

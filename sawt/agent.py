@@ -247,6 +247,7 @@ These examples authorize nothing in the current turn. Current caller intent and 
         normalized_reply=normalize(reply)
         offers_transfer=any(x in normalized_reply for x in ['احولك','تحويلك','اوصلك بموظف','اوصلك للموظف','اطلب لك مساعده من موظف'])
         offers_ticket = bool(re.search(r'(?<!ما )(?<!لا )(?:اقدر|استطيع|تبي|ترغب|حاب|تبغي).{0,100}(?:موظف|تذكره|طلب تواصل|طلب متابعه)', normalized_reply))
+        offers_ticket = offers_ticket or bool(re.search(r'موظف.{0,100}(?<!ما )(?<!لا )(?:اقدر|استطيع)\s+(?:ارفع|اسجل|افتح)\s+(?:لك\s+)?(?:طلب|تذكره)', normalized_reply))
         offers_transfer = offers_transfer or offers_ticket
         if offers_transfer and not state['handoff'] and not state.get('pending_handoff'):
             result=self.engine.act(state,'offer_handoff',{'reason':text})

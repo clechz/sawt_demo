@@ -90,3 +90,65 @@ async def test_speech_uses_bounded_idle_timeout_without_shortening_planner(monke
         assert timeouts[0]['read']==8 and timeouts[0]['connect']==5
         assert timeouts[1]['read']==35
     finally:await provider.aclose()
+
+
+@pytest.mark.parametrize('initial_bytes,recover',[(2000,True),(12000,False)])
+async def test_pcm_retry_only_before_any_audio_escapes(monkeypatch,initial_bytes,recover):
+    monkeypatch.setattr('sawt.v2_provider.config',lambda:{'key':'test','tts':'test'})
+    calls=[];closed=[]
+    class Stream(httpx.AsyncByteStream):
+        def __init__(self,attempt):self.attempt=attempt
+        async def __aiter__(self):
+            if self.attempt==1:
+                yield b'a'*initial_bytes
+                raise httpx.ReadTimeout('synthetic upstream stall')
+            yield b'b'*12000
+            yield b'c'*2000
+        async def aclose(self):closed.append(self.attempt)
+    def handle(request):
+        calls.append(request)
+        return httpx.Response(200,stream=Stream(len(calls)))
+    provider=V2Provider();provider._loop=asyncio.get_running_loop()
+    provider._client=httpx.AsyncClient(transport=httpx.MockTransport(handle))
+    emitted=[]
+    try:
+        if recover:
+            emitted=[chunk async for chunk in provider.speech_chunks('test','pcm')]
+            assert b''.join(emitted)==b'b'*12000+b'c'*2000
+        else:
+            with pytest.raises(ProviderError):
+                async for chunk in provider.speech_chunks('test','pcm'):emitted.append(chunk)
+            assert b''.join(emitted)==b'a'*12000
+        assert len(calls)==(2 if recover else 1)
+        assert closed==list(range(1,len(calls)+1))
+    finally:await provider.aclose()
+
+
+async def test_pcm_billing_failure_never_retries(monkeypatch):
+    monkeypatch.setattr('sawt.v2_provider.config',lambda:{'key':'test','tts':'test'})
+    calls=[]
+    def handle(request):
+        calls.append(request)
+        return httpx.Response(429,json={'error':{'code':'credit_balance_exhausted'}})
+    provider=V2Provider();provider._loop=asyncio.get_running_loop()
+    provider._client=httpx.AsyncClient(transport=httpx.MockTransport(handle))
+    try:
+        with pytest.raises(ProviderQuotaError):
+            async for _ in provider.speech_chunks('test','pcm'):pass
+        assert len(calls)==1
+    finally:await provider.aclose()
+
+
+async def test_pcm_startup_retries_are_bounded(monkeypatch):
+    monkeypatch.setattr('sawt.v2_provider.config',lambda:{'key':'test','tts':'test'})
+    calls=[]
+    def handle(request):
+        calls.append(request)
+        raise httpx.ConnectTimeout('synthetic')
+    provider=V2Provider();provider._loop=asyncio.get_running_loop()
+    provider._client=httpx.AsyncClient(transport=httpx.MockTransport(handle))
+    try:
+        with pytest.raises(ProviderError):
+            async for _ in provider.speech_chunks('test','pcm'):pass
+        assert len(calls)==2
+    finally:await provider.aclose()
