@@ -7,6 +7,7 @@ python -m pytest -q
 node --test tests/audio-meter.test.mjs tests/call-start.test.mjs tests/call-status.test.mjs tests/playback.test.mjs
 python scripts/v2_cloud_journeys.py
 python scripts/v2_cloud_journeys.py --only pizza_options --repeat 3
+python scripts/v2_cloud_journeys.py --only pizza_options information_and_staff --wait-for-capacity-seconds 900
 python scripts/v2_cloud_acceptance.py
 python scripts/verify_cloud_persistence.py
 ```
@@ -34,7 +35,7 @@ The runner logs in, creates an isolated call, connects a real LiveKit microphone
 
 The state-completion hard ceiling defaults to eight seconds; that is a stall detector, not a claim that eight seconds feels conversational. First received audio is measured separately. RMS proves audible energy, not correct spoken meaning. This runner does not certify native Saudi pronunciation, real microphone permissions, Bluetooth behavior, a real telephone network, or every possible wording. Human-call failures take precedence over a passing synthetic test.
 
-A release needs all intended cases executed, zero incorrect or unconfirmed orders, no silent substitution, and no unresolved missing-reply failures. Do not describe a run as passing when cases were skipped, rate-limited or failed. The demo has a shared 20-start/hour and two-active-call budget; schedule test runs accordingly and leave room for human testing.
+A release needs all intended cases executed, zero incorrect or unconfirmed orders, no silent substitution, and no unresolved missing-reply failures. Do not describe a run as passing when cases were skipped, rate-limited or failed. The demo has a shared 20-start/hour and two-active-call budget; schedule test runs accordingly and leave room for human testing. The optional `--wait-for-capacity-seconds` flag retries only the existing call-budget response until its deadline; it never changes limits or exempts synthetic calls. Other errors remain failures. The checkout runner accepts the same flag.
 
 ## Reproduced failures, 2026-10-12
 

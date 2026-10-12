@@ -9,6 +9,7 @@ import httpx
 from livekit import rtc
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
 from sawt.v2_provider import V2Provider
+from scripts.cloud_test_capacity import create_call
 from scripts.v2_recognition_replay import decode
 ROOT=Path(__file__).resolve().parents[1]
 
@@ -104,8 +105,8 @@ class VoiceCall:
    try:chunk=self.queue.get_nowait()
    except asyncio.QueueEmpty:chunk=b'\0'*4800
    await self.source.capture_frame(rtc.AudioFrame(chunk,24000,1,len(chunk)//2))
- async def start(self):
-  r=await self.client.post('/api/calls',json={'recording_consent':True});r.raise_for_status();self.call=r.json();self.auth={'Authorization':'Bearer '+self.call['token']}
+ async def start(self, wait_seconds=0):
+  self.call=await create_call(self.client,wait_seconds);self.auth={'Authorization':'Bearer '+self.call['token']}
   await self.room.connect(self.call['url'],self.call['room_token'])
   self.source=rtc.AudioSource(24000,1,queue_size_ms=100)
   self.track=rtc.LocalAudioTrack.create_audio_track('automated-regression',self.source)
@@ -167,9 +168,9 @@ class VoiceCall:
 
 
 async def main():
- parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--url',default='https://sawt-demo.vercel.app');parser.add_argument('--only',choices=SCENARIOS);parser.add_argument('--repeat',type=int,default=1);parser.add_argument('--max-state-seconds',type=float,default=8);parser.add_argument('--output',type=Path,default=ROOT/'runtime'/('cloud-journeys-'+time.strftime('%Y%m%d-%H%M%S')+'.json'));args=parser.parse_args()
+ parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--url',default='https://sawt-demo.vercel.app');parser.add_argument('--only',choices=SCENARIOS,nargs='+');parser.add_argument('--repeat',type=int,default=1);parser.add_argument('--max-state-seconds',type=float,default=8);parser.add_argument('--output',type=Path,default=ROOT/'runtime'/('cloud-journeys-'+time.strftime('%Y%m%d-%H%M%S')+'.json'));parser.add_argument('--wait-for-capacity-seconds',type=float,default=0);args=parser.parse_args()
  assert 1<=args.repeat<=10
- cases={args.only:SCENARIOS[args.only]} if args.only else SCENARIOS
+ cases={name:SCENARIOS[name] for name in args.only} if args.only else SCENARIOS
  provider=V2Provider();audio={}
  try:
   for specs in cases.values():
@@ -190,7 +191,7 @@ async def main():
    for name,specs in cases.items():
     call=VoiceCall(client);record={'name':name,'attempt':attempt+1,'turns':[],'passed':False};report['cases'].append(record)
     try:
-     await call.start();record['call_id']=call.call['id']
+     await call.start(args.wait_for_capacity_seconds);record['call_id']=call.call['id']
      for spec in specs:
       try:result=await call.turn(audio[spec['text']],spec,args.max_state_seconds)
       except ClarificationRequired as exc:

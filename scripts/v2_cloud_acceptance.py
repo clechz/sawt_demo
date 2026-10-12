@@ -3,6 +3,7 @@
 Caller audio is synthetic. Readback is downloaded/decoded and its playback
 receipt is simulated after the actual duration; this is not a human UX rating.
 """
+import argparse
 import asyncio
 import json
 import sys
@@ -13,12 +14,14 @@ from livekit import rtc
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
 from scripts.v2_recognition_replay import decode
 from sawt.v2_provider import V2Provider
+from scripts.cloud_test_capacity import create_call
 
 ROOT=Path(__file__).resolve().parents[1]
 BASE='https://sawt-demo.vercel.app'
 
 
 async def main():
+    parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--wait-for-capacity-seconds',type=float,default=0);args=parser.parse_args()
     phrases={
         'order':'أبي شكشوكة عدد اثنين، حجم كبير، خبز تميس، استلام من فرع النرجس بالرياض. هذا كل طلبي، اقرأ ملخص الطلب.',
         'yes':'نعم، اعتمد الطلب.',
@@ -54,7 +57,7 @@ async def main():
     async with httpx.AsyncClient(base_url=BASE,headers={'Origin':BASE},timeout=60) as client:
         try:
             assert (await client.post('/login',data={'password':password})).status_code==303
-            response=await client.post('/api/calls',json={'recording_consent':True});response.raise_for_status();call=response.json()
+            call=await create_call(client,args.wait_for_capacity_seconds)
             auth={'Authorization':'Bearer '+call['token']}
             await room.connect(call['url'],call['room_token'])
             source=rtc.AudioSource(24000,1,queue_size_ms=100)
