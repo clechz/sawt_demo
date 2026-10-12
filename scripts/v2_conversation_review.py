@@ -110,7 +110,7 @@ async def main():
                     if result['speech_source']=='received_livekit_audio':
                         assert not any(x in heard for x in ['وعليكم السلام','خلني أراجع','دقيقة أتأكد']),'Unrelated greeting or repetitive filler'
                     else:
-                        # The authorized checkout starts with خلني أراجع معك.
+                        # The authorized checkout starts with the short طلبك.
                         # Require its food, choices, branch and invitation too.
                         from sawt.domain import normalize
                         spoken=normalize(heard)

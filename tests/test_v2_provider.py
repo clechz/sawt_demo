@@ -6,6 +6,18 @@ from sawt.provider import ProviderError
 from sawt.v2_provider import ProviderQuotaError, CALLS_UNAVAILABLE
 
 
+def test_checkout_speech_names_saj_bread_without_changing_price_or_confirmation():
+    from sawt.v2_provider import speech_text
+    text='شاورما دجاج، ساندويتش فقط، صاج، بدون حار. المجموع 18.00 ريال. نأكد الطلب؟'
+    assert speech_text(text)=='شاورما دجاج، ساندويتش فقط، خبز الصاج، بدون حار. المجموع ثمانية عشر ريال. نأكد الطلب؟'
+
+
+@pytest.mark.parametrize('text',['اكتب في الملاحظات ما أبي صاج','خبز الصاج','خبز صاج','الصاج غير متوفر'])
+def test_saj_pronunciation_expansion_is_limited_to_isolated_option_slot(text):
+    from sawt.v2_provider import speech_text
+    assert speech_text(text)==text
+
+
 @pytest.mark.parametrize('code',['insufficient_quota','credit_balance_exhausted'])
 def test_billing_failure_is_actionable_without_leaking_provider_details(code):
     response=httpx.Response(429,json={'error':{'code':code,'message':'secret provider details'}})

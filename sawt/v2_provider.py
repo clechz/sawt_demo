@@ -37,6 +37,13 @@ def spoken_amounts(text):
     return re.sub(r'(?<![\d.])(\d+)\.(\d{2}) ريال', replace, text)
 
 
+def speech_text(text):
+    # A bare checkout option "صاج" was independently heard as "فاج".
+    # Name the bread in its list slot; do not rewrite notes or arbitrary words.
+    text=re.sub(r'(?<=، )صاج(?=،)', 'خبز الصاج', text)
+    return spoken_amounts(text)
+
+
 class V2Provider(OpenAIProvider):
     def __init__(self, *, batch_tools=True):
         self.supports_tool_batches = batch_tools
@@ -111,7 +118,7 @@ class V2Provider(OpenAIProvider):
                 async with asyncio.timeout(3 if response_format=='pcm' else None) as startup:
                     async with self.client().stream('POST', 'https://api.openai.com/v1/audio/speech', headers=self.headers(),
                         timeout=httpx.Timeout(8,connect=5),
-                        json={'model': cfg['tts'], 'voice': voice_name(), 'input': spoken_amounts(text),
+                        json={'model': cfg['tts'], 'voice': voice_name(), 'input': speech_text(text),
                               'instructions': STYLE, 'response_format': response_format}) as response:
                         if response.status_code >= 400:await response.aread()
                         self.check(response)

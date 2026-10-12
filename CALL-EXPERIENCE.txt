@@ -176,7 +176,7 @@ REUSABLE PHRASES — LIVE SOURCE
     When: Stop the call if durable state cannot be read safely.
 
 37. summary
-    طلبك: {items}. {service}، {branch}. رسوم التوصيل {fee} ريال. الإجمالي {total} ريال. الوقت المتوقع {eta} دقيقة. هل تؤكد الطلب؟
+    طلبك: {items}. {fulfillment} {fee_sentence}المجموع {total} ريال، والوقت المتوقع {eta} دقيقة. نأكد الطلب؟
     When: Server-filled items, all quantities/options/notes, service, branch, delivery fee, total and ETA; explicit confirmation question.
 
 
