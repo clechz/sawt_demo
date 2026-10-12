@@ -25,6 +25,8 @@ Neon Postgres stores transactional order state, and private Vercel Blob stores
 recordings/readbacks. The hosted app does not require a local server or tunnel.
 See [cloud deployment and verification](CLOUD-DEPLOYMENT.md).
 
+The shared demo budget defaults to **120 call starts per hour and four concurrent calls**. Configure `SAWT_MAX_CALLS_PER_HOUR` and `SAWT_MAX_ACTIVE_CALLS` on the API host. A single database-backed check enforces both across processes; closed calls still count toward the hourly budget. Provider billing and provider quotas are separate.
+
 ## Run V2 locally
 
 ### Requirements
@@ -105,7 +107,7 @@ flowchart LR
   Voice --> Verify[Bounded audio verification]
   Verify --> Planner[Tool planner + current state]
   Planner --> Rules[Menu and order rules]
-  Rules --> DB[(SQLite transaction)]
+  Rules --> DB[(Neon Postgres / local SQLite)]
   DB --> Reply[Actual saved change / next missing question]
   Reply --> Voice
   DB --> Readback[Exact checkout speech]
@@ -123,7 +125,7 @@ From an activated virtual environment (`.\.venv\Scripts\Activate.ps1` or `source
 
 ```bash
 python -m pytest -q
-node --experimental-default-type=module --test tests/playback.test.mjs tests/audio-meter.test.mjs tests/call-status.test.mjs
+node --test tests/playback.test.mjs tests/audio-meter.test.mjs tests/call-status.test.mjs tests/call-start.test.mjs
 npm ci --prefix frontend
 npm run build --prefix frontend
 ```

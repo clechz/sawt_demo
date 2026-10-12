@@ -62,7 +62,12 @@ a transaction-scoped advisory lock, preserving the demo's single-writer
 semantics across hosts. Revision/epoch checks, idempotency, quote invalidation
 and timed playback receipts stay inside that boundary. Model requests happen
 outside database transactions. This conservative lock is appropriate for the
-two-call demo limit, not a claim of production-scale write throughput.
+four-call demo limit, not a claim of production-scale write throughput.
+
+Call creation uses one shared database-backed budget: 120 starts per rolling
+hour and four active calls by default. Override `SAWT_MAX_CALLS_PER_HOUR` and
+`SAWT_MAX_ACTIVE_CALLS` on Vercel. There is no additional per-process 20-call
+cap. Raising these application limits does not raise provider quotas or credits.
 
 Audio is staged in temporary disk space, then uploaded privately: controlled
 readbacks during their HTTP stream, caller/generated audio when the worker

@@ -116,7 +116,7 @@ class RestaurantVoice(Agent):
         self.session.on('user_input_transcribed', self.on_transcript)
         self.spawn(self.watch_lifetime())
         self.duplex_session.append_commentary(say('greeting'))
-        tx.event(self.sid, 'voice.connected', {'transport': 'livekit', 'model': 'gpt-live-1', 'recognition_policy':'saudi-confirm-v4'})
+        tx.event(self.sid, 'voice.connected', {'transport': 'livekit', 'model': 'gpt-live-1', 'recognition_policy':'saudi-confirm-v4', 'release':'submission-v6'})
         await self.send('ready')
 
     def on_client_event(self, event):
@@ -189,7 +189,8 @@ class RestaurantVoice(Agent):
     async def verify_transcript(self, start, end, text, epoch):
         await self.send('processing', stage='recognizing', epoch=epoch)
         started = time.perf_counter()
-        wav, window = self.input_audio.wav(self.fragment_spans[start:end])
+        after_ms = self.fragment_spans[start-1].get('captured_ms', 0) if start else 0
+        wav, window = self.input_audio.wav(self.fragment_spans[start:end], after_ms=after_ms)
         verified = await asyncio.wait_for(self.provider.recognize(wav), timeout=8)
         from sawt.recognition import reconcile_transcripts
         verified = reconcile_transcripts(text, verified)

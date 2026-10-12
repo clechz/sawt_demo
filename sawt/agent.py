@@ -119,7 +119,12 @@ class Agent:
         tool_count = 0
         batching = getattr(self.provider, 'supports_tool_batches', False)
         if batching:
-            messages[0]['content'] += '\nLatency policy: return independent tool calls together in one response. They execute IN ORDER, not concurrently. Batch independent searches, then batch known valid edits. Do not repeat list_branches/get_item when their exact results are already in CURRENT STATE or this turn. Terminal tools (ask_choice, checkout, confirm, handoff, offer_handoff, cancel_draft) must be called ALONE, after edits. Never guess IDs or omit validation to reduce calls.'
+            # History retains speech, not tool schemas. Supply the authoritative
+            # schemas for existing lines so corrections need no repeated lookup.
+            item_ids = list(dict.fromkeys(x['item_id'] for x in state['basket']))[:8]
+            if item_ids:
+                messages[0]['content'] += '\nCATALOG DEFINITIONS FOR CURRENT BASKET (already inspected):\n' + json.dumps([self.engine.menu.get(item_id) for item_id in item_ids], ensure_ascii=False)
+            messages[0]['content'] += '\nLatency policy: return independent tool calls together in one response. They execute IN ORDER, not concurrently. Batch independent searches, then batch known valid edits. Do not repeat list_branches/get_item when their exact results are already in CURRENT STATE or this turn. To avoid another round trip, checkout or ask_choice MAY be the LAST call after known valid edits in the same batch; it runs only if every preceding call succeeds without rejected choices. For ask_choice the exact line_id must already be known; never invent a new line ID. Other terminal tools (confirm, handoff, offer_handoff, cancel_draft) must be called ALONE. Never guess IDs or omit validation to reduce calls.'
         for step in range(10):
             message = await self.provider.chat(messages, TOOLS)
             if not isinstance(message, dict): raise ProviderError('استجابة النموذج غير صالحة.')
@@ -162,18 +167,25 @@ class Agent:
             if tool_count > 10:
                 raise ProviderError('تجاوز الطلب عدد الخطوات المسموح. لم نعتمد التغييرات الجديدة.')
             terminal = {'ask_choice','checkout','confirm','handoff','offer_handoff','cancel_draft'}
-            if len(calls)>1 and any(c['function'].get('name') in terminal for c in calls):
+            names = [c['function'].get('name') for c in calls]
+            mutations = {'add_item','update_item','replace_item','remove_item','set_service','set_branch','set_location','set_delivery_details'}
+            terminal_last = (len(calls)>1 and names[-1] in {'ask_choice','checkout'}
+                             and all(name in mutations for name in names[:-1]))
+            if len(calls)>1 and any(name in terminal for name in names) and not terminal_last:
                 messages.append({'role':'assistant','content':message.get('content'),'tool_calls':calls})
                 for c in calls:
-                    messages.append({'role':'tool','tool_call_id':c['id'],'content':'No tools in this batch executed. Call terminal tools alone after saving all changes.'})
+                    messages.append({'role':'tool','tool_call_id':c['id'],'content':'No tools in this batch executed. Only ask_choice or checkout may follow mutation tools as the final call. Other terminal tools must be alone.'})
                 continue
             messages.append({'role': 'assistant', 'content': message.get('content'), 'tool_calls': calls})
+            batch_failed = False
             for call in calls:
                 args = {}
                 name = 'invalid'
                 try:
                     name = call['function']['name']; args = json.loads(call['function']['arguments'])
                     validate_args(name, args)
+                    if terminal_last and name in terminal and batch_failed:
+                        raise RuleError('لم يُنفذ السؤال أو الملخص لأن تعديلاً قبله لم ينجح بالكامل. راجع نتائج الأدوات وصحح الطلب أولاً.')
                     if name == 'set_location' and not args['address'].strip():
                         # Preserve explicitly supplied partial fields without
                         # pretending an empty full address replaced an old one.
@@ -195,6 +207,7 @@ class Agent:
                         if item_id in self.engine.menu.items:
                             result['valid_item_definition'] = self.engine.menu.get(item_id)
                             result['repair_instruction'] = 'Use the exact IDs below and retry the failed change. A bad ID does not mean the requested size is unavailable.'
+                batch_failed = batch_failed or bool(result.get('error') or result.get('choice_guard'))
                 events.append({'tool': name, 'args': args, 'result': copy.deepcopy(result)})
                 if result.get('terminal'):
                     return self.finish(state, text, result['reply'], events)
@@ -207,7 +220,7 @@ class Agent:
         # claim that every possible hallucination can be detected lexically.
         normalized_reply=normalize(reply)
         offers_transfer=any(x in normalized_reply for x in ['احولك','تحويلك','اوصلك بموظف','اوصلك للموظف','اطلب لك مساعده من موظف'])
-        offers_ticket = bool(re.search(r'(?<!ما )(?<!لا )(?:اقدر|تبي|ترغب|حاب|تبغي).{0,100}(?:موظف|تذكره|طلب تواصل|طلب متابعه)', normalized_reply))
+        offers_ticket = bool(re.search(r'(?<!ما )(?<!لا )(?:اقدر|استطيع|تبي|ترغب|حاب|تبغي).{0,100}(?:موظف|تذكره|طلب تواصل|طلب متابعه)', normalized_reply))
         offers_transfer = offers_transfer or offers_ticket
         if offers_transfer and not state['handoff'] and not state.get('pending_handoff'):
             result=self.engine.act(state,'offer_handoff',{'reason':text})

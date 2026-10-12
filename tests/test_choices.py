@@ -25,6 +25,26 @@ def test_brown_is_allowed_for_item_that_actually_has_it(setup):
     engine.act(state,'add_item',{'item_id':'breakfast_01','quantity':1,'options':{'bread':['brown'],'portion':['large']},'notes':''},utterance='شكشوكة كبير بخبز بر')
     assert state['basket'][0]['options']=={'bread':['brown'],'portion':['large']}
 
+
+@pytest.mark.parametrize('text,bread',[
+    ('أبي شكشوكة كبير، تميس وتوصيل.','tamees'),
+    ('عطني شكشوكة صاج استلام','saj'),
+    ('أبغى شكشوكة حجم عادي مع خبز أسمر','brown')])
+def test_clear_single_dish_bread_is_not_lost_when_planner_omits_group(setup,text,bread):
+    engine,state=setup
+    engine.act(state,'add_item',{'item_id':'breakfast_01','quantity':1,'options':{},'notes':''},utterance=text)
+    assert state['basket'][0]['options'].get('bread')==[bread]
+
+
+@pytest.mark.parametrize('text',[
+    'أبي شكشوكة كبير وتميس بالعسل','أبي شكشوكة مع فول صاج',
+    'أبي شكشوكة بدون تميس','أبي شكشوكة تميس ولا صاج؟',
+    'هل عندكم شكشوكة مع تميس؟','أبي شكشوكة مع تميس إذا كان مجاني'])
+def test_missing_bread_is_not_filled_from_mixed_negated_or_conditional_order(setup,text):
+    engine,state=setup
+    engine.act(state,'add_item',{'item_id':'breakfast_01','quantity':1,'options':{},'notes':''},utterance=text)
+    assert not state['basket'][0]['options'].get('bread')
+
 def test_negated_heat_does_not_authorize_hot(setup):
     engine,state=setup
     shawarma(engine,state,'وجبة مع صاج بدون حار',{'meal':['meal'],'bread':['saj'],'spice_level':['hot']})

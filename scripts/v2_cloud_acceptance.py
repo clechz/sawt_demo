@@ -35,7 +35,7 @@ async def main():
             audio[name]=decode(path)
     finally:await provider.aclose()
     room=rtc.Room();events=[];tasks=[];frames=0;queue=asyncio.Queue();stop=asyncio.Event()
-    call=None;source=None;pump_task=None;checks={};turns=[]
+    call=None;source=None;pump_task=None;checks={};turns=[];audit_events=[]
     async def listen(track):
         nonlocal frames
         stream=rtc.AudioStream(track)
@@ -67,7 +67,7 @@ async def main():
             async with asyncio.timeout(60):
                 while not any(e.get('type')=='ready' for e in events):await asyncio.sleep(.2)
             await asyncio.sleep(7)
-            audit_events=[];cursor=0
+            cursor=0
             async def state():
                 nonlocal cursor
                 while True:
@@ -138,6 +138,7 @@ async def main():
             await room.disconnect()
             if source:await source.aclose()
             report={'base':BASE,'call_id':call and call['id'],'checks':checks,'turns':turns,
+                    'worker_release':next((e['payload'].get('release') for e in audit_events if e['kind']=='voice.connected'),None),
                     'passed':len(turns)>=5 and all(checks.values()),
                     'playback':'Downloaded and decoded actual cloud speech; elapsed playback receipt simulated; no browser.'}
             (ROOT/'runtime/cloud-acceptance.json').write_text(json.dumps(report,ensure_ascii=False,indent=2),encoding='utf8')

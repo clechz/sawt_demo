@@ -126,10 +126,31 @@ def test_interruption_discards_whole_unpublished_bundle(tx):
     assert tx.load(sid)['state']['service'] is None
     assert not [e for e in tx.events(sid) if e['kind']=='tool.committed']
 
-def test_shared_call_budget(tx):
+def test_shared_call_budget(tx, monkeypatch):
+    monkeypatch.setenv('SAWT_MAX_ACTIVE_CALLS', '2')
     tx.create(enforce_limits=True);tx.create(enforce_limits=True)
     another=Transactions(tx.path,tx.engine)
     with pytest.raises(Conflict):another.create(enforce_limits=True)
+
+
+def test_hourly_budget_includes_closed_calls(tx, monkeypatch):
+    monkeypatch.setenv('SAWT_MAX_CALLS_PER_HOUR', '3')
+    for _ in range(3):
+        sid,_=tx.create(enforce_limits=True)
+        tx.interrupt(sid,close=True)
+    with pytest.raises(Conflict,match='3 starts/hour'):
+        Transactions(tx.path,tx.engine).create(enforce_limits=True)
+
+
+def test_submission_budget_has_room_for_testing_and_callers(tx, monkeypatch):
+    monkeypatch.delenv('SAWT_MAX_CALLS_PER_HOUR', raising=False)
+    monkeypatch.delenv('SAWT_MAX_ACTIVE_CALLS', raising=False)
+    for _ in range(21):
+        sid,_=tx.create(enforce_limits=True)
+        tx.interrupt(sid,close=True)
+    for _ in range(4):tx.create(enforce_limits=True)
+    with pytest.raises(Conflict,match='4 active calls and 120 starts/hour'):
+        tx.create(enforce_limits=True)
 
 
 def test_stream_cannot_confirm_before_duration_is_known(tx, monkeypatch):

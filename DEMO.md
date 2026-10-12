@@ -46,9 +46,9 @@ Show DESIGN.md and its diagram. Say:
 
 > فصلت المحادثة عن صلاحية تغيير الطلب. LiveKit ينقل الصوت، وGPT-Live يدير توقيت المحادثة. طلبات المطعم تمر على تخطيط بأدوات، لكن كود Python هو اللي يتحقق من الخيارات والأسعار والتوفر.
 >
-> ما بنيت شبكة وكلاء ولا مصنف نوايا إضافي. عندنا مسؤوليتان للنماذج: الصوت، وفهم الطلب واختيار الأدوات. حالة الطلب محفوظة في SQLite، وهي المرجع؛ سجل المحادثة يساعد على الفهم فقط.
+> ما بنيت شبكة وكلاء ولا مصنف نوايا إضافي. عندنا مسؤوليتان للنماذج: الصوت، وفهم الطلب واختيار الأدوات. حالة الطلب في النسخة المستضافة محفوظة في Neon Postgres، ومحليًا نستخدم SQLite. الحالة هي المرجع؛ سجل المحادثة يساعد على الفهم فقط.
 >
-> السياق يحتوي الحالة الحالية وآخر ١٢ رسالة، ونسترجع حتى خمسة أصناف في البحث بدل إرسال المنيو كاملًا. أي تغيير يحدّث رقم نسخة الطلب ويلغي الملخص القديم. وإذا وصل كلام أحدث، نتيجة الشغل القديم ما تقدر تكتب فوقه.
+> السياق يحتوي الحالة الحالية وآخر ١٢ رسالة، ونسترجع حتى خمسة أصناف في البحث بدل إرسال المنيو كاملًا. ونرفق خيارات الأصناف الموجودة في السلة عشان التعديل ما يحتاج بحثًا مكررًا. أي تغيير يحدّث رقم نسخة الطلب ويلغي الملخص القديم. وإذا وصل كلام أحدث، نتيجة الشغل القديم ما تقدر تكتب فوقه.
 >
 > واجهة العميل بسيطة، لكن التأكيد له شروط واضحة: ملخص حالي، اكتمال تشغيله، ثم موافقة صريحة. وقيد في قاعدة البيانات يمنع تكرار نفس الطلب.
 
@@ -100,5 +100,5 @@ Only quote the current test count from the report shown on screen. Do not descri
 
 - Repository URL with reviewer access and the final commit.
 - Video link, tested with intended reviewer permissions, under ten minutes.
-- A working demo URL if available; note that a temporary tunnel requires the host to stay running. Share its password privately, not in the public repository.
+- Demo URL: https://sawt-demo.vercel.app. It runs on cloud services independently of the development PC. Share its password privately, not in the public repository.
 - The brief lists `basim@sawt.sa`, cc `careers@sawt.sa`, subject `Sawt Challenge — Abdullah`. Confirm the spelling of your full name before sending. No email is sent by this guide.

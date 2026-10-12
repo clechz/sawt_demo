@@ -10,6 +10,7 @@ python scripts/v2_cloud_journeys.py --only pizza_options --repeat 3
 python scripts/v2_cloud_journeys.py --only pizza_options information_and_staff --wait-for-capacity-seconds 900
 python scripts/v2_cloud_acceptance.py
 python scripts/verify_cloud_persistence.py
+python scripts/v2_cloud_interruptions.py
 ```
 
 Set `SAWT_DEMO_PASSWORD` in the process environment, or use the ignored local `runtime/private-demo.json`. Cloud journeys save timestamped JSON under `runtime/`. Never commit those raw files: they contain call identifiers, state and transient quote tokens. Caller fixtures are synthetic and cached by a hash of their wording. Historical human recordings are not uploaded by this runner.
@@ -35,13 +36,15 @@ The runner logs in, creates an isolated call, connects a real LiveKit microphone
 
 The state-completion hard ceiling defaults to eight seconds; that is a stall detector, not a claim that eight seconds feels conversational. First received audio is measured separately. RMS proves audible energy, not correct spoken meaning. This runner does not certify native Saudi pronunciation, real microphone permissions, Bluetooth behavior, a real telephone network, or every possible wording. Human-call failures take precedence over a passing synthetic test.
 
-A release needs all intended cases executed, zero incorrect or unconfirmed orders, no silent substitution, and no unresolved missing-reply failures. Do not describe a run as passing when cases were skipped, rate-limited or failed. The demo has a shared 20-start/hour and two-active-call budget; schedule test runs accordingly and leave room for human testing. The optional `--wait-for-capacity-seconds` flag retries only the existing call-budget response until its deadline; it never changes limits or exempts synthetic calls. Other errors remain failures. The checkout runner accepts the same flag.
+A release needs all intended cases executed, zero incorrect or unconfirmed orders, no silent substitution, and no unresolved missing-reply failures. Do not describe a run as passing when cases were skipped, rate-limited or failed. The demo has a shared 120-start/hour and four-active-call budget; schedule test runs accordingly and leave room for human testing. The optional `--wait-for-capacity-seconds` flag retries only the existing call-budget response until its deadline; it never changes limits or exempts synthetic calls. Other errors remain failures. The checkout runner accepts the same flag.
 
 ## Reproduced failures, 2026-10-12
 
 The first expanded run passed only one of six complete journeys. It exposed failures that earlier smoke tests missed: natural pizza options looping, a cancellation misheard by secondary STT, a price spelling variant rejected, Adani silently substituted with red tea, an audio-check handler producing no audible response, and merged words losing the negation boundary. The baseline remains in the local run archive. Fixes and rerun results must be reported separately; unit-test counts are not a call-success percentage.
 
 A controlled barge-in sweep (speaking at several offsets during assistant audio), packet loss/reconnect, and a held-out human Saudi accent set are still required before any broad reliability claim. The scripted wait/resume case is not a comprehensive interruption benchmark.
+
+`v2_cloud_interruptions.py` covers explicit wait requests during measured assistant output at 0.2, 0.8 and 1.5 seconds, subsequent option selection, and terminal transport-disconnect cleanup. An explicit participant disconnect ends this demo's call; automatic recovery from packet loss is a separate, unmeasured LiveKit behavior. This script does not certify arbitrary mid-word corrections or network recovery.
 
 ## Why the extra call tests matter
 

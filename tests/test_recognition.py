@@ -34,8 +34,29 @@ def test_provider_clock_ahead_after_stall_uses_captured_pcm_anchor():
     audio.append(base64.b64encode(b'\x01\x00'*24000*30).decode())
     wav,span=audio.wav([{'start_ms':31200,'end_ms':31400,'captured_ms':27800},
                         {'start_ms':32400,'end_ms':32600,'captured_ms':28800}])
-    assert span=={'start_ms':26200,'end_ms':29250}
+    assert span=={'start_ms':24600,'end_ms':29250}
     assert len(wav)>24000
+
+
+def test_late_cloud_caption_retains_opening_word_without_replaying_previous_turn():
+    audio=AudioWindow()
+    pcm=b'\x01\x02'*24000*12
+    audio.append(base64.b64encode(pcm).decode())
+    spans=[{'start_ms':8000,'end_ms':9000,'captured_ms':9300}]
+    wav,span=audio.wav(spans)
+    assert span['start_ms']==5000  # actual price question began at 6000
+    bounded,span=audio.wav(spans,after_ms=5500)
+    with wave.open(io.BytesIO(bounded)) as w:
+        assert w.readframes(w.getnframes())==pcm[5500*48:9450*48]
+    with pytest.raises(AudioWindowError):audio.wav(spans,after_ms=10000)
+
+
+@pytest.mark.parametrize('text',['كانسل طلبي','كنسل طلبي','كانسل الطلب'])
+def test_cancellation_spelling_variants_remain_full_utterance_only(text):
+    from sawt.conversation import requests_cancel
+    assert requests_cancel(text)
+    assert not requests_cancel('لا '+text)
+    assert not requests_cancel(text+' لو السعر غالي')
 
 def test_caption_burst_invalidates_once_but_new_work_can_be_superseded(monkeypatch):
     interrupt=Mock(return_value=2)

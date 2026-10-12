@@ -37,14 +37,15 @@ class AudioWindow:
         if len(self.data) > self.limit:
             del self.data[:len(self.data)-self.limit]
 
-    def wav(self, spans):
+    def wav(self, spans, *, after_ms=0):
         if not spans or any(type(s.get('start_ms')) not in (int,float) or type(s.get('end_ms')) not in (int,float)
                             or not math.isfinite(s['start_ms']) or not math.isfinite(s['end_ms'])
                             or s['start_ms'] < 0 or s['end_ms'] <= s['start_ms'] for s in spans):
             raise AudioWindowError('Missing transcript timing')
         # GPT-Live timestamps are approximate caption intervals, not word
-        # boundaries. The real caller replay needs >350 ms pre-roll to retain
-        # the initial كم; 1400 ms retained it without changing the live stream.
+        # boundaries. Cloud replay showed the opening بكم two seconds before
+        # its caption. Retain three seconds of pre-roll, bounded by the last
+        # consumed caption's capture position so earlier requests cannot repeat.
         # Provider time can advance across transport stalls while our PCM clock
         # counts only delivered samples. Anchor ahead-of-PCM captions to the
         # capture position observed when each delta arrived, not wall time.
@@ -56,7 +57,9 @@ class AudioWindow:
                 offset = end-captured
                 start, end = max(0,start-offset), captured
             aligned.append((start,end))
-        start_ms = max(0, min(s[0] for s in aligned)-1400)
+        if not isinstance(after_ms, (int,float)) or not math.isfinite(after_ms) or after_ms < 0:
+            raise AudioWindowError('Invalid consumed audio boundary')
+        start_ms = max(0, after_ms, min(s[0] for s in aligned)-3000)
         end_ms = max(s[1] for s in aligned)+450
         if end_ms > self.duration_ms + 1000:
             raise AudioWindowError('Transcript ahead of captured audio')

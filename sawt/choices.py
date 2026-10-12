@@ -102,6 +102,25 @@ def matches(text, group_id, options, *, include_negated=False):
     return [m for m in found if not any(a <= m[0] and b >= m[1] and b-a > m[1]-m[0] for a,b,_ in found)]
 
 
+def stated_single_dish_bread(item, utterance, evidence):
+    """A complete, narrow one-dish order form; never infer across mixed requests.
+
+    Example: أبي شكشوكة كبير، تميس وتوصيل. The exact named dish has a bread
+    group; the sole stated bread belongs to it. Questions, two dishes, notes,
+    negations and alternatives do not match and remain with the planner.
+    """
+    if '?' in utterance or '؟' in utterance or item['name'].startswith('تميس '):return None
+    supported={oid for _,_,oid in evidence}
+    if len(supported)!=1:return None
+    text=normalize(utterance)
+    start,end,oid=evidence[0]
+    prefix=text[:start].strip();suffix=text[end:].strip()
+    dish=re.escape(normalize(item['name']))
+    before=rf'(?:ابي|ابغي|عطني|اريد)\s+{dish}(?:\s+(?:(?:حجم|الحجم)\s+)?(?:عادي|كبير|صغير|وسط))?(?:\s+(?:مع|خبز|بخبز))?'
+    if re.fullmatch(before,prefix) and re.fullmatch(r'(?:و?\s*(?:توصيل|استلام))?',suffix):return oid
+    return None
+
+
 def checked_options(menu, item, args, utterance, previous=None):
     args = copy.deepcopy(args)
     selections = menu.canonical_options(item['id'], args.get('options', {}))
@@ -135,6 +154,10 @@ def checked_options(menu, item, args, utterance, previous=None):
                 'question': 'الخبز اللي طلبته مو متوفر لهذا الصنف. المتوفر: ' + '، '.join(o['name'] for o in group['options'].values()) + '. وش تختار؟'})
             continue
         chosen = selections.get(gid)
+        if gid=='bread' and chosen is None:
+            stated=stated_single_dish_bread(item,utterance,evidence)
+            if stated in group['options']:
+                selections[gid]=chosen=[stated]
         if not isinstance(chosen, list):
             continue
         # A planner's empty list is not evidence that the caller retracted a

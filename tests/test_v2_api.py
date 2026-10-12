@@ -14,7 +14,6 @@ def client(tmp_path, monkeypatch):
     monkeypatch.setenv('LIVEKIT_API_KEY','test-key')
     monkeypatch.setenv('LIVEKIT_API_SECRET','test-secret-not-real-32-characters')
     monkeypatch.setenv('OPENAI_API_KEY','test-not-real')
-    app_v2.create_times.clear()
     return TestClient(app_v2.app)
 
 def start(client):
@@ -25,6 +24,17 @@ def test_start_requires_code_and_recording_consent(client):
     assert client.post('/api/calls',headers={'X-Access-Code':'test-code'},json={'recording_consent':False}).status_code==400
     assert client.post('/api/calls',headers={'X-Access-Code':'test-code'},json={'recording_consent':'true'}).status_code==422
     assert start(client).status_code==200
+
+
+def test_api_uses_shared_configured_budget_without_hidden_twenty_call_cap(client,monkeypatch):
+    monkeypatch.setenv('SAWT_MAX_CALLS_PER_HOUR','24')
+    for _ in range(24):
+        response=start(client)
+        assert response.status_code==200
+        call=response.json()
+        client.post('/api/calls/'+call['id']+'/end',headers={'Authorization':'Bearer '+call['token']}).raise_for_status()
+    response=start(client)
+    assert response.status_code==409 and '24 starts/hour' in response.text
 
 def test_origin_and_call_scoping(client):
     assert client.post('/api/calls',headers={'Origin':'https://other.example'},json={'recording_consent':True}).status_code==403

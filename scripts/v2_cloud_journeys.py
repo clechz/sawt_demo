@@ -192,6 +192,8 @@ async def main():
     call=VoiceCall(client);record={'name':name,'attempt':attempt+1,'turns':[],'passed':False};report['cases'].append(record)
     try:
      await call.start(args.wait_for_capacity_seconds);record['call_id']=call.call['id']
+     initial=await call.state()
+     record['worker_release']=next((e['payload'].get('release') for e in initial['events'] if e['kind']=='voice.connected'),None)
      for spec in specs:
       try:result=await call.turn(audio[spec['text']],spec,args.max_state_seconds)
       except ClarificationRequired as exc:

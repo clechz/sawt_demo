@@ -103,7 +103,7 @@ def test_intervening_information_expires_staff_offer(engine):
     assert updated['pending_handoff'] is None and not updated['handoff']
 
 
-@pytest.mark.parametrize('offer',['أحولك لموظف؟','أقدر أرفع طلب لموظف يتواصل معك. هل ترغب بذلك؟','أقدر أفتح لك تذكرة دعم. ترغب أرفع طلب متابعة للموظفين؟'])
+@pytest.mark.parametrize('offer',['أحولك لموظف؟','أقدر أرفع طلب لموظف يتواصل معك. هل ترغب بذلك؟','أستطيع رفع طلب لموظف يتواصل معك. هل ترغب بذلك؟','أقدر أفتح لك تذكرة دعم. ترغب أرفع طلب متابعة للموظفين؟'])
 def test_known_false_transfer_offer_becomes_truthful_stateful_offer(engine,offer):
     state=new_state()
     updated,result=Agent(engine,None).finish(state,'متى تقفلون؟',offer,[])

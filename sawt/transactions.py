@@ -6,6 +6,7 @@ input revision and conversation epoch inside the same transaction as its write.
 import copy
 import hashlib
 import json
+import os
 import secrets
 import sqlite3
 import time
@@ -70,10 +71,12 @@ class Transactions:
         with self.connect() as db:
             db.execute('BEGIN IMMEDIATE')
             if enforce_limits:
+                max_active = max(1, int(os.getenv('SAWT_MAX_ACTIVE_CALLS', '4')))
+                max_hourly = max(1, int(os.getenv('SAWT_MAX_CALLS_PER_HOUR', '120')))
                 active = db.execute('SELECT COUNT(*) FROM calls WHERE closed=0 AND created>?', (time.time()-600,)).fetchone()[0]
                 hourly = db.execute('SELECT COUNT(*) FROM calls WHERE created>?', (time.time()-3600,)).fetchone()[0]
-                if active >= 2 or hourly >= 20:
-                    raise Conflict('Call budget reached: at most 2 active calls and 20 starts/hour')
+                if active >= max_active or hourly >= max_hourly:
+                    raise Conflict(f'Call budget reached: at most {max_active} active calls and {max_hourly} starts/hour')
             db.execute('INSERT INTO calls(id,token_hash,state,created) VALUES(?,?,?,?)',
                        (sid, hashlib.sha256(token.encode()).hexdigest(), encode(new_state()), time.time()))
         return sid, token

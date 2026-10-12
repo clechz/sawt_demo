@@ -80,3 +80,45 @@ def test_empty_full_address_saves_partial_fields():
     state,reply=asyncio.run(Agent(engine,provider).turn(new_state(),'الرياض النرجس'))
     assert state['delivery_details']=={'city':'الرياض','zone':'النرجس'}
     assert state['location'] is None and reply['events'][0]['tool']=='set_delivery_details'
+
+
+def test_checkout_after_valid_edits_uses_one_request_but_never_confirms():
+    original,state,reply,provider=run([{'tool_calls':[
+        call('set_service',{'service':'pickup'},'s'),
+        call('set_branch',{'branch_id':'ruh_narjis'},'b'),
+        call('add_item',{'item_id':'breakfast_01','quantity':1,'options':{'portion':['regular'],'bread':['saj']},'notes':''},'a'),
+        call('checkout',{},'q')]}])
+    assert provider.chat.await_count==1
+    assert state['quote'] and not state['quote']['presented'] and not state['order_id']
+    assert not original['basket']
+    assert reply['events'][-1]['tool']=='checkout'
+
+
+def test_failed_edit_prevents_checkout_of_earlier_valid_items():
+    _,state,reply,provider=run([
+        {'tool_calls':[call('set_service',{'service':'pickup'},'s'),call('set_branch',{'branch_id':'ruh_narjis'},'b'),
+            call('add_item',{'item_id':'breakfast_01','quantity':1,'options':{'portion':['regular'],'bread':['saj']},'notes':''},'a'),
+            call('add_item',{'item_id':'missing','quantity':1,'options':{},'notes':''},'bad'),call('checkout',{},'q')]},
+        {'content':'الصنف الثاني غير موجود.'}])
+    assert len(state['basket'])==1 and not state['quote'] and not state['order_id']
+    assert reply['events'][-1]['tool']=='checkout' and reply['events'][-1]['result'].get('error')
+
+
+def test_terminal_in_middle_cannot_skip_later_mutation():
+    _,state,reply,_=run([
+        {'tool_calls':[call('set_service',{'service':'pickup'},'s'),call('checkout',{},'q'),call('set_branch',{'branch_id':'ruh_narjis'},'b')]},
+        {'content':'نحتاج تفاصيل الطلب.'}])
+    assert state['service'] is None and state['branch'] is None and not reply['events']
+
+
+def test_guarded_choice_rejection_cannot_create_quote_in_same_batch():
+    from sawt.transactions import StagedEngine
+    engine=Engine(Menu(Path(__file__).resolve().parents[1]/'data/restaurant-menu-complex.csv'))
+    provider=SimpleNamespace(supports_tool_batches=True,chat=AsyncMock(side_effect=[
+        {'tool_calls':[call('set_service',{'service':'pickup'},'s'),call('set_branch',{'branch_id':'ruh_narjis'},'b'),
+            call('add_item',{'item_id':'breakfast_01','quantity':1,'options':{'portion':['large'],'bread':['saj']},'notes':''},'a'),call('checkout',{},'q')]},
+        {'content':'حدد الحجم.'}]))
+    state,reply=asyncio.run(Agent(StagedEngine(engine,check_choices=True),provider).turn(new_state(),'أبي شكشوكة صاج استلام النرجس'))
+    assert not state['quote'] and not state['order_id']
+    assert any(e['result'].get('choice_guard') for e in reply['events'])
+    assert next(e for e in reply['events'] if e['tool']=='checkout')['result'].get('error')

@@ -42,7 +42,6 @@ async def lifespan(app):
 app = FastAPI(title='SAWT V2', version='2.0.0', lifespan=lifespan)
 app.mount('/assets', StaticFiles(directory=ROOT / 'static/v2'), name='v2')
 MAX_SECONDS = 600
-create_times = []
 
 class StartCall(BaseModel):
     recording_consent: bool = Field(strict=True)
@@ -126,10 +125,6 @@ async def create(request: Request, body: StartCall):
             raise HTTPException(401, 'رمز الدخول غير صحيح.')
     elif not code_free_caller(request.client.host):
         raise HTTPException(403, 'Public calling is disabled.')
-    now = time.time()
-    create_times[:] = [t for t in create_times if now-t < 3600]
-    if len(create_times) >= 20:
-        raise HTTPException(429, 'وصلنا حد المكالمات التجريبية لهذه الساعة.')
     if not health()['configured']:
         raise HTTPException(503, 'خدمة المكالمات تحتاج إعداد الاتصال.')
     if body.recording_consent is not True:
@@ -141,7 +136,6 @@ async def create(request: Request, body: StartCall):
            .with_grants(api.VideoGrants(room_join=True, room='sawt-' + sid, can_publish=True, can_subscribe=True, can_publish_data=True))
            .with_room_config(api.RoomConfiguration(agents=[api.RoomAgentDispatch(agent_name=os.getenv('SAWT_AGENT_NAME','sawt-v2'), metadata=sid)]))
            .to_jwt())
-    create_times.append(now)
     return {'id': sid, 'token': token, 'room_token': jwt, 'url': os.environ['LIVEKIT_URL'], 'max_seconds': MAX_SECONDS}
 
 
