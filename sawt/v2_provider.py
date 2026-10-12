@@ -99,6 +99,12 @@ class V2Provider(OpenAIProvider):
 
     async def speech_chunks(self, text, response_format='mp3'):
         cfg = config()
+        if response_format=='pcm':
+            from .fixed_voice import fixed_pcm
+            cached=fixed_pcm(text,voice_name(),cfg['tts'])
+            if cached is not None:
+                for offset in range(0,len(cached),4800):yield cached[offset:offset+4800]
+                return
         try:
             async with self.client().stream('POST', 'https://api.openai.com/v1/audio/speech', headers=self.headers(),
                 json={'model': cfg['tts'], 'voice': voice_name(), 'input': spoken_amounts(text),

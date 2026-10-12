@@ -151,7 +151,7 @@ class RestaurantVoice(Agent):
         if self.provider_failed or self.ending:
             return
         self.duplex_session.append_commentary(say('greeting'))
-        await asyncio.to_thread(tx.event, self.sid, 'voice.connected', {'transport': 'livekit', 'model': 'gpt-live-1', 'recognition_policy':'contextual-draft-v9', 'release':'conversation-v25'})
+        await asyncio.to_thread(tx.event, self.sid, 'voice.connected', {'transport': 'livekit', 'model': 'gpt-live-1', 'recognition_policy':'contextual-draft-v9', 'release':'conversation-v26'})
         await self.send('ready')
 
     def on_client_event(self, event):
@@ -371,9 +371,12 @@ class RestaurantVoice(Agent):
         # used to wait for full synthesis before producing even its first word.
         stream=self.provider.speech_chunks(text,'pcm')
         speech=None
+        started=time.monotonic()
+        self.audit('voice.explicit_playback',{'stage':'requested'})
         try:
             first=await anext(stream,b'')
             if not first:raise ProviderError('Empty recovery speech')
+            self.audit('voice.explicit_playback',{'stage':'first_chunk','duration_ms':round((time.monotonic()-started)*1000)})
             if can_play and not await can_play():return
             async def frames():
                 from sawt.speech_stream import pcm_frames
@@ -381,10 +384,12 @@ class RestaurantVoice(Agent):
                     self.recorder.append('generated-assistant',base64.b64encode(data).decode())
                     yield rtc.AudioFrame(data,24000,1,len(data)//2)
             await self.session.interrupt(force=True)
+            self.audit('voice.explicit_playback',{'stage':'interrupted','duration_ms':round((time.monotonic()-started)*1000)})
             if can_play and not await can_play():return
             set_output_enabled(self, True)
             speech = self.session.say(text,audio=frames())
             await speech.wait_for_playout()
+            self.audit('voice.explicit_playback',{'stage':'completed','duration_ms':round((time.monotonic()-started)*1000)})
         finally:
             if speech is not None and not speech.done():
                 speech.interrupt(force=True)

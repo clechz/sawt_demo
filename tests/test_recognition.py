@@ -272,7 +272,7 @@ def test_reply_fallback_rechecks_after_speech_generation(monkeypatch):
             yield b'\0'*960
             raise AssertionError('Stale synthesis must not be consumed')
         finally:closed.append(True)
-    voice=SimpleNamespace(provider=SimpleNamespace(speech_chunks=chunks),session=Mock())
+    voice=SimpleNamespace(provider=SimpleNamespace(speech_chunks=chunks),session=Mock(),audit=Mock())
     guard=AsyncMock(return_value=False)
     asyncio.run(voice_worker.RestaurantVoice.play_message(voice,'old answer',can_play=guard))
     guard.assert_awaited_once()
@@ -286,7 +286,7 @@ def test_streaming_reply_rechecks_new_input_after_interrupting_old_audio():
         try:yield b'\0'*960
         finally:closed.append(True)
     session=Mock();session.interrupt=AsyncMock()
-    voice=SimpleNamespace(provider=SimpleNamespace(speech_chunks=chunks),session=session)
+    voice=SimpleNamespace(provider=SimpleNamespace(speech_chunks=chunks),session=session,audit=Mock())
     guard=AsyncMock(side_effect=[True,False])
     asyncio.run(voice_worker.RestaurantVoice.play_message(voice,'superseded reply',can_play=guard))
     session.interrupt.assert_awaited_once_with(force=True)
