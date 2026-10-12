@@ -7,6 +7,7 @@ import re
 import uuid
 from decimal import Decimal
 from pathlib import Path
+from .conversation import say, spoken_order_number, requests_cancel
 
 BRANCHES = {
     'ruh_olaya': {'name': 'فرع العليا بالرياض', 'city': 'الرياض', 'zones': ['العليا', 'السليمانية'], 'fee': 1200, 'eta': 35},
@@ -65,6 +66,27 @@ class Menu:
         ranked.sort(key=lambda x: (-x[0], x[1]['id']))
         return {'total_matches': len(ranked), 'items': [dict(copy.deepcopy(i), available_here=branch in i['available'] if branch else None) for _, i in ranked[offset:offset + min(limit, 5)]]}
 
+    def categories(self):
+        categories = {}
+        for item in self.items.values():
+            category = categories.setdefault(item['category_id'], {'id': item['category_id'], 'name': item['category'], 'count': 0})
+            category['count'] += 1
+        return {'categories': list(categories.values())}
+
+    def compatible_options(self, previous, item_id):
+        """Carry only identical choices into a replacement, never map by guesswork."""
+        old, new = self.get(previous['item_id']), self.get(item_id)
+        carried = {}
+        for gid, selected in previous['options'].items():
+            group = new['groups'].get(gid)
+            if not group:
+                continue
+            options = [oid for oid in selected if oid in group['options']
+                       and old['groups'][gid]['options'][oid]['name'] == group['options'][oid]['name']]
+            if len(options) <= group['max']:
+                carried[gid] = options
+        return carried
+
     def validate_line(self, line, branch=None):
         item = self.get(line['item_id'])
         quantity = line['quantity']
@@ -114,7 +136,7 @@ class Menu:
 
 def new_state():
     return {'revision': 0, 'service': None, 'location': None, 'branch': None, 'basket': [],
-            'quote': None, 'order_id': None, 'handoff': None, 'history': [], 'events': [], 'offer': 'not_offered'}
+            'quote': None, 'order_id': None, 'handoff': None, 'history': [], 'events': [], 'offer': 'not_offered', 'pending_choice': None, 'pending_handoff': None, 'delivery_details': {}}
 
 class Engine:
     def __init__(self, menu):
@@ -123,6 +145,8 @@ class Engine:
     def touch(self, state):
         state['revision'] += 1
         state['quote'] = None
+        state['pending_choice'] = None
+        state['pending_handoff'] = None
 
     def view(self, state):
         branch = BRANCHES.get(state['branch'])
@@ -141,7 +165,8 @@ class Engine:
                 'branch_id': state['branch'], 'branch': branch, 'basket': lines, 'subtotal': sum(x['line_total'] for x in lines),
                 'delivery_fee': fee, 'total': sum(x['line_total'] for x in lines) + fee,
                 'eta_minutes': branch['eta'] if branch and state['service'] == 'delivery' else 20 if branch else None,
-                'issues': issues, 'quote': state['quote'], 'order_id': state['order_id'], 'handoff': state['handoff']}
+                'issues': issues, 'quote': state['quote'], 'order_id': state['order_id'], 'handoff': state['handoff'],
+                'pending_choice': copy.deepcopy(state.get('pending_choice')), 'pending_handoff': copy.deepcopy(state.get('pending_handoff')), 'delivery_details': copy.deepcopy(state.get('delivery_details',{}))}
 
     def summary(self, state):
         view = self.view(state)
@@ -149,22 +174,41 @@ class Engine:
         for x in view['basket']:
             notes = f"، ملاحظات: {x['notes']}" if x['notes'] else ''
             lines.append(f"{x['quantity']} من {x['name']}، " + '، '.join(x['option_names']) + notes + f"، بسعر {money(x['line_total'])} ريال")
-        service = 'توصيل إلى ' + state['location']['address'] if state['service'] == 'delivery' else 'استلام من الفرع'
-        return 'طلبك: ' + '؛ '.join(lines) + f". {service}، {view['branch']['name']}. رسوم التوصيل {money(view['delivery_fee'])} ريال. الإجمالي {money(view['total'])} ريال. الوقت المتوقع {view['eta_minutes']} دقيقة. هل تؤكد الطلب؟"
+        fulfillment = ('التوصيل إلى ' + state['location']['city'] + '، حي ' + state['location']['zone'] + '، ' + state['location']['address'] + ' من ' if state['service']=='delivery' else 'استلام من ') + view['branch']['name'] + '.'
+        fee_sentence = f"رسوم التوصيل {money(view['delivery_fee'])} ريال. " if state['service']=='delivery' else ''
+        return say('summary',items='؛ '.join(lines),fulfillment=fulfillment,fee_sentence=fee_sentence,total=money(view['total']),eta=view['eta_minutes'])
 
     def act(self, state, action, args, *, utterance='', can_confirm=False):
         if action == 'search_menu': return self.menu.search(args.get('query', ''), state['branch'], offset=max(0, int(args.get('offset', 0))))
+        if action == 'list_categories': return self.menu.categories()
         if action == 'get_item': return self.menu.get(args['item_id'])
         if action == 'get_state': return self.view(state)
         if action == 'list_branches': return BRANCHES
         if action == 'handoff':
+            offered = bool(state.get('pending_handoff'))
             state['handoff'] = state['handoff'] or {'ticket': 'H-' + uuid.uuid4().hex[:8].upper(), 'reason': str(args.get('reason', 'طلب موظف'))[:300]}
             state['quote'] = None
-            return {'terminal': True, 'reply': 'سجلت طلبك للتواصل مع موظف. هذا تحويل تجريبي، وما تم إرسال الطلب للمطعم.', 'handoff': state['handoff']}
+            state['pending_handoff'] = state['pending_choice'] = None
+            return {'terminal': True, 'reply': 'تمام، سجلت لك طلب تواصل.' if offered else say('handoff'), 'handoff': state['handoff']}
         if state['handoff']: raise RuleError('المحادثة محولة لموظف. ابدأ محادثة جديدة للطلب.')
+        if action == 'offer_handoff':
+            topic=args.get('topic','other')
+            if topic not in ('other','hours','allergens','tracking','payments','scheduling'):raise RuleError('نوع المعلومة غير معروف.')
+            state['quote'] = state['pending_choice'] = None
+            state['pending_handoff'] = {'revision':state['revision'],'reason':str(args['reason'])[:300]}
+            return {'terminal':True,'reply':say('missing_'+topic) + ' ' + say('offer_handoff')}
         if action == 'confirm' and state['order_id']:
-            return {'terminal': True, 'reply': f"طلبك مسجل مسبقاً برقم {state['order_id']}.", 'order_id': state['order_id']}
-        if state['order_id']: raise RuleError('الطلب مؤكد. التعديل يحتاج موظفاً أو محادثة جديدة.')
+            return {'terminal': True, 'reply': say('already_confirmed',order_number=spoken_order_number(state['order_id'])), 'order_id': state['order_id']}
+        if state['order_id']: raise RuleError(say('confirmed_change'))
+        if action == 'cancel_draft':
+            if not requests_cancel(utterance):raise RuleError('إلغاء المسودة يحتاج طلباً صريحاً بإلغاء الطلب كله.')
+            had_draft = bool(state['basket'] or state['service'] or state['location'] or state['branch'])
+            state.update(basket=[],service=None,location=None,branch=None,delivery_details={})
+            self.touch(state)
+            return {'terminal': True, 'reply': say('draft_canceled' if had_draft else 'nothing_to_cancel')}
+        if action == 'ask_choice':
+            from .clarification import ask
+            return ask(self.menu, state, args['line_id'], args['group_id'], args.get('option_id'), utterance)
         if action == 'set_service':
             service = args['service']
             if service not in ['delivery', 'pickup']: raise RuleError('نوع الخدمة غير صالح.')
@@ -172,15 +216,43 @@ class Engine:
                 state['service'] = service
                 # Delivery addresses are not silently reused after a pickup switch.
                 state['location'] = None
+                state['delivery_details'] = {}
                 self.touch(state)
+        elif action == 'set_delivery_details':
+            if not args or set(args)-{'city','zone','street','building'}:raise RuleError('اذكر تفاصيل العنوان المطلوب تعديلها.')
+            if any(not isinstance(v,str) or not v.strip() or len(v)>300 for v in args.values()):raise RuleError('تفاصيل العنوان غير صالحة.')
+            details=copy.deepcopy(state.get('delivery_details') or state.get('location') or {})
+            supplied={k:v.strip() for k,v in args.items()}
+            if 'city' in supplied and details.get('city') and normalize(supplied['city'])!=normalize(details['city']):
+                details={}
+            elif 'zone' in supplied and details.get('zone') and normalize(supplied['zone'])!=normalize(details['zone']):
+                details={k:v for k,v in details.items() if k=='city'}
+            elif 'street' in supplied and details.get('street') and normalize(supplied['street'])!=normalize(details['street']):
+                details.pop('building',None);details.pop('address',None)
+            if 'building' in supplied:details.pop('address',None)
+            details.update(supplied)
+            state.update(service='delivery',location=None,branch=None,delivery_details=details)
+            self.touch(state)
+            city_key=re.sub(r'^مدينه\s+','',normalize(details.get('city','')))
+            zone_key=re.sub(r'^حي\s+','',normalize(details.get('zone','')))
+            match=[bid for bid,b in BRANCHES.items() if city_key==normalize(b['city']) and zone_key in [normalize(z) for z in b['zones']]]
+            if details.get('city') and details.get('zone') and not match:
+                return {'error':'المنطقة خارج نطاق التوصيل. تقدر تختار الاستلام.','state':self.view(state)}
+            if match:
+                state['branch']=match[0]
+                address=details.get('address') or (details['street']+'، مبنى '+details['building'] if details.get('street') and details.get('building') else '')
+                if address:
+                    self.act(state,'set_location',{'city':details['city'],'zone':details['zone'],'address':address})
+                    state['delivery_details']=details
         elif action == 'set_location':
             city, zone, address = [str(args.get(k, '')).strip() for k in ['city', 'zone', 'address']]
+            state['delivery_details']={'city':city,'zone':zone,'address':address}
             city_key = re.sub(r'^مدينه\s+', '', normalize(city))
             zone_key = re.sub(r'^حي\s+', '', normalize(zone))
             match = [bid for bid, b in BRANCHES.items() if city_key == normalize(b['city']) and zone_key in [normalize(z) for z in b['zones']]]
             if len(match) != 1:
                 # An unsupported correction must not leave the old delivery address active.
-                state['location'], state['branch'] = None, None
+                state['service'], state['location'], state['branch'] = 'delivery', None, None
                 self.touch(state)
                 return {'error': 'المنطقة خارج نطاق التوصيل. تقدر تختار الاستلام.', 'supported_branches': BRANCHES, 'state': self.view(state)}
             if not address or len(address) > 300:
@@ -197,7 +269,7 @@ class Engine:
             if state['service'] != 'pickup': raise RuleError('فرع التوصيل يتحدد من المنطقة. اختيار الفرع المباشر للاستلام فقط.')
             if args['branch_id'] not in BRANCHES: raise RuleError('الفرع غير موجود.')
             state['branch'] = args['branch_id']; self.touch(state)
-        elif action in ['add_item', 'update_item']:
+        elif action in ['add_item', 'update_item', 'replace_item']:
             if action == 'add_item':
                 if len(state['basket']) >= 30: raise RuleError('السلة كبيرة. نحتاج موظفاً لإكمال الطلب.')
                 line = {'line_id': uuid.uuid4().hex[:8], 'item_id': args['item_id'], 'quantity': args.get('quantity', 1), 'options': args.get('options', {}), 'notes': args.get('notes', '')}
@@ -208,6 +280,9 @@ class Engine:
                 line = next((x for x in state['basket'] if x['line_id'] == args['line_id']), None)
                 if line is None: raise RuleError('سطر الطلب غير موجود.')
                 updated = copy.deepcopy(line)
+                if action == 'replace_item':
+                    updated['options'] = self.menu.compatible_options(line, args['item_id'])
+                    updated['item_id'] = args['item_id']
                 for k in ['quantity', 'notes']:
                     if k in args: updated[k] = args[k]
                 # Supplied groups replace their selections; omitted groups are preserved.
@@ -229,8 +304,7 @@ class Engine:
             if not can_confirm or not quote or not quote['presented'] or quote['revision'] != state['revision'] or self.view(state)['issues']:
                 raise RuleError('نحتاج قراءة الطلب الحالي كاملاً وموافقة واضحة قبل التأكيد.')
             state['order_id'] = 'S-' + str(uuid.uuid4().int % 1000000).zfill(6)
-            digits = '، '.join(state['order_id'][2:])
-            return {'terminal': True, 'reply': f"تم تأكيد الطلب التجريبي. رقم طلبك إس، {digits}. يعطيك العافية!", 'order_id': state['order_id']}
+            return {'terminal': True, 'reply': say('confirmed',order_number=spoken_order_number(state['order_id'])), 'order_id': state['order_id']}
         else: raise RuleError('الأداة غير معروفة.')
         return self.view(state)
 

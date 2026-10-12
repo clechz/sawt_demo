@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#101014"><title>تحدي صوت — عبدالله</title>
+  <link rel="stylesheet" href="/assets/ui/orb.css"><link rel="stylesheet" href="/assets/call.css">
+</head>
+<body>
+<header class="brand"><img src="/assets/sawt-logo.svg" alt="صوت" width="105" height="38"><span class="brand-credit">تحدي عبدالله</span></header>
+<main>
+  <section class="call-panel" aria-label="المكالمة">
+    <div class="orb-control">
+      <div id="voice-orb" class="voice-orb"></div>
+      <button id="start" class="primary-button" aria-label="ابدأ مكالمتك"><span id="start-label">ابدأ المكالمة</span></button>
+      <div class="call-state"><h1 id="call-phase">جاهزين لك</h1><time id="call-time" dir="ltr" aria-label="مدة المكالمة">0:00</time></div>
+    </div>
+    <p id="status" class="sr-only" role="status" aria-live="polite"></p>
+    <div id="controls" class="controls" hidden>
+      <button id="mute" class="mute-button" aria-pressed="false"><i class="mic-on" data-icon="mic"></i><i class="mic-off" data-icon="muted"></i><span id="mute-label" class="sr-only">كتم الميكروفون</span></button>
+      <button id="end" class="end-button" title="إنهاء المكالمة"><i data-icon="hangup"></i><span class="sr-only">إنهاء المكالمة</span></button>
+    </div>
+    <div id="error" role="alert" hidden></div>
+    <button id="retry-audio" class="secondary" hidden>تشغيل الصوت / إعادة الملخص</button>
+    <button id="order-button" class="order-button" aria-describedby="order-note" hidden><span>طلبك</span><span id="total"></span><i data-icon="chevron"></i></button>
+    <p id="order-note" class="sr-only"></p>
+    <form id="access" hidden><label for="code">رمز الدخول للتجربة</label><div><input id="code" type="password" autocomplete="off"><button type="submit">متابعة</button></div></form>
+  </section>
+</main>
+<dialog id="order" aria-labelledby="order-title">
+  <div class="sheet-handle" aria-hidden="true"></div>
+  <header class="order-heading"><div><h2 id="order-title">طلبك</h2><span id="order-badge" class="order-badge"></span></div><button id="close-order" aria-label="إغلاق الطلب"><i data-icon="close"></i></button></header>
+  <div id="basket"></div>
+  <dl id="order-meta"></dl>
+  <div class="order-totals"><div id="delivery-row"><span>رسوم التوصيل</span><span id="order-delivery"></span></div><div class="grand-total"><span>الإجمالي</span><strong id="order-total"></strong></div></div>
+  <p id="order-status"></p>
+</dialog>
+<div id="media" hidden></div>
+<script src="/assets/livekit-client.js"></script><script type="module" src="/assets/app.js"></script><script type="module" src="/assets/ui/orb.js"></script>
+</body></html>

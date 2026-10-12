@@ -7,3 +7,18 @@ runtime/
 *.sqlite3
 *.sqlite3-*
 local-audio/
+frontend/node_modules/
+frontend/.vite/
+# Local human-call reviews and development screenshots are not submission data.
+CALL-REVIEW.txt
+V2-IMPROVEMENTS.txt
+evidence/v2/*
+!evidence/v2/submission-copy-tests.xml
+!evidence/v2/submission-live-replay.json
+!evidence/v2/submission-address-replay.json
+!evidence/v2/submission-voice-edges.json
+!evidence/v2/latency-fix-edges.json
+!evidence/v2/interaction-eval.json
+!evidence/v2/private-demo-smoke.json
+!evidence/v2/open-model-pins.json
+!evidence/v2/README.md

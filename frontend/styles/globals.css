@@ -1,0 +1,18 @@
+@import "tailwindcss";
+@source "../components";
+@source "../demo.tsx";
+@theme inline {
+  --color-primary: #7752f3;
+  --color-primary-foreground: #ffffff;
+  --color-destructive: #bd405f;
+  --color-destructive-foreground: #ffffff;
+  --color-background: #f5f2ff;
+  --color-foreground: #252038;
+  --color-input: #ddd5ee;
+  --color-ring: #9c80fc;
+  --color-accent: #eae2ff;
+  --color-accent-foreground: #5534b7;
+  --color-secondary: #eee7ff;
+  --color-secondary-foreground: #5534b7;
+  --color-muted-foreground: #756b8a;
+}

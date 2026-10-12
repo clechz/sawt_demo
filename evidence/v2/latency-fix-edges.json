@@ -1,0 +1,915 @@
+{
+  "passed": true,
+  "call_id": "cf160343afc440449720d0696783c3e2",
+  "checks": {
+    "spoken_quantity_three": true,
+    "no_unconfirmed_order": true,
+    "quantity_corrected_not_duplicated": true,
+    "english_quantity_and_modifiers": true,
+    "negated_item_not_added": true,
+    "yes_cannot_confirm_unheard_readback": true,
+    "noise_no_basket_change": true
+  },
+  "turns": [
+    {
+      "name": "quantity",
+      "seconds_after_input": 11.97,
+      "events": [
+        {
+          "sequence": 7504,
+          "at": 1791789665.8266456,
+          "kind": "transcript.fragment",
+          "payload": {
+            "start_ms": 8000,
+            "end_ms": 8200,
+            "captured_ms": 8600.0,
+            "text": " أبي"
+          }
+        },
+        {
+          "sequence": 7505,
+          "at": 1791789666.3517797,
+          "kind": "transcript.fragment",
+          "payload": {
+            "start_ms": 8600,
+            "end_ms": 8800,
+            "captured_ms": 9100.0,
+            "text": " ثلاثة"
+          }
+        },
+        {
+          "sequence": 7506,
+          "at": 1791789666.7355812,
+          "kind": "transcript.fragment",
+          "payload": {
+            "start_ms": 9000,
+            "end_ms": 9200,
+            "captured_ms": 9500.0,
+            "text": " تمييز"
+          }
+        },
+        {
+          "sequence": 7507,
+          "at": 1791789667.3912337,
+          "kind": "transcript.fragment",
+          "payload": {
+            "start_ms": 9600,
+            "end_ms": 9800,
+            "captured_ms": 10100.0,
+            "text": " بالع"
+          }
+        },
+        {
+          "sequence": 7508,
+          "at": 1791789667.543469,
+          "kind": "transcript.fragment",
+          "payload": {
+            "start_ms": 9800,
+            "end_ms": 10000,
+            "captured_ms": 10300.0,
+            "text": "سل"
+          }
+        },
+        {
+          "sequence": 7509,
+          "at": 1791789668.1331754,
+          "kind": "transcript.fragment",
+          "payload": {
+            "start_ms": 10400,
+            "end_ms": 10600,
+            "captured_ms": 10900.0,
+            "text": ". حجم"
+          }
+        },
+        {
+          "sequence": 7510,
+          "at": 1791789668.7457452,
+          "kind": "transcript.fragment",
+          "payload": {
+            "start_ms": 11000,
+            "end_ms": 11200,
+            "captured_ms": 11500.0,
+            "text": " عادي"
+          }
+        },
+        {
+          "sequence": 7511,
+          "at": 1791789669.3843222,
+          "kind": "transcript.fragment",
+          "payload": {
+            "start_ms": 11600,
+            "end_ms": 11800,
+            "captured_ms": 12100.0,
+            "text": "، وخب"
+          }
+        },
+        {
+          "sequence": 7512,
+          "at": 1791789669.536298,
+          "kind": "transcript.fragment",
+          "payload": {
+            "start_ms": 11800,
+            "end_ms": 12000,
+            "captured_ms": 12300.0,
+            "text": "ز"
+          }
+        },
+        {
+          "sequence": 7513,
+          "at": 1791789669.9517884,
+          "kind": "transcript.fragment",
+          "payload": {
+            "start_ms": 12200,
+            "end_ms": 12400,
+            "captured_ms": 12700.0,
+            "text": " أسمر"
+          }
+        },
+        {
+          "sequence": 7516,
+          "at": 1791789671.0345168,
+          "kind": "transcript.fragment",
+          "payload": {
+            "start_ms": 13200,
+            "end_ms": 13400,
+            "captured_ms": 13800.0,
+            "text": ". استلام"
+          }
+        },
+        {
+          "sequence": 7517,
+          "at": 1791789671.1276898,
+          "kind": "transcript.fragment",
+          "payload": {
+            "start_ms": 13400,
+            "end_ms": 13600,
+            "captured_ms": 13900.0,
+            "text": " من"
+          }
+        },
+        {
+          "sequence": 7518,
+          "at": 1791789671.453633,
+          "kind": "transcript.fragment",
+          "payload": {
+            "start_ms": 13800,
+            "end_ms": 14000,
+            "captured_ms": 14200.0,
+            "text": " فرع"
+          }
+        },
+        {
+          "sequence": 7519,
+          "at": 1791789671.8813403,
+          "kind": "transcript.fragment",
+          "payload": {
+            "start_ms": 14200,
+            "end_ms": 14400,
+            "captured_ms": 14600.0,
+            "text": " النرج"
+          }
+        },
+        {
+          "sequence": 7521,
+          "at": 1791789672.0547462,
+          "kind": "transcript.fragment",
+          "payload": {
+            "start_ms": 14400,
+            "end_ms": 14600,
+            "captured_ms": 14800.0,
+            "text": "س"
+          }
+        },
+        {
+          "sequence": 7522,
+          "at": 1791789672.8183253,
+          "kind": "transcript.fragment",
+          "payload": {
+            "start_ms": 15000,
+            "end_ms": 15200,
+            "captured_ms": 15600.0,
+            "text": " بالرياض"
+          }
+        },
+        {
+          "sequence": 7531,
+          "at": 1791789674.2781076,
+          "kind": "transcript.verified",
+          "payload": {
+            "caption": "أبي ثلاثة تمييز بالعسل. حجم عادي، وخبز أسمر. استلام من فرع النرجس بالرياض",
+            "text": "أبي ثلاثة تميس بالعسل، حجم عادي وخبز أسمر، استلام من فرع النرجس بالرياض.",
+            "start_ms": 6600,
+            "end_ms": 15650.0,
+            "duration_ms": 703
+          }
+        },
+        {
+          "sequence": 7547,
+          "at": 1791789680.428669,
+          "kind": "delegation.completed",
+          "payload": {
+            "delegation_id": "item_EY4dMH7W8he5Ti1IOKNP0",
+            "duration_ms": 6121,
+            "reply": "ضفت 3 من تميس بالعسل. الاستلام من فرع النرجس بالرياض. باقي شي تضيفه؟"
+          }
+        }
+      ],
+      "basket": [
+        {
+          "item_id": "breakfast_05",
+          "line_id": "874ed057",
+          "notes": "",
+          "options": {
+            "bread": [
+              "brown"
+            ],
+            "portion": [
+              "regular"
+            ]
+          },
+          "quantity": 3,
+          "name": "تميس بالعسل",
+          "option_names": [
+            "عادي",
+            "خبز أسمر"
+          ],
+          "unit_price": 1500,
+          "line_total": 4500,
+          "missing": [],
+          "available": true
+        }
+      ]
+    },
+    {
+      "name": "correction",
+      "seconds_after_input": 8.06,
+      "events": [
+        {
+          "sequence": 7571,
+          "at": 1791789690.759829,
+          "kind": "transcript.fragment",
+          "payload": {
+            "start_ms": 36800,
+            "end_ms": 37000,
+            "captured_ms": 33500.0,
+            "text": " لا"
+          }
+        },
+        {
+          "sequence": 7572,
+          "at": 1791789691.3190174,
+          "kind": "transcript.fragment",
+          "payload": {
+            "start_ms": 37400,
+            "end_ms": 37600,
+            "captured_ms": 34100.0,
+            "text": ". خل"
+          }
+        },
+        {
+          "sequence": 7573,
+          "at": 1791789691.4524713,
+          "kind": "transcript.fragment",
+          "payload": {
+            "start_ms": 37600,
+            "end_ms": 37800,
+            "captured_ms": 34200.0,
+            "text": "ِ"
+          }
+        },
+        {
+          "sequence": 7574,
+          "at": 1791789691.8980258,
+          "kind": "transcript.fragment",
+          "payload": {
+            "start_ms": 38000,
+            "end_ms": 38200,
+            "captured_ms": 34600.0,
+            "text": " التمي"
+          }
+        },
+        {
+          "sequence": 7575,
+          "at": 1791789692.0552902,
+          "kind": "transcript.fragment",
+          "payload": {
+            "start_ms": 38200,
+            "end_ms": 38400,
+            "captured_ms": 34800.0,
+            "text": "يز"
+          }
+        },
+        {
+          "sequence": 7576,
+          "at": 1791789692.4416122,
+          "kind": "transcript.fragment",
+          "payload": {
+            "start_ms": 38600,
+            "end_ms": 38800,
+            "captured_ms": 35200.0,
+            "text": " اث"
+          }
+        },
+        {
+          "sequence": 7577,
+          "at": 1791789692.8476696,
+          "kind": "transcript.fragment",
+          "payload": {
+            "start_ms": 39000,
+            "end_ms": 39200,
+            "captured_ms": 35600.0,
+            "text": "نين"
+          }
+        },
+        {
+          "sequence": 7580,
+          "at": 1791789693.7729306,
+          "kind": "transcript.fragment",
+          "payload": {
+            "start_ms": 39800,
+            "end_ms": 40000,
+            "captured_ms": 36400.0,
+            "text": "، مو"
+          }
+        },
+        {
+          "sequence": 7582,
+          "at": 1791789694.1855698,
+          "kind": "transcript.fragment",
+          "payload": {
+            "start_ms": 40400,
+            "end_ms": 40600,
+            "captured_ms": 36900.0,
+            "text": " ثلاثة"
+          }
+        },
+        {
+          "sequence": 7592,
+          "at": 1791789697.8582191,
+          "kind": "transcript.verified",
+          "payload": {
+            "caption": "لا. خلِ التمييز اثنين، مو ثلاثة",
+            "text": "لا، خل التميس اثنين مو ثلاثة.",
+            "start_ms": 31900.0,
+            "end_ms": 37100.0,
+            "duration_ms": 2618
+          }
+        },
+        {
+          "sequence": 7599,
+          "at": 1791789699.8830554,
+          "kind": "delegation.completed",
+          "payload": {
+            "delegation_id": "item_EY4dheiRU1NSMzW9wJNCq",
+            "duration_ms": 1990,
+            "reply": "خلني أراجع معك: 2 من تميس بالعسل، عادي، خبز أسمر، بسعر 30.00 ريال. استلام من فرع النرجس بالرياض. المجموع 30.00 ريال، والوقت المتوقع 20 دقيقة. نأكد الطلب؟"
+          }
+        }
+      ],
+      "basket": [
+        {
+          "item_id": "breakfast_05",
+          "line_id": "874ed057",
+          "notes": "",
+          "options": {
+            "bread": [
+              "brown"
+            ],
+            "portion": [
+              "regular"
+            ]
+          },
+          "quantity": 2,
+          "name": "تميس بالعسل",
+          "option_names": [
+            "عادي",
+            "خبز أسمر"
+          ],
+          "unit_price": 1500,
+          "line_total": 3000,
+          "missing": [],
+          "available": true
+        }
+      ]
+    },
+    {
+      "name": "mixed",
+      "seconds_after_input": 4.28,
+      "events": [
+        {
+          "sequence": 7602,
+          "at": 1791789708.4511828,
+          "kind": "transcript.fragment",
+          "payload": {
+            "start_ms": 57400,
+            "end_ms": 57600,
+            "captured_ms": 51200.0,
+            "text": " And"
+          }
+        },
+        {
+          "sequence": 7605,
+          "at": 1791789709.2823653,
+          "kind": "transcript.fragment",
+          "payload": {
+            "start_ms": 58200,
+            "end_ms": 58400,
+            "captured_ms": 52000.0,
+            "text": " 2"
+          }
+        },
+        {
+          "sequence": 7607,
+          "at": 1791789709.8471456,
+          "kind": "transcript.fragment",
+          "payload": {
+            "start_ms": 58800,
+            "end_ms": 59000,
+            "captured_ms": 52600.0,
+            "text": " karak"
+          }
+        },
+        {
+          "sequence": 7610,
+          "at": 1791789710.6636856,
+          "kind": "transcript.fragment",
+          "payload": {
+            "start_ms": 59600,
+            "end_ms": 59800,
+            "captured_ms": 53400.0,
+            "text": ", large"
+          }
+        },
+        {
+          "sequence": 7612,
+          "at": 1791789711.0666852,
+          "kind": "transcript.fragment",
+          "payload": {
+            "start_ms": 60000,
+            "end_ms": 60200,
+            "captured_ms": 53800.0,
+            "text": ", no"
+          }
+        },
+        {
+          "sequence": 7613,
+          "at": 1791789711.4606144,
+          "kind": "transcript.fragment",
+          "payload": {
+            "start_ms": 60400,
+            "end_ms": 60600,
+            "captured_ms": 54200.0,
+            "text": " ice"
+          }
+        },
+        {
+          "sequence": 7614,
+          "at": 1791789712.0528884,
+          "kind": "transcript.fragment",
+          "payload": {
+            "start_ms": 61000,
+            "end_ms": 61200,
+            "captured_ms": 54800.0,
+            "text": ", half"
+          }
+        },
+        {
+          "sequence": 7615,
+          "at": 1791789712.6010354,
+          "kind": "transcript.fragment",
+          "payload": {
+            "start_ms": 61400,
+            "end_ms": 61600,
+            "captured_ms": 55400.0,
+            "text": " sugar"
+          }
+        },
+        {
+          "sequence": 7625,
+          "at": 1791789714.1264653,
+          "kind": "transcript.verified",
+          "payload": {
+            "caption": "And 2 karak, large, no ice, half sugar",
+            "text": "And two karak, large, no ice, half sugar.",
+            "start_ms": 49600.0,
+            "end_ms": 55850.0,
+            "duration_ms": 681
+          }
+        },
+        {
+          "sequence": 7632,
+          "at": 1791789715.9244406,
+          "kind": "delegation.completed",
+          "payload": {
+            "delegation_id": "item_EY4e0nf5Q9GIAgu2uDPYi",
+            "duration_ms": 1796,
+            "reply": "خلني أراجع معك: 2 من تميس بالعسل، عادي، خبز أسمر، بسعر 30.00 ريال؛ 2 من شاي كرك، كبير، بدون ثلج، نصف سكر، بسعر 36.00 ريال. استلام من فرع النرجس بالرياض. المجموع 66.00 ريال، والوقت المتوقع 20 دقيقة. نأكد الطلب؟"
+          }
+        }
+      ],
+      "basket": [
+        {
+          "item_id": "breakfast_05",
+          "line_id": "874ed057",
+          "notes": "",
+          "options": {
+            "bread": [
+              "brown"
+            ],
+            "portion": [
+              "regular"
+            ]
+          },
+          "quantity": 2,
+          "name": "تميس بالعسل",
+          "option_names": [
+            "عادي",
+            "خبز أسمر"
+          ],
+          "unit_price": 1500,
+          "line_total": 3000,
+          "missing": [],
+          "available": true
+        },
+        {
+          "item_id": "beverages_09",
+          "line_id": "da848095",
+          "notes": "",
+          "options": {
+            "ice": [
+              "none"
+            ],
+            "size": [
+              "large"
+            ],
+            "sweetness": [
+              "half"
+            ]
+          },
+          "quantity": 2,
+          "name": "شاي كرك",
+          "option_names": [
+            "كبير",
+            "بدون ثلج",
+            "نصف سكر"
+          ],
+          "unit_price": 1800,
+          "line_total": 3600,
+          "missing": [],
+          "available": true
+        }
+      ]
+    },
+    {
+      "name": "negation",
+      "seconds_after_input": 3.78,
+      "events": [
+        {
+          "sequence": 7637,
+          "at": 1791789722.8413281,
+          "kind": "transcript.fragment",
+          "payload": {
+            "start_ms": 71800,
+            "end_ms": 72000,
+            "captured_ms": 65600.0,
+            "text": " لا"
+          }
+        },
+        {
+          "sequence": 7638,
+          "at": 1791789723.4509344,
+          "kind": "transcript.fragment",
+          "payload": {
+            "start_ms": 72400,
+            "end_ms": 72600,
+            "captured_ms": 66200.0,
+            "text": " تضيف"
+          }
+        },
+        {
+          "sequence": 7639,
+          "at": 1791789724.0901952,
+          "kind": "transcript.fragment",
+          "payload": {
+            "start_ms": 73000,
+            "end_ms": 73200,
+            "captured_ms": 66800.0,
+            "text": " ش"
+          }
+        },
+        {
+          "sequence": 7640,
+          "at": 1791789724.3034394,
+          "kind": "transcript.fragment",
+          "payload": {
+            "start_ms": 73200,
+            "end_ms": 73400,
+            "captured_ms": 67100.0,
+            "text": "اور"
+          }
+        },
+        {
+          "sequence": 7641,
+          "at": 1791789724.4565902,
+          "kind": "transcript.fragment",
+          "payload": {
+            "start_ms": 73400,
+            "end_ms": 73600,
+            "captured_ms": 67200.0,
+            "text": "ما"
+          }
+        },
+        {
+          "sequence": 7644,
+          "at": 1791789725.2734733,
+          "kind": "transcript.fragment",
+          "payload": {
+            "start_ms": 74200,
+            "end_ms": 74400,
+            "captured_ms": 68000.0,
+            "text": ". هذا"
+          }
+        },
+        {
+          "sequence": 7646,
+          "at": 1791789725.6616006,
+          "kind": "transcript.fragment",
+          "payload": {
+            "start_ms": 74600,
+            "end_ms": 74800,
+            "captured_ms": 68400.0,
+            "text": " كل"
+          }
+        },
+        {
+          "sequence": 7647,
+          "at": 1791789726.2461865,
+          "kind": "transcript.fragment",
+          "payload": {
+            "start_ms": 75200,
+            "end_ms": 75400,
+            "captured_ms": 69000.0,
+            "text": " طلبي"
+          }
+        },
+        {
+          "sequence": 7650,
+          "at": 1791789727.341997,
+          "kind": "transcript.fragment",
+          "payload": {
+            "start_ms": 76200,
+            "end_ms": 76400,
+            "captured_ms": 69800.0,
+            "text": ". اقرأ"
+          }
+        },
+        {
+          "sequence": 7651,
+          "at": 1791789727.7338147,
+          "kind": "transcript.fragment",
+          "payload": {
+            "start_ms": 76800,
+            "end_ms": 77000,
+            "captured_ms": 70500.0,
+            "text": " ملخص"
+          }
+        },
+        {
+          "sequence": 7656,
+          "at": 1791789728.5177007,
+          "kind": "transcript.fragment",
+          "payload": {
+            "start_ms": 77600,
+            "end_ms": 77800,
+            "captured_ms": 71300.0,
+            "text": " الطلب"
+          }
+        },
+        {
+          "sequence": 7660,
+          "at": 1791789729.6807823,
+          "kind": "transcript.verified",
+          "payload": {
+            "caption": "لا تضيف شاورما. هذا كل طلبي. اقرأ ملخص الطلب",
+            "text": "لا تضيف شاورما، هذا كل طلبي. اقرأ ملخص الطلب.",
+            "start_ms": 64000.0,
+            "end_ms": 71750.0,
+            "duration_ms": 321
+          }
+        },
+        {
+          "sequence": 7665,
+          "at": 1791789731.165342,
+          "kind": "delegation.completed",
+          "payload": {
+            "delegation_id": "item_EY4eGcVb11AaCScbC8KMx",
+            "duration_ms": 1438,
+            "reply": "خلني أراجع معك: 2 من تميس بالعسل، عادي، خبز أسمر، بسعر 30.00 ريال؛ 2 من شاي كرك، كبير، بدون ثلج، نصف سكر، بسعر 36.00 ريال. استلام من فرع النرجس بالرياض. المجموع 66.00 ريال، والوقت المتوقع 20 دقيقة. نأكد الطلب؟"
+          }
+        }
+      ],
+      "basket": [
+        {
+          "item_id": "breakfast_05",
+          "line_id": "874ed057",
+          "notes": "",
+          "options": {
+            "bread": [
+              "brown"
+            ],
+            "portion": [
+              "regular"
+            ]
+          },
+          "quantity": 2,
+          "name": "تميس بالعسل",
+          "option_names": [
+            "عادي",
+            "خبز أسمر"
+          ],
+          "unit_price": 1500,
+          "line_total": 3000,
+          "missing": [],
+          "available": true
+        },
+        {
+          "item_id": "beverages_09",
+          "line_id": "da848095",
+          "notes": "",
+          "options": {
+            "ice": [
+              "none"
+            ],
+            "size": [
+              "large"
+            ],
+            "sweetness": [
+              "half"
+            ]
+          },
+          "quantity": 2,
+          "name": "شاي كرك",
+          "option_names": [
+            "كبير",
+            "بدون ثلج",
+            "نصف سكر"
+          ],
+          "unit_price": 1800,
+          "line_total": 3600,
+          "missing": [],
+          "available": true
+        }
+      ]
+    },
+    {
+      "name": "unheard_yes",
+      "seconds_after_input": 2.55,
+      "events": [
+        {
+          "sequence": 7670,
+          "at": 1791789738.1427662,
+          "kind": "transcript.fragment",
+          "payload": {
+            "start_ms": 89000,
+            "end_ms": 89200,
+            "captured_ms": 80900.0,
+            "text": " نعم"
+          }
+        },
+        {
+          "sequence": 7673,
+          "at": 1791789739.33675,
+          "kind": "transcript.verified",
+          "payload": {
+            "caption": "نعم",
+            "text": "نعم.",
+            "start_ms": 79300.0,
+            "end_ms": 81350.0,
+            "duration_ms": 309
+          }
+        },
+        {
+          "sequence": 7679,
+          "at": 1791789740.4277265,
+          "kind": "delegation.completed",
+          "payload": {
+            "delegation_id": "transcript-c48e051a3aac49b1a090ac22dd6084b6",
+            "duration_ms": 1088,
+            "reply": "خلني أراجع معك: 2 من تميس بالعسل، عادي، خبز أسمر، بسعر 30.00 ريال؛ 2 من شاي كرك، كبير، بدون ثلج، نصف سكر، بسعر 36.00 ريال. استلام من فرع النرجس بالرياض. المجموع 66.00 ريال، والوقت المتوقع 20 دقيقة. نأكد الطلب؟"
+          }
+        }
+      ],
+      "basket": [
+        {
+          "item_id": "breakfast_05",
+          "line_id": "874ed057",
+          "notes": "",
+          "options": {
+            "bread": [
+              "brown"
+            ],
+            "portion": [
+              "regular"
+            ]
+          },
+          "quantity": 2,
+          "name": "تميس بالعسل",
+          "option_names": [
+            "عادي",
+            "خبز أسمر"
+          ],
+          "unit_price": 1500,
+          "line_total": 3000,
+          "missing": [],
+          "available": true
+        },
+        {
+          "item_id": "beverages_09",
+          "line_id": "da848095",
+          "notes": "",
+          "options": {
+            "ice": [
+              "none"
+            ],
+            "size": [
+              "large"
+            ],
+            "sweetness": [
+              "half"
+            ]
+          },
+          "quantity": 2,
+          "name": "شاي كرك",
+          "option_names": [
+            "كبير",
+            "بدون ثلج",
+            "نصف سكر"
+          ],
+          "unit_price": 1800,
+          "line_total": 3600,
+          "missing": [],
+          "available": true
+        }
+      ]
+    },
+    {
+      "name": "noise",
+      "seconds_after_input": 5.03,
+      "events": [],
+      "basket": [
+        {
+          "item_id": "breakfast_05",
+          "line_id": "874ed057",
+          "notes": "",
+          "options": {
+            "bread": [
+              "brown"
+            ],
+            "portion": [
+              "regular"
+            ]
+          },
+          "quantity": 2,
+          "name": "تميس بالعسل",
+          "option_names": [
+            "عادي",
+            "خبز أسمر"
+          ],
+          "unit_price": 1500,
+          "line_total": 3000,
+          "missing": [],
+          "available": true
+        },
+        {
+          "item_id": "beverages_09",
+          "line_id": "da848095",
+          "notes": "",
+          "options": {
+            "ice": [
+              "none"
+            ],
+            "size": [
+              "large"
+            ],
+            "sweetness": [
+              "half"
+            ]
+          },
+          "quantity": 2,
+          "name": "شاي كرك",
+          "option_names": [
+            "كبير",
+            "بدون ثلج",
+            "نصف سكر"
+          ],
+          "unit_price": 1800,
+          "line_total": 3600,
+          "missing": [],
+          "available": true
+        }
+      ]
+    }
+  ],
+  "caller": "synthetic",
+  "limitations": "Real media transport and received output RMS; no independent human accent rating."
+}

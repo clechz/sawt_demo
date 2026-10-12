@@ -1,0 +1,213 @@
+SAWT V2 — PRIVATE DEMO RELEASE
+Test session: October 11–12, 2026
+
+Published demo
+https://wellington-harper-curves-jackson.trycloudflare.com
+Password: use the password supplied in the conversation. It is stored only in
+ignored runtime/private-demo.json and runtime/PRIVATE-DEMO-ACCESS.txt.
+
+This is a temporary, password-protected HTTPS demo running on this computer.
+Keep this computer, its network, voice worker, gateway and Cloudflare tunnel
+running. The URL changes when the tunnel restarts. This is not permanent cloud
+hosting. Orders and employee handoffs are simulated; no restaurant receives them.
+
+RESULTS
+
+350 Python tests passed, 0 failures. One non-blocking Starlette/httpx test-client
+deprecation warning remains. Evidence: evidence/v2/release-offline.xml.
+13 JavaScript tests passed for readback cancellation, playback acknowledgments,
+audio measurement and call-status transitions. TypeScript/Vite build passed.
+
+Catalog validation checks every one of 144 dishes against four branches,
+required options, availability and calculated prices. This is 576 combinations
+within a deterministic test, not 576 voice calls.
+
+Paid planner tests:
+- 19/19 backend scenarios passed (release-backend-eval-final.json).
+- Seven-turn replay of the observed fool/tamees/replacement call passed
+  (call-regression.json).
+- Three additional scenarios, 24 turns, passed after the final conversation
+  fixes: maasoub/karak clarification loop; information-only/allergen queries;
+  unsupported sizes, quantity changes and delivery/pickup corrections
+  (release-live-replay.json).
+The 19-case matrix and seven-turn replay preceded the last clarification wording
+changes; the 24-turn replay, full offline suite and final live smoke cover the
+latest behavior. Planner tests use simulated playback receipts and are not
+evidence of acoustic quality.
+
+Real Chrome voice test, using synthetic caller audio through LiveKit/GPT-Live:
+- Three maasoub plus one karak initially totaled 102 SAR.
+- Changed maasoub quantity to one; retained regular size, brown bread, large
+  karak, no ice and half sugar. Correct revised total: 46 SAR.
+- Interrupted a revised readback. Its receipt never completed.
+- Premature acceptance did not place an order. Only acceptance after the final
+  complete readback saved exactly one order, S-4436C1F1FC4B.
+- Spoken hangup closed the call.
+- A separate final-worker complaint call created a handoff ticket and no order;
+  UI hangup closed it. The assistant explicitly described a simulated handoff.
+Evidence: evidence/v2/release-browser-evidence.json and
+evidence/v2/release-confirmed-order.png. These assertions read the durable DB;
+they do not manufacture browser playback acknowledgments.
+
+Published HTTPS test after final worker restart:
+- Chrome password login and displayed call page verified.
+- Anonymous API blocked; authenticated caller page works; archives, debug/lab
+  and private files remain blocked, even after login.
+- A per-call token is still required to read a call.
+- Real published API -> LiveKit -> GPT-Live connection became ready, heard a
+  synthetic Arabic order, saved the two expected dishes, returned audio and
+  ended successfully. No unconfirmed order was placed.
+- 12/12 HTTPS/voice checks passed; final run received 2,892 audio frames.
+Evidence: evidence/v2/private-demo-smoke.json and private-demo-live.png.
+
+BUGS FOUND AND FIXED
+
+1. Looked up an explicitly requested dish but failed to save it before asking a
+   follow-up. The planner now gets an explicit save requirement.
+2. Repeated sugar questions and lost size/ice on a correction. Saudi half-sugar
+   wording is recognized; known required choices survive unrelated edits.
+3. A bare yes to a question lacked context. The exact pending choice is now
+   stored with its line and revision. Yes accepts only one proposed choice;
+   expiry, replacement, interruption/topic changes and stale revisions cannot
+   turn it into order confirmation.
+4. Asking about karak ice sounded unnatural. The assistant proposes no ice and
+   waits for agreement; it does not silently modify the source menu or assume it.
+5. Optional sauce removal was initially overprotected. Required-choice
+   preservation no longer reverses explicit optional sauce removal.
+6. Tamees dish names were confused with bread changes; generic fool could become
+   Hijazi without clarification. Dish variants and modifier evidence are checked.
+7. Unsupported delivery destinations produced a pickup follow-up. Delivery intent
+   and the actual coverage error are now preserved.
+8. Free-text confirmation invitations could bypass the exact readback request.
+   Observed invitation wording now goes through checkout/readback gating.
+9. Synthetic audio could start before the voice worker was ready and lose its
+   opening words. The local lab disables Send until the ready event.
+10. Native form navigation failed in this Chrome setup. The private login uses
+    same-origin submission with explicit errors and a hash-bound script policy;
+    Chrome login was then verified successfully.
+
+LIMITS / WHAT THESE TESTS DO NOT PROVE
+
+- This is ready for invited demo testing, not immediate restaurant production.
+  There is no real POS, payment flow, kitchen dispatch or human call transfer.
+- Synthetic speech is not a native Saudi listener's accent rating. Pronunciation,
+  noisy callers, different microphones and regional phrasing need further human
+  review. No claim of 100% accuracy or exhaustive coverage is made.
+- Some turns remain slow: the 24-turn planner replay had a 1,540.5 ms median and
+  4,596 ms maximum backend turn time. The last published voice smoke observed
+  saved delegation state 8.39 seconds after synthetic input ended; this includes
+  turn detection/model work/polling and is not time-to-first-audio. Exact readback
+  was about 29–30 seconds for the two-item order. Latency remains an improvement
+  area; these are small-sample measurements, not a production SLA.
+- No sustained load/soak test, mobile device matrix or independently hosted
+  uptime verification was performed. Calls are capped at 2 active, 20 starts/hour,
+  and 10 minutes each in this demo.
+- The app records calls locally for review with its existing retention process.
+  The public gateway blocks archives. Read-only review of previous human calls
+  used transcripts, tools and audit records; it was not an acoustic listening test.
+- The first attempted synthetic browser call lost startup words and was discarded.
+  The subsequent completed call and final ready-gated complaint test are the
+  cited evidence. A test-only LiveKit cleanup warning was fixed by closing its
+  audio resources; the final published smoke exited cleanly.
+
+REPEATABLE CHECKS (run from this repository)
+
+Offline tests and call audit:
+  ../../work/venv/Scripts/python.exe -X utf8 scripts/v2_quality_check.py
+
+Also run the paid backend matrix and both human-call planner replays:
+  ../../work/venv/Scripts/python.exe -X utf8 scripts/v2_quality_check.py --live
+
+Each quality run saves logs and JSON in a new runtime/qa directory.
+Actual browser/microphone behavior still needs Chrome testing; --live does not
+pretend to automate a browser's acoustic playback confirmation.
+
+Published synthetic voice smoke (requires the generated runtime fixture):
+  ../../work/venv/Scripts/python.exe -X utf8 scripts/v2_private_demo_smoke.py
+
+Verify the saved release browser calls, while their DB remains available:
+  ../../work/venv/Scripts/python.exe -X utf8 scripts/v2_release_evidence.py
+
+Stop only the private online gateway/tunnel:
+  ./scripts/stop_private_demo.ps1
+
+To start a new temporary tunnel after stopping it, with the local voice worker
+already running:
+  ./scripts/start_private_demo.ps1 -Python ../../work/venv/Scripts/python.exe -Cloudflared ../../work/bin/cloudflared.exe
+Wait for its URL in runtime/private-tunnel.err.log, then run:
+  ../../work/venv/Scripts/python.exe -X utf8 scripts/configure_private_demo.py
+This preserves the private password and updates the allowed hostname. The new
+URL and credentials are in ignored runtime/PRIVATE-DEMO-ACCESS.txt.
+
+Cloudflare hosting limitations:
+https://developers.cloudflare.com/tunnel/get-started/quick-tunnels/
+
+2026-10-12 follow-up: clear UI copy and explicit caller waiting
+The CTA is now ابدأ المكالمة, underlined inside the orb. Processing labels use
+plain Arabic tied to the backend operation. A caller's explicit pause request
+holds voice output, cancels superseded work and consumes only that utterance;
+new speech resumes the call. Delayed progress cannot replace the waiting label.
+356 Python checks and 14 JS checks passed. After final prompt edits, 60 focused
+Python checks passed. The live planner price replay returned the listed 18/22
+SAR shawarma prices in one sentence without creating an order or a sales question.
+Chrome call 20d97f4ac7134942938e4ddc0c9e5fbe used synthetic speech to verify
+price inquiry, waiting, and resuming with exactly one honey tamees draft, brown
+bread, Narjis pickup. No provider/backend errors; no incomplete order confirmed.
+Evidence: evidence/v2/wait-resume-browser.json and price-clarification-replay.json.
+The real caller recording was separately transcribed with the user's approval.
+Its second transcription differed substantially from the live fragments; this
+does not establish the acoustic cause or prove that recognition is now fixed.
+No new human-microphone or accent-quality pass is claimed.
+
+2026-10-12 follow-up: recognition and customer conversation behavior
+
+The user clarified that the last shawarma-call complaint meant the BOT was not
+speaking. The earlier caption-based waiting change did not address that meaning.
+Bounded audio verification now precedes business and call-control actions;
+original complaint audio correctly routes to recovery, not silence. See
+RECOGNITION-REPORT.txt for the failed tight crop, wider-context fix, measured
+recognition durations and limits. The unclear earlier recording segment remains
+unresolved; this is not a claim of complete transcription recovery.
+
+Final offline run: 394 Python tests passed, one Starlette test-client deprecation
+warning. Final frontend lifecycle/playback run: 15 JS tests passed.
+Machine-readable Python result: evidence/v2/recognition-interaction-tests.xml.
+The original-audio/control replay and synthetic edge replay each passed all 7
+checks. The goodbye media test received closing audio, completed playout, closed
+the call and created no order. These use real provider/media APIs, not Chrome.
+
+The introduction is now open-ended and has no recording/data-collection
+announcement. Recurring spoken templates have one editable source. Explicit
+whole-draft cancellation keeps the call open and cannot cancel confirmed orders.
+Staff-help offers store a yes/no proposal; their acceptance creates only a mock
+ticket. A known misleading "I can transfer you" response exposed during live
+testing was replaced by an honest, stateful offer. Prior candidate replies remain
+described here; the final saved interaction report is the corrected run.
+
+Real planner interaction run: 10 scenarios plus two follow-ups passed. This covers
+price-only/menu/branch information, missing hours/allergen/tracking information,
+complaints and their negation, draft cancellation, protected confirmed orders,
+and yes/no to a staff offer. Unknown-fact and mock-transfer replies were inspected
+in addition to state/tool assertions. This is one development run, not a held-out
+reliability score. evidence/v2/interaction-eval.json contains the actual replies.
+
+The new browser checkout was not completed. One attempt reached readback/waiting
+for confirmation; another disconnected early without a proven cause. The user
+requested no more Chrome testing, so the test tab was closed and verification
+continued with backend/media APIs. Do not report a fresh browser completion.
+The <=10-minute submission video, reviewer access checks and real restaurant
+integrations remain separate unfinished work. CALL-EXPERIENCE.txt maps the actual
+challenge to 38 request/edge-case entries and lists all 37 editable phrases.
+
+Final browser-free call-isolation check: two concurrent real media price calls
+both passed. Persisted timing confirms the second completed its backend request
+after the first disconnected. Both closed with no order. Evidence:
+evidence/v2/concurrency-lifecycle.json. This is a narrow concurrency regression,
+not a load/soak test or two complete concurrent checkout journeys.
+
+Final running-service check: configured health response, zero active test calls,
+and the observed greeting was exactly: "يا هلا، معك صوت، مساعد المطعم الآلي.
+كيف أقدر أخدمك؟" The repeated final goodbye media check also passed all four
+assertions. Nonfatal LiveKit teardown warnings (transcript synchronizer detached,
+unknown FFI handle on earlier cleanup) remain in the worker log; no claim of
+warning-free operation or a production soak pass is made.

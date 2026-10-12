@@ -1,5 +1,9 @@
 # Requirement coverage and honest execution record
 
+**Current submission:** V2 setup is in README.md; curated synthetic evidence is in [evidence/v2](evidence/v2/README.md). The latest audio-clock, background-diagnostic and microphone-meter changes are explained in DESIGN.md. A passing synthetic run does not override a human report of poor latency.
+
+**Current V2 evidence:** see `RELEASE-TEST-REPORT.txt`, `RECOGNITION-REPORT.txt`, and `CALL-EXPERIENCE.txt`. Current tests add bounded audio verification, correction/negation checks, stateful staff offers, whole-draft cancellation and audible closing. Run `python scripts/v2_quality_check.py` for the offline suite. The counts, batch STT/TTS timings and push-to-talk limitations below are preserved **V1 historical results**, not current V2 results.
+
 Local execution: **232 automated tests passed** on Python 3.12.14. `test-results.xml` is the machine-readable output. Includes 144 parametrized menu-item tests that iterate all selectable option rows and validate independent price expectations. Tests using a scripted provider establish application behavior, not real-model Arabic understanding. Concurrent confirmations, in-flight interruption, malformed provider envelopes, stale readback acknowledgement, neighborhood prefixes, incomplete address corrections, size aliases and negated handoff phrases are covered.
 
 Hosted execution on 2026-10-11: **14/14 text scenarios passed** with GPT-4.1; **one three-turn synthetic Arabic audio journey passed** with GPT-4o Transcribe, GPT-4.1 and GPT-4o mini TTS. The saved reports in `evidence/` contain observed transcripts, states, tools and timings. These are a single final run of a development suite, not a held-out reliability estimate. Earlier runs exposed failures described below; the suite was used to improve the implementation.

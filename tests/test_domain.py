@@ -132,7 +132,7 @@ def test_arabic_normalization_and_search(menu):
 
 def test_readback_contains_details_and_fee(engine):
     s=ready(engine);v=engine.view(s);text=engine.act(s,'checkout',{})['reply']
-    assert v['basket'][0]['name'] in text and 'بدون بصل' in text and '15.00' in text and 'هل تؤكد الطلب' in text
+    assert v['basket'][0]['name'] in text and 'بدون بصل' in text and '15.00' in text and 'نأكد الطلب' in text
 
 def test_delivery_branch_cannot_be_overridden(engine):
     s=ready(engine)

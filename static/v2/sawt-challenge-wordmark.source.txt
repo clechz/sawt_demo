@@ -1,0 +1,13 @@
+Custom header: تحدي صوت — عبدالله
+Generated using the built-in image_gen tool on 2026-10-11.
+This is a custom challenge wordmark inspired by the official Sawt logo, not an official Sawt brand asset.
+The official SVG remains available separately as sawt-logo.svg.
+
+Generation prompt:
+Create a clean Arabic header wordmark inspired by the supplied real SAWT logo. The reference shows its distinctive ultra-bold geometric round lettering. Write exactly the phrase «تحدي صوت — عبدالله» on one horizontal line reading right to left. The word صوت in the middle MUST copy the original logo accurately: the ت at the left has TWO equally sized clearly distinct circular dots, the و is a large circle with the triangular tail below, and the ص at the right has its thin horizontal slit. Match تحدي and عبدالله to this rounded geometric style. Use clean solid BLACK shapes on a pure WHITE background, as if an exported vector logo on paper. Absolutely no gray, antialias halos, distressed texture, stray marks, gradients, 3D, outlines or shadows. Maintain readable Arabic spelling with distinct dots. One single wide logo with a small margin, no poster, no UI, no extra text.
+
+Final correction prompt:
+Make ONE precise correction to this image and preserve everything else exactly. In the LEFTMOST word عبدالله, REMOVE the TWO black circular dots positioned above its LEFTMOST final letter ه. This is the name عبدالله (ع ب د ا ل ل ه), and the final ه has NO dots. The two unwanted dots are the leftmost pair of dots in the whole image, above the far-left rounded letter. Fill ONLY those two dots with the same clean white background. KEEP the single dot below ب in عبدالله. KEEP both large circles in the central صوت logo. KEEP all dots in the rightmost word تحدي. Preserve every other letter contour, layout, thickness, colors, line and spacing unchanged. Do NOT regenerate or retype the lettering. No other changes. Exact final reading is تحدي صوت — عبدالله.
+
+Display:
+The unmodified black-on-white PNG is inverted and screen-blended by CSS for the dark header. The image is centered inside a cropped header box to remove empty page margins without distorting the lettering.

@@ -1,0 +1,5405 @@
+{
+  "kind": "live_planner_acceptance",
+  "playback": "SIMULATED; browser audio tested separately",
+  "scenarios": [
+    {
+      "name": "human_karak_loop",
+      "turns": [
+        {
+          "input": "وش أقسام المنيو عندكم؟",
+          "ms": 1384,
+          "reply": "أقسام المنيو عندنا: الفطور، الشوربات والسلطات، المقبلات، الأرز والأطباق السعودية، المشويات، أطباق الدجاج، البرجر والسندويتشات، البيتزا والمناقيش، الباستا، المأكولات البحرية، الحلويات، والمشروبات. إذا حاب تعرف تفاصيل أو أسعار قسم معين خبرني.",
+          "transcript": "وش أقسام المنيو عندكم؟",
+          "state": {
+            "revision": 0,
+            "status": "collecting",
+            "service": null,
+            "location": null,
+            "branch_id": null,
+            "branch": null,
+            "basket": [],
+            "subtotal": 0,
+            "delivery_fee": 0,
+            "total": 0,
+            "eta_minutes": null,
+            "issues": [
+              "حدد توصيل أو استلام.",
+              "حدد الفرع أو منطقة التوصيل.",
+              "السلة فارغة."
+            ],
+            "quote": null,
+            "order_id": null,
+            "handoff": null,
+            "pending_choice": null,
+            "pending_handoff": null,
+            "delivery_details": {}
+          },
+          "events": [
+            {
+              "tool": "list_categories",
+              "args": {},
+              "result": {
+                "categories": [
+                  {
+                    "id": "breakfast",
+                    "name": "الفطور",
+                    "count": 12
+                  },
+                  {
+                    "id": "salads_soups",
+                    "name": "الشوربات والسلطات",
+                    "count": 12
+                  },
+                  {
+                    "id": "appetizers",
+                    "name": "المقبلات",
+                    "count": 12
+                  },
+                  {
+                    "id": "rice",
+                    "name": "الأرز والأطباق السعودية",
+                    "count": 12
+                  },
+                  {
+                    "id": "grills",
+                    "name": "المشويات",
+                    "count": 12
+                  },
+                  {
+                    "id": "chicken",
+                    "name": "أطباق الدجاج",
+                    "count": 12
+                  },
+                  {
+                    "id": "sandwiches",
+                    "name": "البرجر والسندويتشات",
+                    "count": 12
+                  },
+                  {
+                    "id": "pizza_flatbread",
+                    "name": "البيتزا والمناقيش",
+                    "count": 12
+                  },
+                  {
+                    "id": "pasta",
+                    "name": "الباستا",
+                    "count": 12
+                  },
+                  {
+                    "id": "seafood",
+                    "name": "المأكولات البحرية",
+                    "count": 12
+                  },
+                  {
+                    "id": "desserts",
+                    "name": "الحلويات",
+                    "count": 12
+                  },
+                  {
+                    "id": "beverages",
+                    "name": "المشروبات",
+                    "count": 12
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "input": "أبغى ثلاثة معصوب ملكي خبز أسمر حجم عادي، وتوصيل.",
+          "ms": 3288,
+          "reply": "ضفت 3 من معصوب ملكي. بأي مدينة وحي؟",
+          "transcript": "أبغى ثلاثة معصوب ملكي خبز أسمر حجم عادي، وتوصيل.",
+          "state": {
+            "revision": 2,
+            "status": "collecting",
+            "service": "delivery",
+            "location": null,
+            "branch_id": null,
+            "branch": null,
+            "basket": [
+              {
+                "item_id": "breakfast_06",
+                "line_id": "f568b904",
+                "notes": "",
+                "options": {
+                  "bread": [
+                    "brown"
+                  ],
+                  "portion": [
+                    "regular"
+                  ]
+                },
+                "quantity": 3,
+                "name": "معصوب ملكي",
+                "option_names": [
+                  "عادي",
+                  "خبز أسمر"
+                ],
+                "unit_price": 2800,
+                "line_total": 8400,
+                "missing": [],
+                "available": null
+              }
+            ],
+            "subtotal": 8400,
+            "delivery_fee": 0,
+            "total": 8400,
+            "eta_minutes": null,
+            "issues": [
+              "حدد الفرع أو منطقة التوصيل.",
+              "نحتاج عنوان التوصيل والمنطقة."
+            ],
+            "quote": null,
+            "order_id": null,
+            "handoff": null,
+            "pending_choice": null,
+            "pending_handoff": null,
+            "delivery_details": {}
+          },
+          "events": [
+            {
+              "tool": "search_menu",
+              "args": {
+                "query": "معصوب ملكي"
+              },
+              "result": {
+                "total_matches": 1,
+                "items": [
+                  {
+                    "id": "breakfast_06",
+                    "name": "معصوب ملكي",
+                    "name_en": "Royal Masoub",
+                    "category": "الفطور",
+                    "category_id": "breakfast",
+                    "base": 2600,
+                    "available": [
+                      "ruh_olaya",
+                      "ruh_narjis",
+                      "ruh_malqa",
+                      "jed_rawdah"
+                    ],
+                    "groups": {
+                      "portion": {
+                        "name": "الحجم",
+                        "required": true,
+                        "min": 1,
+                        "max": 1,
+                        "options": {
+                          "regular": {
+                            "name": "عادي",
+                            "name_en": "Regular",
+                            "delta": 0
+                          },
+                          "large": {
+                            "name": "كبير",
+                            "name_en": "Large",
+                            "delta": 800
+                          }
+                        }
+                      },
+                      "bread": {
+                        "name": "اختيار الخبز",
+                        "required": true,
+                        "min": 1,
+                        "max": 1,
+                        "options": {
+                          "tamees": {
+                            "name": "تميس",
+                            "name_en": "Tamees",
+                            "delta": 0
+                          },
+                          "saj": {
+                            "name": "صاج",
+                            "name_en": "Saj",
+                            "delta": 0
+                          },
+                          "brown": {
+                            "name": "خبز أسمر",
+                            "name_en": "Brown bread",
+                            "delta": 200
+                          }
+                        }
+                      },
+                      "extras": {
+                        "name": "إضافات",
+                        "required": false,
+                        "min": 0,
+                        "max": 3,
+                        "options": {
+                          "cheese": {
+                            "name": "جبن",
+                            "name_en": "Cheese",
+                            "delta": 400
+                          },
+                          "honey": {
+                            "name": "عسل",
+                            "name_en": "Honey",
+                            "delta": 300
+                          },
+                          "cream": {
+                            "name": "قشطة",
+                            "name_en": "Cream",
+                            "delta": 500
+                          },
+                          "eggs": {
+                            "name": "بيضتان",
+                            "name_en": "Two eggs",
+                            "delta": 600
+                          }
+                        }
+                      }
+                    },
+                    "available_here": null
+                  }
+                ]
+              }
+            },
+            {
+              "tool": "add_item",
+              "args": {
+                "item_id": "breakfast_06",
+                "quantity": 3,
+                "options": {
+                  "portion": [
+                    "regular"
+                  ],
+                  "bread": [
+                    "brown"
+                  ]
+                },
+                "notes": ""
+              },
+              "result": {
+                "revision": 1,
+                "status": "collecting",
+                "service": null,
+                "location": null,
+                "branch_id": null,
+                "branch": null,
+                "basket": [
+                  {
+                    "line_id": "f568b904",
+                    "item_id": "breakfast_06",
+                    "quantity": 3,
+                    "options": {
+                      "portion": [
+                        "regular"
+                      ],
+                      "bread": [
+                        "brown"
+                      ]
+                    },
+                    "notes": "",
+                    "name": "معصوب ملكي",
+                    "option_names": [
+                      "عادي",
+                      "خبز أسمر"
+                    ],
+                    "unit_price": 2800,
+                    "line_total": 8400,
+                    "missing": [],
+                    "available": null
+                  }
+                ],
+                "subtotal": 8400,
+                "delivery_fee": 0,
+                "total": 8400,
+                "eta_minutes": null,
+                "issues": [
+                  "حدد توصيل أو استلام.",
+                  "حدد الفرع أو منطقة التوصيل."
+                ],
+                "quote": null,
+                "order_id": null,
+                "handoff": null,
+                "pending_choice": null,
+                "pending_handoff": null,
+                "delivery_details": {}
+              }
+            },
+            {
+              "tool": "set_service",
+              "args": {
+                "service": "delivery"
+              },
+              "result": {
+                "revision": 2,
+                "status": "collecting",
+                "service": "delivery",
+                "location": null,
+                "branch_id": null,
+                "branch": null,
+                "basket": [
+                  {
+                    "line_id": "f568b904",
+                    "item_id": "breakfast_06",
+                    "quantity": 3,
+                    "options": {
+                      "portion": [
+                        "regular"
+                      ],
+                      "bread": [
+                        "brown"
+                      ]
+                    },
+                    "notes": "",
+                    "name": "معصوب ملكي",
+                    "option_names": [
+                      "عادي",
+                      "خبز أسمر"
+                    ],
+                    "unit_price": 2800,
+                    "line_total": 8400,
+                    "missing": [],
+                    "available": null
+                  }
+                ],
+                "subtotal": 8400,
+                "delivery_fee": 0,
+                "total": 8400,
+                "eta_minutes": null,
+                "issues": [
+                  "حدد الفرع أو منطقة التوصيل.",
+                  "نحتاج عنوان التوصيل والمنطقة."
+                ],
+                "quote": null,
+                "order_id": null,
+                "handoff": null,
+                "pending_choice": null,
+                "pending_handoff": null,
+                "delivery_details": {}
+              }
+            }
+          ]
+        },
+        {
+          "input": "ومعها ثلاثة شاي عدني.",
+          "ms": 1932,
+          "reply": "ما لقيت شاي عدني في المنيو، لكن عندنا شاي أحمر وشاي كرك. أي واحد تفضل أضيفه مع الطلب؟",
+          "transcript": "ومعها ثلاثة شاي عدني.",
+          "state": {
+            "revision": 2,
+            "status": "collecting",
+            "service": "delivery",
+            "location": null,
+            "branch_id": null,
+            "branch": null,
+            "basket": [
+              {
+                "item_id": "breakfast_06",
+                "line_id": "f568b904",
+                "notes": "",
+                "options": {
+                  "bread": [
+                    "brown"
+                  ],
+                  "portion": [
+                    "regular"
+                  ]
+                },
+                "quantity": 3,
+                "name": "معصوب ملكي",
+                "option_names": [
+                  "عادي",
+                  "خبز أسمر"
+                ],
+                "unit_price": 2800,
+                "line_total": 8400,
+                "missing": [],
+                "available": null
+              }
+            ],
+            "subtotal": 8400,
+            "delivery_fee": 0,
+            "total": 8400,
+            "eta_minutes": null,
+            "issues": [
+              "حدد الفرع أو منطقة التوصيل.",
+              "نحتاج عنوان التوصيل والمنطقة."
+            ],
+            "quote": null,
+            "order_id": null,
+            "handoff": null,
+            "pending_choice": null,
+            "pending_handoff": null,
+            "delivery_details": {}
+          },
+          "events": [
+            {
+              "tool": "search_menu",
+              "args": {
+                "query": "شاي عدني"
+              },
+              "result": {
+                "total_matches": 3,
+                "items": [
+                  {
+                    "id": "beverages_01",
+                    "name": "مياه معدنية",
+                    "name_en": "Mineral Water",
+                    "category": "المشروبات",
+                    "category_id": "beverages",
+                    "base": 500,
+                    "available": [
+                      "ruh_olaya",
+                      "ruh_narjis",
+                      "ruh_malqa",
+                      "jed_rawdah"
+                    ],
+                    "groups": {
+                      "size": {
+                        "name": "الحجم",
+                        "required": true,
+                        "min": 1,
+                        "max": 1,
+                        "options": {
+                          "small": {
+                            "name": "صغير",
+                            "name_en": "Small",
+                            "delta": 0
+                          },
+                          "medium": {
+                            "name": "وسط",
+                            "name_en": "Medium",
+                            "delta": 300
+                          },
+                          "large": {
+                            "name": "كبير",
+                            "name_en": "Large",
+                            "delta": 600
+                          }
+                        }
+                      },
+                      "ice": {
+                        "name": "الثلج",
+                        "required": true,
+                        "min": 1,
+                        "max": 1,
+                        "options": {
+                          "regular": {
+                            "name": "ثلج عادي",
+                            "name_en": "Regular ice",
+                            "delta": 0
+                          },
+                          "light": {
+                            "name": "ثلج خفيف",
+                            "name_en": "Light ice",
+                            "delta": 0
+                          },
+                          "none": {
+                            "name": "بدون ثلج",
+                            "name_en": "No ice",
+                            "delta": 0
+                          }
+                        }
+                      },
+                      "sweetness": {
+                        "name": "السكر",
+                        "required": true,
+                        "min": 1,
+                        "max": 1,
+                        "options": {
+                          "none": {
+                            "name": "بدون سكر",
+                            "name_en": "No sugar",
+                            "delta": 0
+                          },
+                          "half": {
+                            "name": "نصف سكر",
+                            "name_en": "Half sugar",
+                            "delta": 0
+                          },
+                          "regular": {
+                            "name": "سكر عادي",
+                            "name_en": "Regular sugar",
+                            "delta": 0
+                          },
+                          "extra": {
+                            "name": "سكر إضافي",
+                            "name_en": "Extra sugar",
+                            "delta": 0
+                          }
+                        }
+                      }
+                    },
+                    "available_here": null
+                  },
+                  {
+                    "id": "beverages_08",
+                    "name": "شاي أحمر",
+                    "name_en": "Black Tea",
+                    "category": "المشروبات",
+                    "category_id": "beverages",
+                    "base": 800,
+                    "available": [
+                      "ruh_olaya",
+                      "ruh_narjis",
+                      "ruh_malqa",
+                      "jed_rawdah"
+                    ],
+                    "groups": {
+                      "size": {
+                        "name": "الحجم",
+                        "required": true,
+                        "min": 1,
+                        "max": 1,
+                        "options": {
+                          "small": {
+                            "name": "صغير",
+                            "name_en": "Small",
+                            "delta": 0
+                          },
+                          "medium": {
+                            "name": "وسط",
+                            "name_en": "Medium",
+                            "delta": 300
+                          },
+                          "large": {
+                            "name": "كبير",
+                            "name_en": "Large",
+                            "delta": 600
+                          }
+                        }
+                      },
+                      "ice": {
+                        "name": "الثلج",
+                        "required": true,
+                        "min": 1,
+                        "max": 1,
+                        "options": {
+                          "regular": {
+                            "name": "ثلج عادي",
+                            "name_en": "Regular ice",
+                            "delta": 0
+                          },
+                          "light": {
+                            "name": "ثلج خفيف",
+                            "name_en": "Light ice",
+                            "delta": 0
+                          },
+                          "none": {
+                            "name": "بدون ثلج",
+                            "name_en": "No ice",
+                            "delta": 0
+                          }
+                        }
+                      },
+                      "sweetness": {
+                        "name": "السكر",
+                        "required": true,
+                        "min": 1,
+                        "max": 1,
+                        "options": {
+                          "none": {
+                            "name": "بدون سكر",
+                            "name_en": "No sugar",
+                            "delta": 0
+                          },
+                          "half": {
+                            "name": "نصف سكر",
+                            "name_en": "Half sugar",
+                            "delta": 0
+                          },
+                          "regular": {
+                            "name": "سكر عادي",
+                            "name_en": "Regular sugar",
+                            "delta": 0
+                          },
+                          "extra": {
+                            "name": "سكر إضافي",
+                            "name_en": "Extra sugar",
+                            "delta": 0
+                          }
+                        }
+                      }
+                    },
+                    "available_here": null
+                  },
+                  {
+                    "id": "beverages_09",
+                    "name": "شاي كرك",
+                    "name_en": "Karak Tea",
+                    "category": "المشروبات",
+                    "category_id": "beverages",
+                    "base": 1200,
+                    "available": [
+                      "ruh_olaya",
+                      "ruh_narjis",
+                      "ruh_malqa",
+                      "jed_rawdah"
+                    ],
+                    "groups": {
+                      "size": {
+                        "name": "الحجم",
+                        "required": true,
+                        "min": 1,
+                        "max": 1,
+                        "options": {
+                          "small": {
+                            "name": "صغير",
+                            "name_en": "Small",
+                            "delta": 0
+                          },
+                          "medium": {
+                            "name": "وسط",
+                            "name_en": "Medium",
+                            "delta": 300
+                          },
+                          "large": {
+                            "name": "كبير",
+                            "name_en": "Large",
+                            "delta": 600
+                          }
+                        }
+                      },
+                      "ice": {
+                        "name": "الثلج",
+                        "required": true,
+                        "min": 1,
+                        "max": 1,
+                        "options": {
+                          "regular": {
+                            "name": "ثلج عادي",
+                            "name_en": "Regular ice",
+                            "delta": 0
+                          },
+                          "light": {
+                            "name": "ثلج خفيف",
+                            "name_en": "Light ice",
+                            "delta": 0
+                          },
+                          "none": {
+                            "name": "بدون ثلج",
+                            "name_en": "No ice",
+                            "delta": 0
+                          }
+                        }
+                      },
+                      "sweetness": {
+                        "name": "السكر",
+                        "required": true,
+                        "min": 1,
+                        "max": 1,
+                        "options": {
+                          "none": {
+                            "name": "بدون سكر",
+                            "name_en": "No sugar",
+                            "delta": 0
+                          },
+                          "half": {
+                            "name": "نصف سكر",
+                            "name_en": "Half sugar",
+                            "delta": 0
+                          },
+                          "regular": {
+                            "name": "سكر عادي",
+                            "name_en": "Regular sugar",
+                            "delta": 0
+                          },
+                          "extra": {
+                            "name": "سكر إضافي",
+                            "name_en": "Extra sugar",
+                            "delta": 0
+                          }
+                        }
+                      }
+                    },
+                    "available_here": null
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "input": "ماشي كرك، عطني كرك بدال العدني.",
+          "ms": 3897,
+          "reply": "ضفت 3 من شاي كرك. بالنسبة لـشاي كرك، الحجم صغير ولا وسط ولا كبير؟",
+          "transcript": "ماشي كرك، عطني كرك بدال العدني.",
+          "state": {
+            "revision": 3,
+            "status": "collecting",
+            "service": "delivery",
+            "location": null,
+            "branch_id": null,
+            "branch": null,
+            "basket": [
+              {
+                "item_id": "breakfast_06",
+                "line_id": "f568b904",
+                "notes": "",
+                "options": {
+                  "bread": [
+                    "brown"
+                  ],
+                  "portion": [
+                    "regular"
+                  ]
+                },
+                "quantity": 3,
+                "name": "معصوب ملكي",
+                "option_names": [
+                  "عادي",
+                  "خبز أسمر"
+                ],
+                "unit_price": 2800,
+                "line_total": 8400,
+                "missing": [],
+                "available": null
+              },
+              {
+                "item_id": "beverages_09",
+                "line_id": "00bb1405",
+                "notes": "",
+                "options": {},
+                "quantity": 3,
+                "name": "شاي كرك",
+                "option_names": [],
+                "unit_price": 1200,
+                "line_total": 3600,
+                "missing": [
+                  "الحجم",
+                  "الثلج",
+                  "السكر"
+                ],
+                "available": null
+              }
+            ],
+            "subtotal": 12000,
+            "delivery_fee": 0,
+            "total": 12000,
+            "eta_minutes": null,
+            "issues": [
+              "حدد الفرع أو منطقة التوصيل.",
+              "نحتاج عنوان التوصيل والمنطقة.",
+              "شاي كرك: اختر الحجم، الثلج، السكر"
+            ],
+            "quote": null,
+            "order_id": null,
+            "handoff": null,
+            "pending_choice": {
+              "created": 1791787952.9362223,
+              "group_id": "size",
+              "item_id": "beverages_09",
+              "line_id": "00bb1405",
+              "option_id": null,
+              "question": "بالنسبة لـشاي كرك، الحجم صغير ولا وسط ولا كبير؟",
+              "revision": 3
+            },
+            "pending_handoff": null,
+            "delivery_details": {}
+          },
+          "events": [
+            {
+              "tool": "search_menu",
+              "args": {
+                "query": "كرك"
+              },
+              "result": {
+                "total_matches": 1,
+                "items": [
+                  {
+                    "id": "beverages_09",
+                    "name": "شاي كرك",
+                    "name_en": "Karak Tea",
+                    "category": "المشروبات",
+                    "category_id": "beverages",
+                    "base": 1200,
+                    "available": [
+                      "ruh_olaya",
+                      "ruh_narjis",
+                      "ruh_malqa",
+                      "jed_rawdah"
+                    ],
+                    "groups": {
+                      "size": {
+                        "name": "الحجم",
+                        "required": true,
+                        "min": 1,
+                        "max": 1,
+                        "options": {
+                          "small": {
+                            "name": "صغير",
+                            "name_en": "Small",
+                            "delta": 0
+                          },
+                          "medium": {
+                            "name": "وسط",
+                            "name_en": "Medium",
+                            "delta": 300
+                          },
+                          "large": {
+                            "name": "كبير",
+                            "name_en": "Large",
+                            "delta": 600
+                          }
+                        }
+                      },
+                      "ice": {
+                        "name": "الثلج",
+                        "required": true,
+                        "min": 1,
+                        "max": 1,
+                        "options": {
+                          "regular": {
+                            "name": "ثلج عادي",
+                            "name_en": "Regular ice",
+                            "delta": 0
+                          },
+                          "light": {
+                            "name": "ثلج خفيف",
+                            "name_en": "Light ice",
+                            "delta": 0
+                          },
+                          "none": {
+                            "name": "بدون ثلج",
+                            "name_en": "No ice",
+                            "delta": 0
+                          }
+                        }
+                      },
+                      "sweetness": {
+                        "name": "السكر",
+                        "required": true,
+                        "min": 1,
+                        "max": 1,
+                        "options": {
+                          "none": {
+                            "name": "بدون سكر",
+                            "name_en": "No sugar",
+                            "delta": 0
+                          },
+                          "half": {
+                            "name": "نصف سكر",
+                            "name_en": "Half sugar",
+                            "delta": 0
+                          },
+                          "regular": {
+                            "name": "سكر عادي",
+                            "name_en": "Regular sugar",
+                            "delta": 0
+                          },
+                          "extra": {
+                            "name": "سكر إضافي",
+                            "name_en": "Extra sugar",
+                            "delta": 0
+                          }
+                        }
+                      }
+                    },
+                    "available_here": null
+                  }
+                ]
+              }
+            },
+            {
+              "tool": "add_item",
+              "args": {
+                "item_id": "beverages_09",
+                "quantity": 3,
+                "options": {},
+                "notes": ""
+              },
+              "result": {
+                "revision": 3,
+                "status": "collecting",
+                "service": "delivery",
+                "location": null,
+                "branch_id": null,
+                "branch": null,
+                "basket": [
+                  {
+                    "item_id": "breakfast_06",
+                    "line_id": "f568b904",
+                    "notes": "",
+                    "options": {
+                      "bread": [
+                        "brown"
+                      ],
+                      "portion": [
+                        "regular"
+                      ]
+                    },
+                    "quantity": 3,
+                    "name": "معصوب ملكي",
+                    "option_names": [
+                      "عادي",
+                      "خبز أسمر"
+                    ],
+                    "unit_price": 2800,
+                    "line_total": 8400,
+                    "missing": [],
+                    "available": null
+                  },
+                  {
+                    "line_id": "00bb1405",
+                    "item_id": "beverages_09",
+                    "quantity": 3,
+                    "options": {},
+                    "notes": "",
+                    "name": "شاي كرك",
+                    "option_names": [],
+                    "unit_price": 1200,
+                    "line_total": 3600,
+                    "missing": [
+                      "الحجم",
+                      "الثلج",
+                      "السكر"
+                    ],
+                    "available": null
+                  }
+                ],
+                "subtotal": 12000,
+                "delivery_fee": 0,
+                "total": 12000,
+                "eta_minutes": null,
+                "issues": [
+                  "حدد الفرع أو منطقة التوصيل.",
+                  "نحتاج عنوان التوصيل والمنطقة.",
+                  "شاي كرك: اختر الحجم، الثلج، السكر"
+                ],
+                "quote": null,
+                "order_id": null,
+                "handoff": null,
+                "pending_choice": null,
+                "pending_handoff": null,
+                "delivery_details": {}
+              }
+            },
+            {
+              "tool": "ask_choice",
+              "args": {
+                "line_id": "00bb1405",
+                "group_id": "size"
+              },
+              "result": {
+                "terminal": true,
+                "reply": "بالنسبة لـشاي كرك، الحجم صغير ولا وسط ولا كبير؟"
+              }
+            }
+          ]
+        },
+        {
+          "input": "وشو كرك ثلج؟ تستهبل انت، الكرك حار.",
+          "ms": 4619,
+          "reply": "الكرك بدون ثلج؟",
+          "transcript": "وشو كرك ثلج؟ تستهبل انت، الكرك حار.",
+          "state": {
+            "revision": 3,
+            "status": "collecting",
+            "service": "delivery",
+            "location": null,
+            "branch_id": null,
+            "branch": null,
+            "basket": [
+              {
+                "item_id": "breakfast_06",
+                "line_id": "f568b904",
+                "notes": "",
+                "options": {
+                  "bread": [
+                    "brown"
+                  ],
+                  "portion": [
+                    "regular"
+                  ]
+                },
+                "quantity": 3,
+                "name": "معصوب ملكي",
+                "option_names": [
+                  "عادي",
+                  "خبز أسمر"
+                ],
+                "unit_price": 2800,
+                "line_total": 8400,
+                "missing": [],
+                "available": null
+              },
+              {
+                "item_id": "beverages_09",
+                "line_id": "00bb1405",
+                "notes": "",
+                "options": {},
+                "quantity": 3,
+                "name": "شاي كرك",
+                "option_names": [],
+                "unit_price": 1200,
+                "line_total": 3600,
+                "missing": [
+                  "الحجم",
+                  "الثلج",
+                  "السكر"
+                ],
+                "available": null
+              }
+            ],
+            "subtotal": 12000,
+            "delivery_fee": 0,
+            "total": 12000,
+            "eta_minutes": null,
+            "issues": [
+              "حدد الفرع أو منطقة التوصيل.",
+              "نحتاج عنوان التوصيل والمنطقة.",
+              "شاي كرك: اختر الحجم، الثلج، السكر"
+            ],
+            "quote": null,
+            "order_id": null,
+            "handoff": null,
+            "pending_choice": {
+              "created": 1791787955.214155,
+              "group_id": "ice",
+              "item_id": "beverages_09",
+              "line_id": "00bb1405",
+              "option_id": "none",
+              "question": "الكرك بدون ثلج؟",
+              "revision": 3
+            },
+            "pending_handoff": null,
+            "delivery_details": {}
+          },
+          "events": [
+            {
+              "tool": "ask_choice",
+              "args": {
+                "line_id": "00bb1405",
+                "group_id": "ice"
+              },
+              "result": {
+                "terminal": true,
+                "reply": "الكرك بدون ثلج؟"
+              }
+            }
+          ]
+        },
+        {
+          "input": "أيوه",
+          "ms": 1306,
+          "reply": "بالنسبة لـشاي كرك، خليته بدون ثلج. الحجم صغير ولا وسط ولا كبير؟",
+          "transcript": "أيوه",
+          "state": {
+            "revision": 4,
+            "status": "collecting",
+            "service": "delivery",
+            "location": null,
+            "branch_id": null,
+            "branch": null,
+            "basket": [
+              {
+                "item_id": "breakfast_06",
+                "line_id": "f568b904",
+                "notes": "",
+                "options": {
+                  "bread": [
+                    "brown"
+                  ],
+                  "portion": [
+                    "regular"
+                  ]
+                },
+                "quantity": 3,
+                "name": "معصوب ملكي",
+                "option_names": [
+                  "عادي",
+                  "خبز أسمر"
+                ],
+                "unit_price": 2800,
+                "line_total": 8400,
+                "missing": [],
+                "available": null
+              },
+              {
+                "item_id": "beverages_09",
+                "line_id": "00bb1405",
+                "notes": "",
+                "options": {
+                  "ice": [
+                    "none"
+                  ]
+                },
+                "quantity": 3,
+                "name": "شاي كرك",
+                "option_names": [
+                  "بدون ثلج"
+                ],
+                "unit_price": 1200,
+                "line_total": 3600,
+                "missing": [
+                  "الحجم",
+                  "السكر"
+                ],
+                "available": null
+              }
+            ],
+            "subtotal": 12000,
+            "delivery_fee": 0,
+            "total": 12000,
+            "eta_minutes": null,
+            "issues": [
+              "حدد الفرع أو منطقة التوصيل.",
+              "نحتاج عنوان التوصيل والمنطقة.",
+              "شاي كرك: اختر الحجم، السكر"
+            ],
+            "quote": null,
+            "order_id": null,
+            "handoff": null,
+            "pending_choice": {
+              "created": 1791787958.714387,
+              "group_id": "size",
+              "item_id": "beverages_09",
+              "line_id": "00bb1405",
+              "option_id": null,
+              "question": "بالنسبة لـشاي كرك، الحجم صغير ولا وسط ولا كبير؟",
+              "revision": 4
+            },
+            "pending_handoff": null,
+            "delivery_details": {}
+          },
+          "events": [
+            {
+              "tool": "update_item",
+              "args": {
+                "line_id": "00bb1405",
+                "options": {
+                  "ice": [
+                    "none"
+                  ]
+                }
+              },
+              "result": {
+                "revision": 4,
+                "status": "collecting",
+                "service": "delivery",
+                "location": null,
+                "branch_id": null,
+                "branch": null,
+                "basket": [
+                  {
+                    "item_id": "breakfast_06",
+                    "line_id": "f568b904",
+                    "notes": "",
+                    "options": {
+                      "bread": [
+                        "brown"
+                      ],
+                      "portion": [
+                        "regular"
+                      ]
+                    },
+                    "quantity": 3,
+                    "name": "معصوب ملكي",
+                    "option_names": [
+                      "عادي",
+                      "خبز أسمر"
+                    ],
+                    "unit_price": 2800,
+                    "line_total": 8400,
+                    "missing": [],
+                    "available": null
+                  },
+                  {
+                    "item_id": "beverages_09",
+                    "line_id": "00bb1405",
+                    "notes": "",
+                    "options": {
+                      "ice": [
+                        "none"
+                      ]
+                    },
+                    "quantity": 3,
+                    "name": "شاي كرك",
+                    "option_names": [
+                      "بدون ثلج"
+                    ],
+                    "unit_price": 1200,
+                    "line_total": 3600,
+                    "missing": [
+                      "الحجم",
+                      "السكر"
+                    ],
+                    "available": null
+                  }
+                ],
+                "subtotal": 12000,
+                "delivery_fee": 0,
+                "total": 12000,
+                "eta_minutes": null,
+                "issues": [
+                  "حدد الفرع أو منطقة التوصيل.",
+                  "نحتاج عنوان التوصيل والمنطقة.",
+                  "شاي كرك: اختر الحجم، السكر"
+                ],
+                "quote": null,
+                "order_id": null,
+                "handoff": null,
+                "pending_choice": null,
+                "pending_handoff": null,
+                "delivery_details": {}
+              },
+              "source": "unambiguous_short_choice"
+            }
+          ]
+        },
+        {
+          "input": "بدون ثلج، الحجم كبير وخلي سكر وسط.",
+          "ms": 2135,
+          "reply": "بالنسبة لـشاي كرك، خليت الحجم كبير. تقصد نصف سكر؟",
+          "transcript": "بدون ثلج، الحجم كبير وخلي سكر وسط.",
+          "state": {
+            "revision": 5,
+            "status": "collecting",
+            "service": "delivery",
+            "location": null,
+            "branch_id": null,
+            "branch": null,
+            "basket": [
+              {
+                "item_id": "breakfast_06",
+                "line_id": "f568b904",
+                "notes": "",
+                "options": {
+                  "bread": [
+                    "brown"
+                  ],
+                  "portion": [
+                    "regular"
+                  ]
+                },
+                "quantity": 3,
+                "name": "معصوب ملكي",
+                "option_names": [
+                  "عادي",
+                  "خبز أسمر"
+                ],
+                "unit_price": 2800,
+                "line_total": 8400,
+                "missing": [],
+                "available": null
+              },
+              {
+                "item_id": "beverages_09",
+                "line_id": "00bb1405",
+                "notes": "",
+                "options": {
+                  "ice": [
+                    "none"
+                  ],
+                  "size": [
+                    "large"
+                  ],
+                  "sweetness": []
+                },
+                "quantity": 3,
+                "name": "شاي كرك",
+                "option_names": [
+                  "كبير",
+                  "بدون ثلج"
+                ],
+                "unit_price": 1800,
+                "line_total": 5400,
+                "missing": [
+                  "السكر"
+                ],
+                "available": null
+              }
+            ],
+            "subtotal": 13800,
+            "delivery_fee": 0,
+            "total": 13800,
+            "eta_minutes": null,
+            "issues": [
+              "حدد الفرع أو منطقة التوصيل.",
+              "نحتاج عنوان التوصيل والمنطقة.",
+              "شاي كرك: اختر السكر"
+            ],
+            "quote": null,
+            "order_id": null,
+            "handoff": null,
+            "pending_choice": {
+              "created": 1791787961.479796,
+              "group_id": "sweetness",
+              "item_id": "beverages_09",
+              "line_id": "00bb1405",
+              "option_id": "half",
+              "question": "بالنسبة لـشاي كرك، تقصد نصف سكر؟",
+              "revision": 5
+            },
+            "pending_handoff": null,
+            "delivery_details": {}
+          },
+          "events": [
+            {
+              "tool": "update_item",
+              "args": {
+                "line_id": "00bb1405",
+                "options": {
+                  "ice": [
+                    "none"
+                  ],
+                  "size": [
+                    "large"
+                  ],
+                  "sweetness": [
+                    "half"
+                  ]
+                }
+              },
+              "result": {
+                "revision": 5,
+                "status": "collecting",
+                "service": "delivery",
+                "location": null,
+                "branch_id": null,
+                "branch": null,
+                "basket": [
+                  {
+                    "item_id": "breakfast_06",
+                    "line_id": "f568b904",
+                    "notes": "",
+                    "options": {
+                      "bread": [
+                        "brown"
+                      ],
+                      "portion": [
+                        "regular"
+                      ]
+                    },
+                    "quantity": 3,
+                    "name": "معصوب ملكي",
+                    "option_names": [
+                      "عادي",
+                      "خبز أسمر"
+                    ],
+                    "unit_price": 2800,
+                    "line_total": 8400,
+                    "missing": [],
+                    "available": null
+                  },
+                  {
+                    "item_id": "beverages_09",
+                    "line_id": "00bb1405",
+                    "notes": "",
+                    "options": {
+                      "ice": [
+                        "none"
+                      ],
+                      "size": [
+                        "large"
+                      ],
+                      "sweetness": []
+                    },
+                    "quantity": 3,
+                    "name": "شاي كرك",
+                    "option_names": [
+                      "كبير",
+                      "بدون ثلج"
+                    ],
+                    "unit_price": 1800,
+                    "line_total": 5400,
+                    "missing": [
+                      "السكر"
+                    ],
+                    "available": null
+                  }
+                ],
+                "subtotal": 13800,
+                "delivery_fee": 0,
+                "total": 13800,
+                "eta_minutes": null,
+                "issues": [
+                  "حدد الفرع أو منطقة التوصيل.",
+                  "نحتاج عنوان التوصيل والمنطقة.",
+                  "شاي كرك: اختر السكر"
+                ],
+                "quote": null,
+                "order_id": null,
+                "handoff": null,
+                "pending_choice": null,
+                "pending_handoff": null,
+                "delivery_details": {},
+                "choice_guard": [
+                  {
+                    "group": "sweetness",
+                    "reason": "no_customer_evidence",
+                    "question": "السكر: بدون سكر، نصف سكر، سكر عادي، سكر إضافي، وش تختار؟",
+                    "line_id": "00bb1405"
+                  }
+                ],
+                "instruction": "Unverified choices were NOT saved. Keep this incomplete draft, ask the questions, and never claim the rejected choices were accepted."
+              }
+            },
+            {
+              "tool": "ask_choice",
+              "args": {
+                "line_id": "00bb1405",
+                "group_id": "sweetness",
+                "option_id": "half"
+              },
+              "result": {
+                "terminal": true,
+                "reply": "بالنسبة لـشاي كرك، تقصد نصف سكر؟"
+              }
+            }
+          ]
+        },
+        {
+          "input": "أيوه",
+          "ms": 210,
+          "reply": "بالنسبة لـشاي كرك، خليته نص سكر. بأي مدينة وحي؟",
+          "transcript": "أيوه",
+          "state": {
+            "revision": 6,
+            "status": "collecting",
+            "service": "delivery",
+            "location": null,
+            "branch_id": null,
+            "branch": null,
+            "basket": [
+              {
+                "item_id": "breakfast_06",
+                "line_id": "f568b904",
+                "notes": "",
+                "options": {
+                  "bread": [
+                    "brown"
+                  ],
+                  "portion": [
+                    "regular"
+                  ]
+                },
+                "quantity": 3,
+                "name": "معصوب ملكي",
+                "option_names": [
+                  "عادي",
+                  "خبز أسمر"
+                ],
+                "unit_price": 2800,
+                "line_total": 8400,
+                "missing": [],
+                "available": null
+              },
+              {
+                "item_id": "beverages_09",
+                "line_id": "00bb1405",
+                "notes": "",
+                "options": {
+                  "ice": [
+                    "none"
+                  ],
+                  "size": [
+                    "large"
+                  ],
+                  "sweetness": [
+                    "half"
+                  ]
+                },
+                "quantity": 3,
+                "name": "شاي كرك",
+                "option_names": [
+                  "كبير",
+                  "بدون ثلج",
+                  "نصف سكر"
+                ],
+                "unit_price": 1800,
+                "line_total": 5400,
+                "missing": [],
+                "available": null
+              }
+            ],
+            "subtotal": 13800,
+            "delivery_fee": 0,
+            "total": 13800,
+            "eta_minutes": null,
+            "issues": [
+              "حدد الفرع أو منطقة التوصيل.",
+              "نحتاج عنوان التوصيل والمنطقة."
+            ],
+            "quote": null,
+            "order_id": null,
+            "handoff": null,
+            "pending_choice": null,
+            "pending_handoff": null,
+            "delivery_details": {}
+          },
+          "events": [
+            {
+              "tool": "update_item",
+              "args": {
+                "line_id": "00bb1405",
+                "options": {
+                  "sweetness": [
+                    "half"
+                  ]
+                }
+              },
+              "result": {
+                "revision": 6,
+                "status": "collecting",
+                "service": "delivery",
+                "location": null,
+                "branch_id": null,
+                "branch": null,
+                "basket": [
+                  {
+                    "item_id": "breakfast_06",
+                    "line_id": "f568b904",
+                    "notes": "",
+                    "options": {
+                      "bread": [
+                        "brown"
+                      ],
+                      "portion": [
+                        "regular"
+                      ]
+                    },
+                    "quantity": 3,
+                    "name": "معصوب ملكي",
+                    "option_names": [
+                      "عادي",
+                      "خبز أسمر"
+                    ],
+                    "unit_price": 2800,
+                    "line_total": 8400,
+                    "missing": [],
+                    "available": null
+                  },
+                  {
+                    "item_id": "beverages_09",
+                    "line_id": "00bb1405",
+                    "notes": "",
+                    "options": {
+                      "ice": [
+                        "none"
+                      ],
+                      "size": [
+                        "large"
+                      ],
+                      "sweetness": [
+                        "half"
+                      ]
+                    },
+                    "quantity": 3,
+                    "name": "شاي كرك",
+                    "option_names": [
+                      "كبير",
+                      "بدون ثلج",
+                      "نصف سكر"
+                    ],
+                    "unit_price": 1800,
+                    "line_total": 5400,
+                    "missing": [],
+                    "available": null
+                  }
+                ],
+                "subtotal": 13800,
+                "delivery_fee": 0,
+                "total": 13800,
+                "eta_minutes": null,
+                "issues": [
+                  "حدد الفرع أو منطقة التوصيل.",
+                  "نحتاج عنوان التوصيل والمنطقة."
+                ],
+                "quote": null,
+                "order_id": null,
+                "handoff": null,
+                "pending_choice": null,
+                "pending_handoff": null,
+                "delivery_details": {}
+              },
+              "source": "unambiguous_short_choice"
+            }
+          ]
+        },
+        {
+          "input": "لا الشاي واحد بس، المعصوب خله ثلاثة.",
+          "ms": 1918,
+          "reply": "بالنسبة لـشاي كرك، خليت الكمية واحد. بأي مدينة وحي؟",
+          "transcript": "لا الشاي واحد بس، المعصوب خله ثلاثة.",
+          "state": {
+            "revision": 7,
+            "status": "collecting",
+            "service": "delivery",
+            "location": null,
+            "branch_id": null,
+            "branch": null,
+            "basket": [
+              {
+                "item_id": "breakfast_06",
+                "line_id": "f568b904",
+                "notes": "",
+                "options": {
+                  "bread": [
+                    "brown"
+                  ],
+                  "portion": [
+                    "regular"
+                  ]
+                },
+                "quantity": 3,
+                "name": "معصوب ملكي",
+                "option_names": [
+                  "عادي",
+                  "خبز أسمر"
+                ],
+                "unit_price": 2800,
+                "line_total": 8400,
+                "missing": [],
+                "available": null
+              },
+              {
+                "item_id": "beverages_09",
+                "line_id": "00bb1405",
+                "notes": "",
+                "options": {
+                  "ice": [
+                    "none"
+                  ],
+                  "size": [
+                    "large"
+                  ],
+                  "sweetness": [
+                    "half"
+                  ]
+                },
+                "quantity": 1,
+                "name": "شاي كرك",
+                "option_names": [
+                  "كبير",
+                  "بدون ثلج",
+                  "نصف سكر"
+                ],
+                "unit_price": 1800,
+                "line_total": 1800,
+                "missing": [],
+                "available": null
+              }
+            ],
+            "subtotal": 10200,
+            "delivery_fee": 0,
+            "total": 10200,
+            "eta_minutes": null,
+            "issues": [
+              "حدد الفرع أو منطقة التوصيل.",
+              "نحتاج عنوان التوصيل والمنطقة."
+            ],
+            "quote": null,
+            "order_id": null,
+            "handoff": null,
+            "pending_choice": null,
+            "pending_handoff": null,
+            "delivery_details": {}
+          },
+          "events": [
+            {
+              "tool": "update_item",
+              "args": {
+                "line_id": "00bb1405",
+                "quantity": 1
+              },
+              "result": {
+                "revision": 7,
+                "status": "collecting",
+                "service": "delivery",
+                "location": null,
+                "branch_id": null,
+                "branch": null,
+                "basket": [
+                  {
+                    "item_id": "breakfast_06",
+                    "line_id": "f568b904",
+                    "notes": "",
+                    "options": {
+                      "bread": [
+                        "brown"
+                      ],
+                      "portion": [
+                        "regular"
+                      ]
+                    },
+                    "quantity": 3,
+                    "name": "معصوب ملكي",
+                    "option_names": [
+                      "عادي",
+                      "خبز أسمر"
+                    ],
+                    "unit_price": 2800,
+                    "line_total": 8400,
+                    "missing": [],
+                    "available": null
+                  },
+                  {
+                    "item_id": "beverages_09",
+                    "line_id": "00bb1405",
+                    "notes": "",
+                    "options": {
+                      "ice": [
+                        "none"
+                      ],
+                      "size": [
+                        "large"
+                      ],
+                      "sweetness": [
+                        "half"
+                      ]
+                    },
+                    "quantity": 1,
+                    "name": "شاي كرك",
+                    "option_names": [
+                      "كبير",
+                      "بدون ثلج",
+                      "نصف سكر"
+                    ],
+                    "unit_price": 1800,
+                    "line_total": 1800,
+                    "missing": [],
+                    "available": null
+                  }
+                ],
+                "subtotal": 10200,
+                "delivery_fee": 0,
+                "total": 10200,
+                "eta_minutes": null,
+                "issues": [
+                  "حدد الفرع أو منطقة التوصيل.",
+                  "نحتاج عنوان التوصيل والمنطقة."
+                ],
+                "quote": null,
+                "order_id": null,
+                "handoff": null,
+                "pending_choice": null,
+                "pending_handoff": null,
+                "delivery_details": {}
+              }
+            }
+          ]
+        },
+        {
+          "input": "يا بويا المرة المليار تعيد لي، بدون ثلج و سكر نص، كمل.",
+          "ms": 1550,
+          "reply": "طلبك الآن فيه 3 معصوب ملكي و1 شاي كرك كبير بدون ثلج ونص سكر. باقي أحتاج اسم المدينة والحي عشان التوصيل. ممكن تعطيني المدينة أول؟",
+          "transcript": "يا بويا المرة المليار تعيد لي، بدون ثلج و سكر نص، كمل.",
+          "state": {
+            "revision": 7,
+            "status": "collecting",
+            "service": "delivery",
+            "location": null,
+            "branch_id": null,
+            "branch": null,
+            "basket": [
+              {
+                "item_id": "breakfast_06",
+                "line_id": "f568b904",
+                "notes": "",
+                "options": {
+                  "bread": [
+                    "brown"
+                  ],
+                  "portion": [
+                    "regular"
+                  ]
+                },
+                "quantity": 3,
+                "name": "معصوب ملكي",
+                "option_names": [
+                  "عادي",
+                  "خبز أسمر"
+                ],
+                "unit_price": 2800,
+                "line_total": 8400,
+                "missing": [],
+                "available": null
+              },
+              {
+                "item_id": "beverages_09",
+                "line_id": "00bb1405",
+                "notes": "",
+                "options": {
+                  "ice": [
+                    "none"
+                  ],
+                  "size": [
+                    "large"
+                  ],
+                  "sweetness": [
+                    "half"
+                  ]
+                },
+                "quantity": 1,
+                "name": "شاي كرك",
+                "option_names": [
+                  "كبير",
+                  "بدون ثلج",
+                  "نصف سكر"
+                ],
+                "unit_price": 1800,
+                "line_total": 1800,
+                "missing": [],
+                "available": null
+              }
+            ],
+            "subtotal": 10200,
+            "delivery_fee": 0,
+            "total": 10200,
+            "eta_minutes": null,
+            "issues": [
+              "حدد الفرع أو منطقة التوصيل.",
+              "نحتاج عنوان التوصيل والمنطقة."
+            ],
+            "quote": null,
+            "order_id": null,
+            "handoff": null,
+            "pending_choice": null,
+            "pending_handoff": null,
+            "delivery_details": {}
+          },
+          "events": []
+        },
+        {
+          "input": "الرياض حي النرجس شارع الاختبار مبنى ١٢، العنوان تجريبي.",
+          "ms": 1222,
+          "reply": "خلني أراجع معك: 3 من معصوب ملكي، عادي، خبز أسمر، بسعر 84.00 ريال؛ 1 من شاي كرك، كبير، بدون ثلج، نصف سكر، بسعر 18.00 ريال. التوصيل إلى الرياض، حي النرجس، شارع الاختبار مبنى ١٢ من فرع النرجس بالرياض. رسوم التوصيل 15.00 ريال. المجموع 117.00 ريال، والوقت المتوقع 40 دقيقة. نأكد الطلب؟",
+          "transcript": "الرياض حي النرجس شارع الاختبار مبنى ١٢، العنوان تجريبي.",
+          "state": {
+            "revision": 8,
+            "status": "awaiting_confirmation",
+            "service": "delivery",
+            "location": {
+              "address": "شارع الاختبار مبنى ١٢",
+              "city": "الرياض",
+              "zone": "النرجس"
+            },
+            "branch_id": "ruh_narjis",
+            "branch": {
+              "name": "فرع النرجس بالرياض",
+              "city": "الرياض",
+              "zones": [
+                "النرجس",
+                "الياسمين"
+              ],
+              "fee": 1500,
+              "eta": 40
+            },
+            "basket": [
+              {
+                "item_id": "breakfast_06",
+                "line_id": "f568b904",
+                "notes": "",
+                "options": {
+                  "bread": [
+                    "brown"
+                  ],
+                  "portion": [
+                    "regular"
+                  ]
+                },
+                "quantity": 3,
+                "name": "معصوب ملكي",
+                "option_names": [
+                  "عادي",
+                  "خبز أسمر"
+                ],
+                "unit_price": 2800,
+                "line_total": 8400,
+                "missing": [],
+                "available": true
+              },
+              {
+                "item_id": "beverages_09",
+                "line_id": "00bb1405",
+                "notes": "",
+                "options": {
+                  "ice": [
+                    "none"
+                  ],
+                  "size": [
+                    "large"
+                  ],
+                  "sweetness": [
+                    "half"
+                  ]
+                },
+                "quantity": 1,
+                "name": "شاي كرك",
+                "option_names": [
+                  "كبير",
+                  "بدون ثلج",
+                  "نصف سكر"
+                ],
+                "unit_price": 1800,
+                "line_total": 1800,
+                "missing": [],
+                "available": true
+              }
+            ],
+            "subtotal": 10200,
+            "delivery_fee": 1500,
+            "total": 11700,
+            "eta_minutes": 40,
+            "issues": [],
+            "quote": {
+              "presented": false,
+              "revision": 8,
+              "text": "خلني أراجع معك: 3 من معصوب ملكي، عادي، خبز أسمر، بسعر 84.00 ريال؛ 1 من شاي كرك، كبير، بدون ثلج، نصف سكر، بسعر 18.00 ريال. التوصيل إلى الرياض، حي النرجس، شارع الاختبار مبنى ١٢ من فرع النرجس بالرياض. رسوم التوصيل 15.00 ريال. المجموع 117.00 ريال، والوقت المتوقع 40 دقيقة. نأكد الطلب؟",
+              "text_hash": "b1a9c1504111efd7c88588cdc6860368c4d7eb950be8e4e14b03dfbb05583350",
+              "token": "0f10137d0e2540f095bec7497a3047e0"
+            },
+            "order_id": null,
+            "handoff": null,
+            "pending_choice": null,
+            "pending_handoff": null,
+            "delivery_details": {
+              "address": "شارع الاختبار مبنى ١٢",
+              "city": "الرياض",
+              "zone": "النرجس"
+            }
+          },
+          "events": [
+            {
+              "tool": "set_location",
+              "args": {
+                "city": "الرياض",
+                "zone": "النرجس",
+                "address": "شارع الاختبار مبنى ١٢"
+              },
+              "result": {
+                "revision": 8,
+                "status": "ready_for_readback",
+                "service": "delivery",
+                "location": {
+                  "city": "الرياض",
+                  "zone": "النرجس",
+                  "address": "شارع الاختبار مبنى ١٢"
+                },
+                "branch_id": "ruh_narjis",
+                "branch": {
+                  "name": "فرع النرجس بالرياض",
+                  "city": "الرياض",
+                  "zones": [
+                    "النرجس",
+                    "الياسمين"
+                  ],
+                  "fee": 1500,
+                  "eta": 40
+                },
+                "basket": [
+                  {
+                    "item_id": "breakfast_06",
+                    "line_id": "f568b904",
+                    "notes": "",
+                    "options": {
+                      "bread": [
+                        "brown"
+                      ],
+                      "portion": [
+                        "regular"
+                      ]
+                    },
+                    "quantity": 3,
+                    "name": "معصوب ملكي",
+                    "option_names": [
+                      "عادي",
+                      "خبز أسمر"
+                    ],
+                    "unit_price": 2800,
+                    "line_total": 8400,
+                    "missing": [],
+                    "available": true
+                  },
+                  {
+                    "item_id": "beverages_09",
+                    "line_id": "00bb1405",
+                    "notes": "",
+                    "options": {
+                      "ice": [
+                        "none"
+                      ],
+                      "size": [
+                        "large"
+                      ],
+                      "sweetness": [
+                        "half"
+                      ]
+                    },
+                    "quantity": 1,
+                    "name": "شاي كرك",
+                    "option_names": [
+                      "كبير",
+                      "بدون ثلج",
+                      "نصف سكر"
+                    ],
+                    "unit_price": 1800,
+                    "line_total": 1800,
+                    "missing": [],
+                    "available": true
+                  }
+                ],
+                "subtotal": 10200,
+                "delivery_fee": 1500,
+                "total": 11700,
+                "eta_minutes": 40,
+                "issues": [],
+                "quote": null,
+                "order_id": null,
+                "handoff": null,
+                "pending_choice": null,
+                "pending_handoff": null,
+                "delivery_details": {
+                  "city": "الرياض",
+                  "zone": "النرجس",
+                  "address": "شارع الاختبار مبنى ١٢"
+                }
+              }
+            },
+            {
+              "tool": "checkout",
+              "args": {},
+              "result": {
+                "terminal": true,
+                "reply": "خلني أراجع معك: 3 من معصوب ملكي، عادي، خبز أسمر، بسعر 84.00 ريال؛ 1 من شاي كرك، كبير، بدون ثلج، نصف سكر، بسعر 18.00 ريال. التوصيل إلى الرياض، حي النرجس، شارع الاختبار مبنى ١٢ من فرع النرجس بالرياض. رسوم التوصيل 15.00 ريال. المجموع 117.00 ريال، والوقت المتوقع 40 دقيقة. نأكد الطلب؟",
+                "quote": {
+                  "revision": 8,
+                  "token": "0f10137d0e2540f095bec7497a3047e0",
+                  "presented": false,
+                  "text": "خلني أراجع معك: 3 من معصوب ملكي، عادي، خبز أسمر، بسعر 84.00 ريال؛ 1 من شاي كرك، كبير، بدون ثلج، نصف سكر، بسعر 18.00 ريال. التوصيل إلى الرياض، حي النرجس، شارع الاختبار مبنى ١٢ من فرع النرجس بالرياض. رسوم التوصيل 15.00 ريال. المجموع 117.00 ريال، والوقت المتوقع 40 دقيقة. نأكد الطلب؟",
+                  "text_hash": "b1a9c1504111efd7c88588cdc6860368c4d7eb950be8e4e14b03dfbb05583350"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "input": "خلص هذا طلبي، اقرأ الملخص.",
+          "ms": 596,
+          "reply": "خلني أراجع معك: 3 من معصوب ملكي، عادي، خبز أسمر، بسعر 84.00 ريال؛ 1 من شاي كرك، كبير، بدون ثلج، نصف سكر، بسعر 18.00 ريال. التوصيل إلى الرياض، حي النرجس، شارع الاختبار مبنى ١٢ من فرع النرجس بالرياض. رسوم التوصيل 15.00 ريال. المجموع 117.00 ريال، والوقت المتوقع 40 دقيقة. نأكد الطلب؟",
+          "transcript": "خلص هذا طلبي، اقرأ الملخص.",
+          "state": {
+            "revision": 8,
+            "status": "awaiting_confirmation",
+            "service": "delivery",
+            "location": {
+              "address": "شارع الاختبار مبنى ١٢",
+              "city": "الرياض",
+              "zone": "النرجس"
+            },
+            "branch_id": "ruh_narjis",
+            "branch": {
+              "name": "فرع النرجس بالرياض",
+              "city": "الرياض",
+              "zones": [
+                "النرجس",
+                "الياسمين"
+              ],
+              "fee": 1500,
+              "eta": 40
+            },
+            "basket": [
+              {
+                "item_id": "breakfast_06",
+                "line_id": "f568b904",
+                "notes": "",
+                "options": {
+                  "bread": [
+                    "brown"
+                  ],
+                  "portion": [
+                    "regular"
+                  ]
+                },
+                "quantity": 3,
+                "name": "معصوب ملكي",
+                "option_names": [
+                  "عادي",
+                  "خبز أسمر"
+                ],
+                "unit_price": 2800,
+                "line_total": 8400,
+                "missing": [],
+                "available": true
+              },
+              {
+                "item_id": "beverages_09",
+                "line_id": "00bb1405",
+                "notes": "",
+                "options": {
+                  "ice": [
+                    "none"
+                  ],
+                  "size": [
+                    "large"
+                  ],
+                  "sweetness": [
+                    "half"
+                  ]
+                },
+                "quantity": 1,
+                "name": "شاي كرك",
+                "option_names": [
+                  "كبير",
+                  "بدون ثلج",
+                  "نصف سكر"
+                ],
+                "unit_price": 1800,
+                "line_total": 1800,
+                "missing": [],
+                "available": true
+              }
+            ],
+            "subtotal": 10200,
+            "delivery_fee": 1500,
+            "total": 11700,
+            "eta_minutes": 40,
+            "issues": [],
+            "quote": {
+              "presented": false,
+              "revision": 8,
+              "text": "خلني أراجع معك: 3 من معصوب ملكي، عادي، خبز أسمر، بسعر 84.00 ريال؛ 1 من شاي كرك، كبير، بدون ثلج، نصف سكر، بسعر 18.00 ريال. التوصيل إلى الرياض، حي النرجس، شارع الاختبار مبنى ١٢ من فرع النرجس بالرياض. رسوم التوصيل 15.00 ريال. المجموع 117.00 ريال، والوقت المتوقع 40 دقيقة. نأكد الطلب؟",
+              "text_hash": "b1a9c1504111efd7c88588cdc6860368c4d7eb950be8e4e14b03dfbb05583350",
+              "token": "a5895002810a40cd9e649b5ed7e0cd71"
+            },
+            "order_id": null,
+            "handoff": null,
+            "pending_choice": null,
+            "pending_handoff": null,
+            "delivery_details": {
+              "address": "شارع الاختبار مبنى ١٢",
+              "city": "الرياض",
+              "zone": "النرجس"
+            }
+          },
+          "events": [
+            {
+              "tool": "checkout",
+              "args": {},
+              "result": {
+                "terminal": true,
+                "reply": "خلني أراجع معك: 3 من معصوب ملكي، عادي، خبز أسمر، بسعر 84.00 ريال؛ 1 من شاي كرك، كبير، بدون ثلج، نصف سكر، بسعر 18.00 ريال. التوصيل إلى الرياض، حي النرجس، شارع الاختبار مبنى ١٢ من فرع النرجس بالرياض. رسوم التوصيل 15.00 ريال. المجموع 117.00 ريال، والوقت المتوقع 40 دقيقة. نأكد الطلب؟",
+                "quote": {
+                  "revision": 8,
+                  "token": "a5895002810a40cd9e649b5ed7e0cd71",
+                  "presented": false,
+                  "text": "خلني أراجع معك: 3 من معصوب ملكي، عادي، خبز أسمر، بسعر 84.00 ريال؛ 1 من شاي كرك، كبير، بدون ثلج، نصف سكر، بسعر 18.00 ريال. التوصيل إلى الرياض، حي النرجس، شارع الاختبار مبنى ١٢ من فرع النرجس بالرياض. رسوم التوصيل 15.00 ريال. المجموع 117.00 ريال، والوقت المتوقع 40 دقيقة. نأكد الطلب؟",
+                  "text_hash": "b1a9c1504111efd7c88588cdc6860368c4d7eb950be8e4e14b03dfbb05583350"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "input": "نعم",
+          "ms": 1365,
+          "reply": "خلني أراجع معك: 3 من معصوب ملكي، عادي، خبز أسمر، بسعر 84.00 ريال؛ 1 من شاي كرك، كبير، بدون ثلج، نصف سكر، بسعر 18.00 ريال. التوصيل إلى الرياض، حي النرجس، شارع الاختبار مبنى ١٢ من فرع النرجس بالرياض. رسوم التوصيل 15.00 ريال. المجموع 117.00 ريال، والوقت المتوقع 40 دقيقة. نأكد الطلب؟",
+          "transcript": "نعم",
+          "state": {
+            "revision": 8,
+            "status": "awaiting_confirmation",
+            "service": "delivery",
+            "location": {
+              "address": "شارع الاختبار مبنى ١٢",
+              "city": "الرياض",
+              "zone": "النرجس"
+            },
+            "branch_id": "ruh_narjis",
+            "branch": {
+              "name": "فرع النرجس بالرياض",
+              "city": "الرياض",
+              "zones": [
+                "النرجس",
+                "الياسمين"
+              ],
+              "fee": 1500,
+              "eta": 40
+            },
+            "basket": [
+              {
+                "item_id": "breakfast_06",
+                "line_id": "f568b904",
+                "notes": "",
+                "options": {
+                  "bread": [
+                    "brown"
+                  ],
+                  "portion": [
+                    "regular"
+                  ]
+                },
+                "quantity": 3,
+                "name": "معصوب ملكي",
+                "option_names": [
+                  "عادي",
+                  "خبز أسمر"
+                ],
+                "unit_price": 2800,
+                "line_total": 8400,
+                "missing": [],
+                "available": true
+              },
+              {
+                "item_id": "beverages_09",
+                "line_id": "00bb1405",
+                "notes": "",
+                "options": {
+                  "ice": [
+                    "none"
+                  ],
+                  "size": [
+                    "large"
+                  ],
+                  "sweetness": [
+                    "half"
+                  ]
+                },
+                "quantity": 1,
+                "name": "شاي كرك",
+                "option_names": [
+                  "كبير",
+                  "بدون ثلج",
+                  "نصف سكر"
+                ],
+                "unit_price": 1800,
+                "line_total": 1800,
+                "missing": [],
+                "available": true
+              }
+            ],
+            "subtotal": 10200,
+            "delivery_fee": 1500,
+            "total": 11700,
+            "eta_minutes": 40,
+            "issues": [],
+            "quote": {
+              "presented": false,
+              "revision": 8,
+              "text": "خلني أراجع معك: 3 من معصوب ملكي، عادي، خبز أسمر، بسعر 84.00 ريال؛ 1 من شاي كرك، كبير، بدون ثلج، نصف سكر، بسعر 18.00 ريال. التوصيل إلى الرياض، حي النرجس، شارع الاختبار مبنى ١٢ من فرع النرجس بالرياض. رسوم التوصيل 15.00 ريال. المجموع 117.00 ريال، والوقت المتوقع 40 دقيقة. نأكد الطلب؟",
+              "text_hash": "b1a9c1504111efd7c88588cdc6860368c4d7eb950be8e4e14b03dfbb05583350",
+              "token": "9fa019af34e242bba34dff9f8400f36c"
+            },
+            "order_id": null,
+            "handoff": null,
+            "pending_choice": null,
+            "pending_handoff": null,
+            "delivery_details": {
+              "address": "شارع الاختبار مبنى ١٢",
+              "city": "الرياض",
+              "zone": "النرجس"
+            }
+          },
+          "events": [
+            {
+              "tool": "confirm",
+              "args": {},
+              "result": {
+                "error": "نحتاج قراءة الطلب الحالي كاملاً وموافقة واضحة قبل التأكيد."
+              }
+            },
+            {
+              "tool": "checkout",
+              "args": {},
+              "result": {
+                "terminal": true,
+                "reply": "خلني أراجع معك: 3 من معصوب ملكي، عادي، خبز أسمر، بسعر 84.00 ريال؛ 1 من شاي كرك، كبير، بدون ثلج، نصف سكر، بسعر 18.00 ريال. التوصيل إلى الرياض، حي النرجس، شارع الاختبار مبنى ١٢ من فرع النرجس بالرياض. رسوم التوصيل 15.00 ريال. المجموع 117.00 ريال، والوقت المتوقع 40 دقيقة. نأكد الطلب؟",
+                "quote": {
+                  "revision": 8,
+                  "token": "9fa019af34e242bba34dff9f8400f36c",
+                  "presented": false,
+                  "text": "خلني أراجع معك: 3 من معصوب ملكي، عادي، خبز أسمر، بسعر 84.00 ريال؛ 1 من شاي كرك، كبير، بدون ثلج، نصف سكر، بسعر 18.00 ريال. التوصيل إلى الرياض، حي النرجس، شارع الاختبار مبنى ١٢ من فرع النرجس بالرياض. رسوم التوصيل 15.00 ريال. المجموع 117.00 ريال، والوقت المتوقع 40 دقيقة. نأكد الطلب؟",
+                  "text_hash": "b1a9c1504111efd7c88588cdc6860368c4d7eb950be8e4e14b03dfbb05583350"
+                }
+              },
+              "source": "readback_guard"
+            }
+          ]
+        },
+        {
+          "input": "اقرأ لي ملخص الطلب من جديد.",
+          "ms": 582,
+          "reply": "خلني أراجع معك: 3 من معصوب ملكي، عادي، خبز أسمر، بسعر 84.00 ريال؛ 1 من شاي كرك، كبير، بدون ثلج، نصف سكر، بسعر 18.00 ريال. التوصيل إلى الرياض، حي النرجس، شارع الاختبار مبنى ١٢ من فرع النرجس بالرياض. رسوم التوصيل 15.00 ريال. المجموع 117.00 ريال، والوقت المتوقع 40 دقيقة. نأكد الطلب؟",
+          "transcript": "اقرأ لي ملخص الطلب من جديد.",
+          "state": {
+            "revision": 8,
+            "status": "awaiting_confirmation",
+            "service": "delivery",
+            "location": {
+              "address": "شارع الاختبار مبنى ١٢",
+              "city": "الرياض",
+              "zone": "النرجس"
+            },
+            "branch_id": "ruh_narjis",
+            "branch": {
+              "name": "فرع النرجس بالرياض",
+              "city": "الرياض",
+              "zones": [
+                "النرجس",
+                "الياسمين"
+              ],
+              "fee": 1500,
+              "eta": 40
+            },
+            "basket": [
+              {
+                "item_id": "breakfast_06",
+                "line_id": "f568b904",
+                "notes": "",
+                "options": {
+                  "bread": [
+                    "brown"
+                  ],
+                  "portion": [
+                    "regular"
+                  ]
+                },
+                "quantity": 3,
+                "name": "معصوب ملكي",
+                "option_names": [
+                  "عادي",
+                  "خبز أسمر"
+                ],
+                "unit_price": 2800,
+                "line_total": 8400,
+                "missing": [],
+                "available": true
+              },
+              {
+                "item_id": "beverages_09",
+                "line_id": "00bb1405",
+                "notes": "",
+                "options": {
+                  "ice": [
+                    "none"
+                  ],
+                  "size": [
+                    "large"
+                  ],
+                  "sweetness": [
+                    "half"
+                  ]
+                },
+                "quantity": 1,
+                "name": "شاي كرك",
+                "option_names": [
+                  "كبير",
+                  "بدون ثلج",
+                  "نصف سكر"
+                ],
+                "unit_price": 1800,
+                "line_total": 1800,
+                "missing": [],
+                "available": true
+              }
+            ],
+            "subtotal": 10200,
+            "delivery_fee": 1500,
+            "total": 11700,
+            "eta_minutes": 40,
+            "issues": [],
+            "quote": {
+              "presented": false,
+              "revision": 8,
+              "text": "خلني أراجع معك: 3 من معصوب ملكي، عادي، خبز أسمر، بسعر 84.00 ريال؛ 1 من شاي كرك، كبير، بدون ثلج، نصف سكر، بسعر 18.00 ريال. التوصيل إلى الرياض، حي النرجس، شارع الاختبار مبنى ١٢ من فرع النرجس بالرياض. رسوم التوصيل 15.00 ريال. المجموع 117.00 ريال، والوقت المتوقع 40 دقيقة. نأكد الطلب؟",
+              "text_hash": "b1a9c1504111efd7c88588cdc6860368c4d7eb950be8e4e14b03dfbb05583350",
+              "token": "975a4a31be36440890a74178b7238a6d"
+            },
+            "order_id": null,
+            "handoff": null,
+            "pending_choice": null,
+            "pending_handoff": null,
+            "delivery_details": {
+              "address": "شارع الاختبار مبنى ١٢",
+              "city": "الرياض",
+              "zone": "النرجس"
+            }
+          },
+          "events": [
+            {
+              "tool": "checkout",
+              "args": {},
+              "result": {
+                "terminal": true,
+                "reply": "خلني أراجع معك: 3 من معصوب ملكي، عادي، خبز أسمر، بسعر 84.00 ريال؛ 1 من شاي كرك، كبير، بدون ثلج، نصف سكر، بسعر 18.00 ريال. التوصيل إلى الرياض، حي النرجس، شارع الاختبار مبنى ١٢ من فرع النرجس بالرياض. رسوم التوصيل 15.00 ريال. المجموع 117.00 ريال، والوقت المتوقع 40 دقيقة. نأكد الطلب؟",
+                "quote": {
+                  "revision": 8,
+                  "token": "975a4a31be36440890a74178b7238a6d",
+                  "presented": false,
+                  "text": "خلني أراجع معك: 3 من معصوب ملكي، عادي، خبز أسمر، بسعر 84.00 ريال؛ 1 من شاي كرك، كبير، بدون ثلج، نصف سكر، بسعر 18.00 ريال. التوصيل إلى الرياض، حي النرجس، شارع الاختبار مبنى ١٢ من فرع النرجس بالرياض. رسوم التوصيل 15.00 ريال. المجموع 117.00 ريال، والوقت المتوقع 40 دقيقة. نأكد الطلب؟",
+                  "text_hash": "b1a9c1504111efd7c88588cdc6860368c4d7eb950be8e4e14b03dfbb05583350"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "input": "نعم",
+          "ms": 54,
+          "reply": "تم، تأكد طلبك في التجربة. رقمه إس، B، 2، A، 4، 4، F، 5، E، 9، 8، 6، 1.",
+          "transcript": "نعم",
+          "state": {
+            "revision": 8,
+            "status": "completed",
+            "service": "delivery",
+            "location": {
+              "address": "شارع الاختبار مبنى ١٢",
+              "city": "الرياض",
+              "zone": "النرجس"
+            },
+            "branch_id": "ruh_narjis",
+            "branch": {
+              "name": "فرع النرجس بالرياض",
+              "city": "الرياض",
+              "zones": [
+                "النرجس",
+                "الياسمين"
+              ],
+              "fee": 1500,
+              "eta": 40
+            },
+            "basket": [
+              {
+                "item_id": "breakfast_06",
+                "line_id": "f568b904",
+                "notes": "",
+                "options": {
+                  "bread": [
+                    "brown"
+                  ],
+                  "portion": [
+                    "regular"
+                  ]
+                },
+                "quantity": 3,
+                "name": "معصوب ملكي",
+                "option_names": [
+                  "عادي",
+                  "خبز أسمر"
+                ],
+                "unit_price": 2800,
+                "line_total": 8400,
+                "missing": [],
+                "available": true
+              },
+              {
+                "item_id": "beverages_09",
+                "line_id": "00bb1405",
+                "notes": "",
+                "options": {
+                  "ice": [
+                    "none"
+                  ],
+                  "size": [
+                    "large"
+                  ],
+                  "sweetness": [
+                    "half"
+                  ]
+                },
+                "quantity": 1,
+                "name": "شاي كرك",
+                "option_names": [
+                  "كبير",
+                  "بدون ثلج",
+                  "نصف سكر"
+                ],
+                "unit_price": 1800,
+                "line_total": 1800,
+                "missing": [],
+                "available": true
+              }
+            ],
+            "subtotal": 10200,
+            "delivery_fee": 1500,
+            "total": 11700,
+            "eta_minutes": 40,
+            "issues": [],
+            "quote": {
+              "presented": true,
+              "receipt_id": "dc9d0110ee8541bfb05eea90d2cbb462",
+              "revision": 8,
+              "text": "خلني أراجع معك: 3 من معصوب ملكي، عادي، خبز أسمر، بسعر 84.00 ريال؛ 1 من شاي كرك، كبير، بدون ثلج، نصف سكر، بسعر 18.00 ريال. التوصيل إلى الرياض، حي النرجس، شارع الاختبار مبنى ١٢ من فرع النرجس بالرياض. رسوم التوصيل 15.00 ريال. المجموع 117.00 ريال، والوقت المتوقع 40 دقيقة. نأكد الطلب؟",
+              "text_hash": "b1a9c1504111efd7c88588cdc6860368c4d7eb950be8e4e14b03dfbb05583350",
+              "token": "975a4a31be36440890a74178b7238a6d"
+            },
+            "order_id": "S-B2A44F5E9861",
+            "handoff": null,
+            "pending_choice": null,
+            "pending_handoff": null,
+            "delivery_details": {
+              "address": "شارع الاختبار مبنى ١٢",
+              "city": "الرياض",
+              "zone": "النرجس"
+            }
+          },
+          "events": [
+            {
+              "tool": "confirm",
+              "args": {},
+              "result": {
+                "terminal": true,
+                "reply": "تم، تأكد طلبك في التجربة. رقمه إس، B، 2، A، 4، 4، F، 5، E، 9، 8، 6، 1.",
+                "order_id": "S-B2A44F5E9861"
+              }
+            }
+          ]
+        },
+        {
+          "input": "نعم",
+          "ms": 38,
+          "reply": "إيه، طلبك متأكد. رقمه إس، B، 2، A، 4، 4، F، 5، E، 9، 8، 6، 1.",
+          "transcript": "نعم",
+          "state": {
+            "revision": 8,
+            "status": "completed",
+            "service": "delivery",
+            "location": {
+              "address": "شارع الاختبار مبنى ١٢",
+              "city": "الرياض",
+              "zone": "النرجس"
+            },
+            "branch_id": "ruh_narjis",
+            "branch": {
+              "name": "فرع النرجس بالرياض",
+              "city": "الرياض",
+              "zones": [
+                "النرجس",
+                "الياسمين"
+              ],
+              "fee": 1500,
+              "eta": 40
+            },
+            "basket": [
+              {
+                "item_id": "breakfast_06",
+                "line_id": "f568b904",
+                "notes": "",
+                "options": {
+                  "bread": [
+                    "brown"
+                  ],
+                  "portion": [
+                    "regular"
+                  ]
+                },
+                "quantity": 3,
+                "name": "معصوب ملكي",
+                "option_names": [
+                  "عادي",
+                  "خبز أسمر"
+                ],
+                "unit_price": 2800,
+                "line_total": 8400,
+                "missing": [],
+                "available": true
+              },
+              {
+                "item_id": "beverages_09",
+                "line_id": "00bb1405",
+                "notes": "",
+                "options": {
+                  "ice": [
+                    "none"
+                  ],
+                  "size": [
+                    "large"
+                  ],
+                  "sweetness": [
+                    "half"
+                  ]
+                },
+                "quantity": 1,
+                "name": "شاي كرك",
+                "option_names": [
+                  "كبير",
+                  "بدون ثلج",
+                  "نصف سكر"
+                ],
+                "unit_price": 1800,
+                "line_total": 1800,
+                "missing": [],
+                "available": true
+              }
+            ],
+            "subtotal": 10200,
+            "delivery_fee": 1500,
+            "total": 11700,
+            "eta_minutes": 40,
+            "issues": [],
+            "quote": {
+              "presented": true,
+              "receipt_id": "dc9d0110ee8541bfb05eea90d2cbb462",
+              "revision": 8,
+              "text": "خلني أراجع معك: 3 من معصوب ملكي، عادي، خبز أسمر، بسعر 84.00 ريال؛ 1 من شاي كرك، كبير، بدون ثلج، نصف سكر، بسعر 18.00 ريال. التوصيل إلى الرياض، حي النرجس، شارع الاختبار مبنى ١٢ من فرع النرجس بالرياض. رسوم التوصيل 15.00 ريال. المجموع 117.00 ريال، والوقت المتوقع 40 دقيقة. نأكد الطلب؟",
+              "text_hash": "b1a9c1504111efd7c88588cdc6860368c4d7eb950be8e4e14b03dfbb05583350",
+              "token": "975a4a31be36440890a74178b7238a6d"
+            },
+            "order_id": "S-B2A44F5E9861",
+            "handoff": null,
+            "pending_choice": null,
+            "pending_handoff": null,
+            "delivery_details": {
+              "address": "شارع الاختبار مبنى ١٢",
+              "city": "الرياض",
+              "zone": "النرجس"
+            }
+          },
+          "events": [
+            {
+              "tool": "confirm",
+              "args": {},
+              "result": {
+                "terminal": true,
+                "reply": "إيه، طلبك متأكد. رقمه إس، B، 2، A، 4، 4، F، 5، E، 9، 8، 6، 1.",
+                "order_id": "S-B2A44F5E9861"
+              }
+            }
+          ]
+        }
+      ],
+      "passed": true
+    },
+    {
+      "name": "information_and_allergens",
+      "turns": [
+        {
+          "input": "هل مضغوط اللحم متوفر بفرع النرجس بالرياض؟ بس أسأل ما أبي أطلب للحين.",
+          "ms": 2580,
+          "reply": "نعم، مضغوط اللحم متوفر في فرع النرجس بالرياض. إذا تحتاج تفاصيل أو أسعار أو خيارات الأحجام، بلغني.",
+          "transcript": "هل مضغوط اللحم متوفر بفرع النرجس بالرياض؟ بس أسأل ما أبي أطلب للحين.",
+          "state": {
+            "revision": 0,
+            "status": "collecting",
+            "service": null,
+            "location": null,
+            "branch_id": null,
+            "branch": null,
+            "basket": [],
+            "subtotal": 0,
+            "delivery_fee": 0,
+            "total": 0,
+            "eta_minutes": null,
+            "issues": [
+              "حدد توصيل أو استلام.",
+              "حدد الفرع أو منطقة التوصيل.",
+              "السلة فارغة."
+            ],
+            "quote": null,
+            "order_id": null,
+            "handoff": null,
+            "pending_choice": null,
+            "pending_handoff": null,
+            "delivery_details": {}
+          },
+          "events": [
+            {
+              "tool": "list_branches",
+              "args": {},
+              "result": {
+                "ruh_olaya": {
+                  "name": "فرع العليا بالرياض",
+                  "city": "الرياض",
+                  "zones": [
+                    "العليا",
+                    "السليمانية"
+                  ],
+                  "fee": 1200,
+                  "eta": 35
+                },
+                "ruh_narjis": {
+                  "name": "فرع النرجس بالرياض",
+                  "city": "الرياض",
+                  "zones": [
+                    "النرجس",
+                    "الياسمين"
+                  ],
+                  "fee": 1500,
+                  "eta": 40
+                },
+                "ruh_malqa": {
+                  "name": "فرع الملقا بالرياض",
+                  "city": "الرياض",
+                  "zones": [
+                    "الملقا",
+                    "حطين"
+                  ],
+                  "fee": 1000,
+                  "eta": 30
+                },
+                "jed_rawdah": {
+                  "name": "فرع الروضة بجدة",
+                  "city": "جدة",
+                  "zones": [
+                    "الروضة",
+                    "السلامة"
+                  ],
+                  "fee": 1400,
+                  "eta": 40
+                }
+              }
+            },
+            {
+              "tool": "search_menu",
+              "args": {
+                "query": "مضغوط لحم"
+              },
+              "result": {
+                "total_matches": 18,
+                "items": [
+                  {
+                    "id": "rice_06",
+                    "name": "مضغوط لحم",
+                    "name_en": "Lamb Madghout",
+                    "category": "الأرز والأطباق السعودية",
+                    "category_id": "rice",
+                    "base": 7000,
+                    "available": [
+                      "ruh_olaya",
+                      "ruh_narjis",
+                      "ruh_malqa",
+                      "jed_rawdah"
+                    ],
+                    "groups": {
+                      "portion": {
+                        "name": "الحجم",
+                        "required": true,
+                        "min": 1,
+                        "max": 1,
+                        "options": {
+                          "single": {
+                            "name": "فردي",
+                            "name_en": "Single",
+                            "delta": 0
+                          },
+                          "large": {
+                            "name": "كبير",
+                            "name_en": "Large",
+                            "delta": 1400
+                          },
+                          "family": {
+                            "name": "عائلي",
+                            "name_en": "Family",
+                            "delta": 5500
+                          }
+                        }
+                      },
+                      "rice": {
+                        "name": "نوع الأرز",
+                        "required": true,
+                        "min": 1,
+                        "max": 1,
+                        "options": {
+                          "original": {
+                            "name": "الأرز الأصلي",
+                            "name_en": "Original rice",
+                            "delta": 0
+                          },
+                          "white": {
+                            "name": "أرز أبيض",
+                            "name_en": "White rice",
+                            "delta": 0
+                          },
+                          "brown": {
+                            "name": "أرز بني",
+                            "name_en": "Brown rice",
+                            "delta": 400
+                          }
+                        }
+                      },
+                      "extras": {
+                        "name": "إضافات",
+                        "required": false,
+                        "min": 0,
+                        "max": 3,
+                        "options": {
+                          "nuts": {
+                            "name": "مكسرات",
+                            "name_en": "Nuts",
+                            "delta": 600
+                          },
+                          "raisins": {
+                            "name": "زبيب",
+                            "name_en": "Raisins",
+                            "delta": 300
+                          },
+                          "dagoos": {
+                            "name": "دقوس إضافي",
+                            "name_en": "Extra dagoos",
+                            "delta": 200
+                          },
+                          "salad": {
+                            "name": "سلطة جانبية",
+                            "name_en": "Side salad",
+                            "delta": 700
+                          }
+                        }
+                      },
+                      "spice_level": {
+                        "name": "درجة الحرارة",
+                        "required": true,
+                        "min": 1,
+                        "max": 1,
+                        "options": {
+                          "not_spicy": {
+                            "name": "بدون حار",
+                            "name_en": "Not spicy",
+                            "delta": 0
+                          },
+                          "mild": {
+                            "name": "حار خفيف",
+                            "name_en": "Mild",
+                            "delta": 0
+                          },
+                          "medium": {
+                            "name": "حار وسط",
+                            "name_en": "Medium",
+                            "delta": 0
+                          },
+                          "hot": {
+                            "name": "حار",
+                            "name_en": "Hot",
+                            "delta": 0
+                          }
+                        }
+                      }
+                    },
+                    "available_here": null
+                  },
+                  {
+                    "id": "appetizers_02",
+                    "name": "حمص باللحم",
+                    "name_en": "Hummus with Meat",
+                    "category": "المقبلات",
+                    "category_id": "appetizers",
+                    "base": 2900,
+                    "available": [
+                      "ruh_olaya",
+                      "ruh_narjis",
+                      "ruh_malqa"
+                    ],
+                    "groups": {
+                      "portion": {
+                        "name": "الحجم",
+                        "required": true,
+                        "min": 1,
+                        "max": 1,
+                        "options": {
+                          "regular": {
+                            "name": "عادي",
+                            "name_en": "Regular",
+                            "delta": 0
+                          },
+                          "sharing": {
+                            "name": "للمشاركة",
+                            "name_en": "Sharing",
+                            "delta": 1200
+                          }
+                        }
+                      },
+                      "sauce": {
+                        "name": "اختيار الصلصة",
+                        "required": false,
+                        "min": 0,
+                        "max": 2,
+                        "options": {
+                          "garlic": {
+                            "name": "ثوم",
+                            "name_en": "Garlic",
+                            "delta": 200
+                          },
+                          "tahini": {
+                            "name": "طحينة",
+                            "name_en": "Tahini",
+                            "delta": 200
+                          },
+                          "hot": {
+                            "name": "شطة",
+                            "name_en": "Hot sauce",
+                            "delta": 200
+                          },
+                          "ranch": {
+                            "name": "رانش",
+                            "name_en": "Ranch",
+                            "delta": 300
+                          }
+                        }
+                      },
+                      "spice_level": {
+                        "name": "درجة الحرارة",
+                        "required": true,
+                        "min": 1,
+                        "max": 1,
+                        "options": {
+                          "not_spicy": {
+                            "name": "بدون حار",
+                            "name_en": "Not spicy",
+                            "delta": 0
+                          },
+                          "mild": {
+                            "name": "حار خفيف",
+                            "name_en": "Mild",
+                            "delta": 0
+                          },
+                          "medium": {
+                            "name": "حار وسط",
+                            "name_en": "Medium",
+                            "delta": 0
+                          },
+                          "hot": {
+                            "name": "حار",
+                            "name_en": "Hot",
+                            "delta": 0
+                          }
+                        }
+                      }
+                    },
+                    "available_here": null
+                  },
+                  {
+                    "id": "appetizers_07",
+                    "name": "سمبوسة لحم",
+                    "name_en": "Meat Samosa",
+                    "category": "المقبلات",
+                    "category_id": "appetizers",
+                    "base": 1800,
+                    "available": [
+                      "ruh_olaya",
+                      "ruh_narjis",
+                      "ruh_malqa",
+                      "jed_rawdah"
+                    ],
+                    "groups": {
+                      "portion": {
+                        "name": "الحجم",
+                        "required": true,
+                        "min": 1,
+                        "max": 1,
+                        "options": {
+                          "regular": {
+                            "name": "عادي",
+                            "name_en": "Regular",
+                            "delta": 0
+                          },
+                          "sharing": {
+                            "name": "للمشاركة",
+                            "name_en": "Sharing",
+                            "delta": 1200
+                          }
+                        }
+                      },
+                      "sauce": {
+                        "name": "اختيار الصلصة",
+                        "required": false,
+                        "min": 0,
+                        "max": 2,
+                        "options": {
+                          "garlic": {
+                            "name": "ثوم",
+                            "name_en": "Garlic",
+                            "delta": 200
+                          },
+                          "tahini": {
+                            "name": "طحينة",
+                            "name_en": "Tahini",
+                            "delta": 200
+                          },
+                          "hot": {
+                            "name": "شطة",
+                            "name_en": "Hot sauce",
+                            "delta": 200
+                          },
+                          "ranch": {
+                            "name": "رانش",
+                            "name_en": "Ranch",
+                            "delta": 300
+                          }
+                        }
+                      },
+                      "spice_level": {
+                        "name": "درجة الحرارة",
+                        "required": true,
+                        "min": 1,
+                        "max": 1,
+                        "options": {
+                          "not_spicy": {
+                            "name": "بدون حار",
+                            "name_en": "Not spicy",
+                            "delta": 0
+                          },
+                          "mild": {
+                            "name": "حار خفيف",
+                            "name_en": "Mild",
+                            "delta": 0
+                          },
+                          "medium": {
+                            "name": "حار وسط",
+                            "name_en": "Medium",
+                            "delta": 0
+                          },
+                          "hot": {
+                            "name": "حار",
+                            "name_en": "Hot",
+                            "delta": 0
+                          }
+                        }
+                      }
+                    },
+                    "available_here": null
+                  },
+                  {
+                    "id": "grills_02",
+                    "name": "كباب لحم",
+                    "name_en": "Lamb Kebab",
+                    "category": "المشويات",
+                    "category_id": "grills",
+                    "base": 4600,
+                    "available": [
+                      "ruh_olaya",
+                      "ruh_narjis",
+                      "ruh_malqa",
+                      "jed_rawdah"
+                    ],
+                    "groups": {
+                      "portion": {
+                        "name": "الحجم",
+                        "required": true,
+                        "min": 1,
+                        "max": 1,
+                        "options": {
+                          "single": {
+                            "name": "فردي",
+                            "name_en": "Single",
+                            "delta": 0
+                          },
+                          "double": {
+                            "name": "دبل",
+                            "name_en": "Double",
+                            "delta": 2800
+                          },
+                          "family": {
+                            "name": "عائلي",
+                            "name_en": "Family",
+                            "delta": 7500
+                          }
+                        }
+                      },
+                      "side": {
+                        "name": "الطبق الجانبي",
+                        "required": true,
+                        "min": 1,
+                        "max": 1,
+                        "options": {
+                          "rice": {
+                            "name": "أرز",
+                            "name_en": "Rice",
+                            "delta": 0
+                          },
+                          "fries": {
+                            "name": "بطاطس",
+                            "name_en": "Fries",
+                            "delta": 0
+                          },
+                          "vegetables": {
+                            "name": "خضار مشوية",
+                            "name_en": "Grilled vegetables",
+                            "delta": 300
+                          }
+                        }
+                      },
+                      "extras": {
+                        "name": "إضافات",
+                        "required": false,
+                        "min": 0,
+                        "max": 3,
+                        "options": {
+                          "bread": {
+                            "name": "خبز إضافي",
+                            "name_en": "Extra bread",
+                            "delta": 200
+                          },
+                          "garlic": {
+                            "name": "ثوم",
+                            "name_en": "Garlic",
+                            "delta": 200
+                          },
+                          "hummus": {
+                            "name": "حمص صغير",
+                            "name_en": "Small hummus",
+                            "delta": 700
+                          },
+                          "meat_skewer": {
+                            "name": "سيخ لحم",
+                            "name_en": "Meat skewer",
+                            "delta": 1600
+                          }
+                        }
+                      },
+                      "spice_level": {
+                        "name": "درجة الحرارة",
+                        "required": true,
+                        "min": 1,
+                        "max": 1,
+                        "options": {
+                          "not_spicy": {
+                            "name": "بدون حار",
+                            "name_en": "Not spicy",
+                            "delta": 0
+                          },
+                          "mild": {
+                            "name": "حار خفيف",
+                            "name_en": "Mild",
+                            "delta": 0
+                          },
+                          "medium": {
+                            "name": "حار وسط",
+                            "name_en": "Medium",
+                            "delta": 0
+                          },
+                          "hot": {
+                            "name": "حار",
+                            "name_en": "Hot",
+                            "delta": 0
+                          }
+                        }
+                      }
+                    },
+                    "available_here": null
+                  },
+                  {
+                    "id": "grills_04",
+                    "name": "أوصال لحم",
+                    "name_en": "Lamb Cubes",
+                    "category": "المشويات",
+                    "category_id": "grills",
+                    "base": 5200,
+                    "available": [
+                      "ruh_narjis",
+                      "ruh_malqa",
+                      "jed_rawdah"
+                    ],
+                    "groups": {
+                      "portion": {
+                        "name": "الحجم",
+                        "required": true,
+                        "min": 1,
+                        "max": 1,
+                        "options": {
+                          "single": {
+                            "name": "فردي",
+                            "name_en": "Single",
+                            "delta": 0
+                          },
+                          "double": {
+                            "name": "دبل",
+                            "name_en": "Double",
+                            "delta": 2800
+                          },
+                          "family": {
+                            "name": "عائلي",
+                            "name_en": "Family",
+                            "delta": 7500
+                          }
+                        }
+                      },
+                      "side": {
+                        "name": "الطبق الجانبي",
+                        "required": true,
+                        "min": 1,
+                        "max": 1,
+                        "options": {
+                          "rice": {
+                            "name": "أرز",
+                            "name_en": "Rice",
+                            "delta": 0
+                          },
+                          "fries": {
+                            "name": "بطاطس",
+                            "name_en": "Fries",
+                            "delta": 0
+                          },
+                          "vegetables": {
+                            "name": "خضار مشوية",
+                            "name_en": "Grilled vegetables",
+                            "delta": 300
+                          }
+                        }
+                      },
+                      "extras": {
+                        "name": "إضافات",
+                        "required": false,
+                        "min": 0,
+                        "max": 3,
+                        "options": {
+                          "bread": {
+                            "name": "خبز إضافي",
+                            "name_en": "Extra bread",
+                            "delta": 200
+                          },
+                          "garlic": {
+                            "name": "ثوم",
+                            "name_en": "Garlic",
+                            "delta": 200
+                          },
+                          "hummus": {
+                            "name": "حمص صغير",
+                            "name_en": "Small hummus",
+                            "delta": 700
+                          },
+                          "meat_skewer": {
+                            "name": "سيخ لحم",
+                            "name_en": "Meat skewer",
+                            "delta": 1600
+                          }
+                        }
+                      },
+                      "spice_level": {
+                        "name": "درجة الحرارة",
+                        "required": true,
+                        "min": 1,
+                        "max": 1,
+                        "options": {
+                          "not_spicy": {
+                            "name": "بدون حار",
+                            "name_en": "Not spicy",
+                            "delta": 0
+                          },
+                          "mild": {
+                            "name": "حار خفيف",
+                            "name_en": "Mild",
+                            "delta": 0
+                          },
+                          "medium": {
+                            "name": "حار وسط",
+                            "name_en": "Medium",
+                            "delta": 0
+                          },
+                          "hot": {
+                            "name": "حار",
+                            "name_en": "Hot",
+                            "delta": 0
+                          }
+                        }
+                      }
+                    },
+                    "available_here": null
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "input": "عندي حساسية مكسرات، هل تضمن المعصوب آمن؟",
+          "ms": 947,
+          "reply": "ما عندي تفاصيل المكونات، فما أقدر أضمن لك إنه يناسب حساسيتك. التحويل لموظف مو مفعّل هنا، لكن أقدر أسجل طلب تواصل للتجربة. تبي أسجله؟",
+          "transcript": "عندي حساسية مكسرات، هل تضمن المعصوب آمن؟",
+          "state": {
+            "revision": 0,
+            "status": "collecting",
+            "service": null,
+            "location": null,
+            "branch_id": null,
+            "branch": null,
+            "basket": [],
+            "subtotal": 0,
+            "delivery_fee": 0,
+            "total": 0,
+            "eta_minutes": null,
+            "issues": [
+              "حدد توصيل أو استلام.",
+              "حدد الفرع أو منطقة التوصيل.",
+              "السلة فارغة."
+            ],
+            "quote": null,
+            "order_id": null,
+            "handoff": null,
+            "pending_choice": null,
+            "pending_handoff": {
+              "reason": "سؤال عن مكونات أو مسببات حساسية في المعصوب، والمعلومات غير متوفرة في النظام.",
+              "revision": 0
+            },
+            "delivery_details": {}
+          },
+          "events": [
+            {
+              "tool": "offer_handoff",
+              "args": {
+                "reason": "سؤال عن مكونات أو مسببات حساسية في المعصوب، والمعلومات غير متوفرة في النظام.",
+                "topic": "allergens"
+              },
+              "result": {
+                "terminal": true,
+                "reply": "ما عندي تفاصيل المكونات، فما أقدر أضمن لك إنه يناسب حساسيتك. التحويل لموظف مو مفعّل هنا، لكن أقدر أسجل طلب تواصل للتجربة. تبي أسجله؟"
+              }
+            }
+          ]
+        }
+      ],
+      "passed": true
+    },
+    {
+      "name": "unavailable_size_and_corrections",
+      "turns": [
+        {
+          "input": "أبي معصوب ملكي صغير بخبز أسمر، استلام فرع العليا بالرياض.",
+          "ms": 4007,
+          "reply": "ضفت 1 من معصوب ملكي. الاستلام من فرع العليا بالرياض. ما فيه صغير. الحجم عادي ولا كبير؟",
+          "transcript": "أبي معصوب ملكي صغير بخبز أسمر، استلام فرع العليا بالرياض.",
+          "state": {
+            "revision": 3,
+            "status": "collecting",
+            "service": "pickup",
+            "location": null,
+            "branch_id": "ruh_olaya",
+            "branch": {
+              "name": "فرع العليا بالرياض",
+              "city": "الرياض",
+              "zones": [
+                "العليا",
+                "السليمانية"
+              ],
+              "fee": 1200,
+              "eta": 35
+            },
+            "basket": [
+              {
+                "item_id": "breakfast_06",
+                "line_id": "fffd7b18",
+                "notes": "",
+                "options": {
+                  "bread": [
+                    "brown"
+                  ],
+                  "portion": []
+                },
+                "quantity": 1,
+                "name": "معصوب ملكي",
+                "option_names": [
+                  "خبز أسمر"
+                ],
+                "unit_price": 2800,
+                "line_total": 2800,
+                "missing": [
+                  "الحجم"
+                ],
+                "available": true
+              }
+            ],
+            "subtotal": 2800,
+            "delivery_fee": 0,
+            "total": 2800,
+            "eta_minutes": 20,
+            "issues": [
+              "معصوب ملكي: اختر الحجم"
+            ],
+            "quote": null,
+            "order_id": null,
+            "handoff": null,
+            "pending_choice": {
+              "created": 1791787977.5054488,
+              "group_id": "portion",
+              "item_id": "breakfast_06",
+              "line_id": "fffd7b18",
+              "option_id": null,
+              "question": "ما فيه صغير. الحجم عادي ولا كبير؟",
+              "revision": 3
+            },
+            "pending_handoff": null,
+            "delivery_details": {}
+          },
+          "events": [
+            {
+              "tool": "set_service",
+              "args": {
+                "service": "pickup"
+              },
+              "result": {
+                "revision": 1,
+                "status": "collecting",
+                "service": "pickup",
+                "location": null,
+                "branch_id": null,
+                "branch": null,
+                "basket": [],
+                "subtotal": 0,
+                "delivery_fee": 0,
+                "total": 0,
+                "eta_minutes": null,
+                "issues": [
+                  "حدد الفرع أو منطقة التوصيل.",
+                  "السلة فارغة."
+                ],
+                "quote": null,
+                "order_id": null,
+                "handoff": null,
+                "pending_choice": null,
+                "pending_handoff": null,
+                "delivery_details": {}
+              }
+            },
+            {
+              "tool": "list_branches",
+              "args": {},
+              "result": {
+                "ruh_olaya": {
+                  "name": "فرع العليا بالرياض",
+                  "city": "الرياض",
+                  "zones": [
+                    "العليا",
+                    "السليمانية"
+                  ],
+                  "fee": 1200,
+                  "eta": 35
+                },
+                "ruh_narjis": {
+                  "name": "فرع النرجس بالرياض",
+                  "city": "الرياض",
+                  "zones": [
+                    "النرجس",
+                    "الياسمين"
+                  ],
+                  "fee": 1500,
+                  "eta": 40
+                },
+                "ruh_malqa": {
+                  "name": "فرع الملقا بالرياض",
+                  "city": "الرياض",
+                  "zones": [
+                    "الملقا",
+                    "حطين"
+                  ],
+                  "fee": 1000,
+                  "eta": 30
+                },
+                "jed_rawdah": {
+                  "name": "فرع الروضة بجدة",
+                  "city": "جدة",
+                  "zones": [
+                    "الروضة",
+                    "السلامة"
+                  ],
+                  "fee": 1400,
+                  "eta": 40
+                }
+              }
+            },
+            {
+              "tool": "set_branch",
+              "args": {
+                "branch_id": "ruh_olaya"
+              },
+              "result": {
+                "revision": 2,
+                "status": "collecting",
+                "service": "pickup",
+                "location": null,
+                "branch_id": "ruh_olaya",
+                "branch": {
+                  "name": "فرع العليا بالرياض",
+                  "city": "الرياض",
+                  "zones": [
+                    "العليا",
+                    "السليمانية"
+                  ],
+                  "fee": 1200,
+                  "eta": 35
+                },
+                "basket": [],
+                "subtotal": 0,
+                "delivery_fee": 0,
+                "total": 0,
+                "eta_minutes": 20,
+                "issues": [
+                  "السلة فارغة."
+                ],
+                "quote": null,
+                "order_id": null,
+                "handoff": null,
+                "pending_choice": null,
+                "pending_handoff": null,
+                "delivery_details": {}
+              }
+            },
+            {
+              "tool": "search_menu",
+              "args": {
+                "query": "معصوب ملكي"
+              },
+              "result": {
+                "total_matches": 1,
+                "items": [
+                  {
+                    "id": "breakfast_06",
+                    "name": "معصوب ملكي",
+                    "name_en": "Royal Masoub",
+                    "category": "الفطور",
+                    "category_id": "breakfast",
+                    "base": 2600,
+                    "available": [
+                      "ruh_olaya",
+                      "ruh_narjis",
+                      "ruh_malqa",
+                      "jed_rawdah"
+                    ],
+                    "groups": {
+                      "portion": {
+                        "name": "الحجم",
+                        "required": true,
+                        "min": 1,
+                        "max": 1,
+                        "options": {
+                          "regular": {
+                            "name": "عادي",
+                            "name_en": "Regular",
+                            "delta": 0
+                          },
+                          "large": {
+                            "name": "كبير",
+                            "name_en": "Large",
+                            "delta": 800
+                          }
+                        }
+                      },
+                      "bread": {
+                        "name": "اختيار الخبز",
+                        "required": true,
+                        "min": 1,
+                        "max": 1,
+                        "options": {
+                          "tamees": {
+                            "name": "تميس",
+                            "name_en": "Tamees",
+                            "delta": 0
+                          },
+                          "saj": {
+                            "name": "صاج",
+                            "name_en": "Saj",
+                            "delta": 0
+                          },
+                          "brown": {
+                            "name": "خبز أسمر",
+                            "name_en": "Brown bread",
+                            "delta": 200
+                          }
+                        }
+                      },
+                      "extras": {
+                        "name": "إضافات",
+                        "required": false,
+                        "min": 0,
+                        "max": 3,
+                        "options": {
+                          "cheese": {
+                            "name": "جبن",
+                            "name_en": "Cheese",
+                            "delta": 400
+                          },
+                          "honey": {
+                            "name": "عسل",
+                            "name_en": "Honey",
+                            "delta": 300
+                          },
+                          "cream": {
+                            "name": "قشطة",
+                            "name_en": "Cream",
+                            "delta": 500
+                          },
+                          "eggs": {
+                            "name": "بيضتان",
+                            "name_en": "Two eggs",
+                            "delta": 600
+                          }
+                        }
+                      }
+                    },
+                    "available_here": true
+                  }
+                ]
+              }
+            },
+            {
+              "tool": "add_item",
+              "args": {
+                "item_id": "breakfast_06",
+                "quantity": 1,
+                "options": {
+                  "portion": [
+                    "regular"
+                  ],
+                  "bread": [
+                    "brown"
+                  ]
+                },
+                "notes": ""
+              },
+              "result": {
+                "revision": 3,
+                "status": "collecting",
+                "service": "pickup",
+                "location": null,
+                "branch_id": "ruh_olaya",
+                "branch": {
+                  "name": "فرع العليا بالرياض",
+                  "city": "الرياض",
+                  "zones": [
+                    "العليا",
+                    "السليمانية"
+                  ],
+                  "fee": 1200,
+                  "eta": 35
+                },
+                "basket": [
+                  {
+                    "line_id": "fffd7b18",
+                    "item_id": "breakfast_06",
+                    "quantity": 1,
+                    "options": {
+                      "portion": [],
+                      "bread": [
+                        "brown"
+                      ]
+                    },
+                    "notes": "",
+                    "name": "معصوب ملكي",
+                    "option_names": [
+                      "خبز أسمر"
+                    ],
+                    "unit_price": 2800,
+                    "line_total": 2800,
+                    "missing": [
+                      "الحجم"
+                    ],
+                    "available": true
+                  }
+                ],
+                "subtotal": 2800,
+                "delivery_fee": 0,
+                "total": 2800,
+                "eta_minutes": 20,
+                "issues": [
+                  "معصوب ملكي: اختر الحجم"
+                ],
+                "quote": null,
+                "order_id": null,
+                "handoff": null,
+                "pending_choice": null,
+                "pending_handoff": null,
+                "delivery_details": {},
+                "choice_guard": [
+                  {
+                    "group": "portion",
+                    "reason": "no_customer_evidence",
+                    "question": "الحجم: عادي، كبير، وش تختار؟",
+                    "line_id": "fffd7b18"
+                  }
+                ],
+                "instruction": "Unverified choices were NOT saved. Keep this incomplete draft, ask the questions, and never claim the rejected choices were accepted."
+              }
+            },
+            {
+              "tool": "ask_choice",
+              "args": {
+                "line_id": "fffd7b18",
+                "group_id": "portion"
+              },
+              "result": {
+                "terminal": true,
+                "reply": "ما فيه صغير. الحجم عادي ولا كبير؟"
+              }
+            }
+          ]
+        },
+        {
+          "input": "حجم عادي عادي",
+          "ms": 42,
+          "reply": "خليت الحجم عادي. باقي شي تضيفه؟",
+          "transcript": "حجم عادي عادي",
+          "state": {
+            "revision": 4,
+            "status": "ready_for_readback",
+            "service": "pickup",
+            "location": null,
+            "branch_id": "ruh_olaya",
+            "branch": {
+              "name": "فرع العليا بالرياض",
+              "city": "الرياض",
+              "zones": [
+                "العليا",
+                "السليمانية"
+              ],
+              "fee": 1200,
+              "eta": 35
+            },
+            "basket": [
+              {
+                "item_id": "breakfast_06",
+                "line_id": "fffd7b18",
+                "notes": "",
+                "options": {
+                  "bread": [
+                    "brown"
+                  ],
+                  "portion": [
+                    "regular"
+                  ]
+                },
+                "quantity": 1,
+                "name": "معصوب ملكي",
+                "option_names": [
+                  "عادي",
+                  "خبز أسمر"
+                ],
+                "unit_price": 2800,
+                "line_total": 2800,
+                "missing": [],
+                "available": true
+              }
+            ],
+            "subtotal": 2800,
+            "delivery_fee": 0,
+            "total": 2800,
+            "eta_minutes": 20,
+            "issues": [],
+            "quote": null,
+            "order_id": null,
+            "handoff": null,
+            "pending_choice": null,
+            "pending_handoff": null,
+            "delivery_details": {}
+          },
+          "events": [
+            {
+              "tool": "update_item",
+              "args": {
+                "line_id": "fffd7b18",
+                "options": {
+                  "portion": [
+                    "regular"
+                  ]
+                }
+              },
+              "result": {
+                "revision": 4,
+                "status": "ready_for_readback",
+                "service": "pickup",
+                "location": null,
+                "branch_id": "ruh_olaya",
+                "branch": {
+                  "name": "فرع العليا بالرياض",
+                  "city": "الرياض",
+                  "zones": [
+                    "العليا",
+                    "السليمانية"
+                  ],
+                  "fee": 1200,
+                  "eta": 35
+                },
+                "basket": [
+                  {
+                    "item_id": "breakfast_06",
+                    "line_id": "fffd7b18",
+                    "notes": "",
+                    "options": {
+                      "bread": [
+                        "brown"
+                      ],
+                      "portion": [
+                        "regular"
+                      ]
+                    },
+                    "quantity": 1,
+                    "name": "معصوب ملكي",
+                    "option_names": [
+                      "عادي",
+                      "خبز أسمر"
+                    ],
+                    "unit_price": 2800,
+                    "line_total": 2800,
+                    "missing": [],
+                    "available": true
+                  }
+                ],
+                "subtotal": 2800,
+                "delivery_fee": 0,
+                "total": 2800,
+                "eta_minutes": 20,
+                "issues": [],
+                "quote": null,
+                "order_id": null,
+                "handoff": null,
+                "pending_choice": null,
+                "pending_handoff": null,
+                "delivery_details": {}
+              },
+              "source": "unambiguous_short_choice"
+            }
+          ]
+        },
+        {
+          "input": "خلها اثنين واقرأ الطلب.",
+          "ms": 1243,
+          "reply": "خلني أراجع معك: 2 من معصوب ملكي، عادي، خبز أسمر، بسعر 56.00 ريال. استلام من فرع العليا بالرياض. المجموع 56.00 ريال، والوقت المتوقع 20 دقيقة. نأكد الطلب؟",
+          "transcript": "خلها اثنين واقرأ الطلب.",
+          "state": {
+            "revision": 5,
+            "status": "awaiting_confirmation",
+            "service": "pickup",
+            "location": null,
+            "branch_id": "ruh_olaya",
+            "branch": {
+              "name": "فرع العليا بالرياض",
+              "city": "الرياض",
+              "zones": [
+                "العليا",
+                "السليمانية"
+              ],
+              "fee": 1200,
+              "eta": 35
+            },
+            "basket": [
+              {
+                "item_id": "breakfast_06",
+                "line_id": "fffd7b18",
+                "notes": "",
+                "options": {
+                  "bread": [
+                    "brown"
+                  ],
+                  "portion": [
+                    "regular"
+                  ]
+                },
+                "quantity": 2,
+                "name": "معصوب ملكي",
+                "option_names": [
+                  "عادي",
+                  "خبز أسمر"
+                ],
+                "unit_price": 2800,
+                "line_total": 5600,
+                "missing": [],
+                "available": true
+              }
+            ],
+            "subtotal": 5600,
+            "delivery_fee": 0,
+            "total": 5600,
+            "eta_minutes": 20,
+            "issues": [],
+            "quote": {
+              "presented": false,
+              "revision": 5,
+              "text": "خلني أراجع معك: 2 من معصوب ملكي، عادي، خبز أسمر، بسعر 56.00 ريال. استلام من فرع العليا بالرياض. المجموع 56.00 ريال، والوقت المتوقع 20 دقيقة. نأكد الطلب؟",
+              "text_hash": "bd308e5875addaf0f3d8cb8477e23079446fe6ee47f22f55631a4fb1b0d8c212",
+              "token": "2d75978b76cb48eb9f794db7ce48081f"
+            },
+            "order_id": null,
+            "handoff": null,
+            "pending_choice": null,
+            "pending_handoff": null,
+            "delivery_details": {}
+          },
+          "events": [
+            {
+              "tool": "update_item",
+              "args": {
+                "line_id": "fffd7b18",
+                "quantity": 2
+              },
+              "result": {
+                "revision": 5,
+                "status": "ready_for_readback",
+                "service": "pickup",
+                "location": null,
+                "branch_id": "ruh_olaya",
+                "branch": {
+                  "name": "فرع العليا بالرياض",
+                  "city": "الرياض",
+                  "zones": [
+                    "العليا",
+                    "السليمانية"
+                  ],
+                  "fee": 1200,
+                  "eta": 35
+                },
+                "basket": [
+                  {
+                    "item_id": "breakfast_06",
+                    "line_id": "fffd7b18",
+                    "notes": "",
+                    "options": {
+                      "bread": [
+                        "brown"
+                      ],
+                      "portion": [
+                        "regular"
+                      ]
+                    },
+                    "quantity": 2,
+                    "name": "معصوب ملكي",
+                    "option_names": [
+                      "عادي",
+                      "خبز أسمر"
+                    ],
+                    "unit_price": 2800,
+                    "line_total": 5600,
+                    "missing": [],
+                    "available": true
+                  }
+                ],
+                "subtotal": 5600,
+                "delivery_fee": 0,
+                "total": 5600,
+                "eta_minutes": 20,
+                "issues": [],
+                "quote": null,
+                "order_id": null,
+                "handoff": null,
+                "pending_choice": null,
+                "pending_handoff": null,
+                "delivery_details": {}
+              }
+            },
+            {
+              "tool": "checkout",
+              "args": {},
+              "result": {
+                "terminal": true,
+                "reply": "خلني أراجع معك: 2 من معصوب ملكي، عادي، خبز أسمر، بسعر 56.00 ريال. استلام من فرع العليا بالرياض. المجموع 56.00 ريال، والوقت المتوقع 20 دقيقة. نأكد الطلب؟",
+                "quote": {
+                  "revision": 5,
+                  "token": "2d75978b76cb48eb9f794db7ce48081f",
+                  "presented": false,
+                  "text": "خلني أراجع معك: 2 من معصوب ملكي، عادي، خبز أسمر، بسعر 56.00 ريال. استلام من فرع العليا بالرياض. المجموع 56.00 ريال، والوقت المتوقع 20 دقيقة. نأكد الطلب؟",
+                  "text_hash": "bd308e5875addaf0f3d8cb8477e23079446fe6ee47f22f55631a4fb1b0d8c212"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "input": "نعم بس خله واحد بدل اثنين",
+          "ms": 1164,
+          "reply": "خلني أراجع معك: 1 من معصوب ملكي، عادي، خبز أسمر، بسعر 28.00 ريال. استلام من فرع العليا بالرياض. المجموع 28.00 ريال، والوقت المتوقع 20 دقيقة. نأكد الطلب؟",
+          "transcript": "نعم بس خله واحد بدل اثنين",
+          "state": {
+            "revision": 6,
+            "status": "awaiting_confirmation",
+            "service": "pickup",
+            "location": null,
+            "branch_id": "ruh_olaya",
+            "branch": {
+              "name": "فرع العليا بالرياض",
+              "city": "الرياض",
+              "zones": [
+                "العليا",
+                "السليمانية"
+              ],
+              "fee": 1200,
+              "eta": 35
+            },
+            "basket": [
+              {
+                "item_id": "breakfast_06",
+                "line_id": "fffd7b18",
+                "notes": "",
+                "options": {
+                  "bread": [
+                    "brown"
+                  ],
+                  "portion": [
+                    "regular"
+                  ]
+                },
+                "quantity": 1,
+                "name": "معصوب ملكي",
+                "option_names": [
+                  "عادي",
+                  "خبز أسمر"
+                ],
+                "unit_price": 2800,
+                "line_total": 2800,
+                "missing": [],
+                "available": true
+              }
+            ],
+            "subtotal": 2800,
+            "delivery_fee": 0,
+            "total": 2800,
+            "eta_minutes": 20,
+            "issues": [],
+            "quote": {
+              "presented": false,
+              "revision": 6,
+              "text": "خلني أراجع معك: 1 من معصوب ملكي، عادي، خبز أسمر، بسعر 28.00 ريال. استلام من فرع العليا بالرياض. المجموع 28.00 ريال، والوقت المتوقع 20 دقيقة. نأكد الطلب؟",
+              "text_hash": "b084cb0174466d0af1365e13faae350cc5fbb09f8a287f9b501a2c3a58cda01f",
+              "token": "aeabc25943654d37bc44a59714af8f15"
+            },
+            "order_id": null,
+            "handoff": null,
+            "pending_choice": null,
+            "pending_handoff": null,
+            "delivery_details": {}
+          },
+          "events": [
+            {
+              "tool": "update_item",
+              "args": {
+                "line_id": "fffd7b18",
+                "quantity": 1
+              },
+              "result": {
+                "revision": 6,
+                "status": "ready_for_readback",
+                "service": "pickup",
+                "location": null,
+                "branch_id": "ruh_olaya",
+                "branch": {
+                  "name": "فرع العليا بالرياض",
+                  "city": "الرياض",
+                  "zones": [
+                    "العليا",
+                    "السليمانية"
+                  ],
+                  "fee": 1200,
+                  "eta": 35
+                },
+                "basket": [
+                  {
+                    "item_id": "breakfast_06",
+                    "line_id": "fffd7b18",
+                    "notes": "",
+                    "options": {
+                      "bread": [
+                        "brown"
+                      ],
+                      "portion": [
+                        "regular"
+                      ]
+                    },
+                    "quantity": 1,
+                    "name": "معصوب ملكي",
+                    "option_names": [
+                      "عادي",
+                      "خبز أسمر"
+                    ],
+                    "unit_price": 2800,
+                    "line_total": 2800,
+                    "missing": [],
+                    "available": true
+                  }
+                ],
+                "subtotal": 2800,
+                "delivery_fee": 0,
+                "total": 2800,
+                "eta_minutes": 20,
+                "issues": [],
+                "quote": null,
+                "order_id": null,
+                "handoff": null,
+                "pending_choice": null,
+                "pending_handoff": null,
+                "delivery_details": {}
+              }
+            },
+            {
+              "tool": "checkout",
+              "args": {},
+              "result": {
+                "terminal": true,
+                "reply": "خلني أراجع معك: 1 من معصوب ملكي، عادي، خبز أسمر، بسعر 28.00 ريال. استلام من فرع العليا بالرياض. المجموع 28.00 ريال، والوقت المتوقع 20 دقيقة. نأكد الطلب؟",
+                "quote": {
+                  "revision": 6,
+                  "token": "aeabc25943654d37bc44a59714af8f15",
+                  "presented": false,
+                  "text": "خلني أراجع معك: 1 من معصوب ملكي، عادي، خبز أسمر، بسعر 28.00 ريال. استلام من فرع العليا بالرياض. المجموع 28.00 ريال، والوقت المتوقع 20 دقيقة. نأكد الطلب؟",
+                  "text_hash": "b084cb0174466d0af1365e13faae350cc5fbb09f8a287f9b501a2c3a58cda01f"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "input": "غيرها توصيل للطائف حي الحلقة شارع تجريبي واحد",
+          "ms": 1769,
+          "reply": "خليته توصيل. المنطقة خارج نطاق التوصيل. تقدر تختار الاستلام.",
+          "transcript": "غيرها توصيل للطائف حي الحلقة شارع تجريبي واحد",
+          "state": {
+            "revision": 7,
+            "status": "collecting",
+            "service": "delivery",
+            "location": null,
+            "branch_id": null,
+            "branch": null,
+            "basket": [
+              {
+                "item_id": "breakfast_06",
+                "line_id": "fffd7b18",
+                "notes": "",
+                "options": {
+                  "bread": [
+                    "brown"
+                  ],
+                  "portion": [
+                    "regular"
+                  ]
+                },
+                "quantity": 1,
+                "name": "معصوب ملكي",
+                "option_names": [
+                  "عادي",
+                  "خبز أسمر"
+                ],
+                "unit_price": 2800,
+                "line_total": 2800,
+                "missing": [],
+                "available": null
+              }
+            ],
+            "subtotal": 2800,
+            "delivery_fee": 0,
+            "total": 2800,
+            "eta_minutes": null,
+            "issues": [
+              "حدد الفرع أو منطقة التوصيل.",
+              "نحتاج عنوان التوصيل والمنطقة."
+            ],
+            "quote": null,
+            "order_id": null,
+            "handoff": null,
+            "pending_choice": null,
+            "pending_handoff": null,
+            "delivery_details": {
+              "address": "شارع تجريبي واحد",
+              "city": "الطائف",
+              "zone": "الحلقة"
+            }
+          },
+          "events": [
+            {
+              "tool": "set_location",
+              "args": {
+                "city": "الطائف",
+                "zone": "الحلقة",
+                "address": "شارع تجريبي واحد"
+              },
+              "result": {
+                "error": "المنطقة خارج نطاق التوصيل. تقدر تختار الاستلام.",
+                "supported_branches": {
+                  "ruh_olaya": {
+                    "name": "فرع العليا بالرياض",
+                    "city": "الرياض",
+                    "zones": [
+                      "العليا",
+                      "السليمانية"
+                    ],
+                    "fee": 1200,
+                    "eta": 35
+                  },
+                  "ruh_narjis": {
+                    "name": "فرع النرجس بالرياض",
+                    "city": "الرياض",
+                    "zones": [
+                      "النرجس",
+                      "الياسمين"
+                    ],
+                    "fee": 1500,
+                    "eta": 40
+                  },
+                  "ruh_malqa": {
+                    "name": "فرع الملقا بالرياض",
+                    "city": "الرياض",
+                    "zones": [
+                      "الملقا",
+                      "حطين"
+                    ],
+                    "fee": 1000,
+                    "eta": 30
+                  },
+                  "jed_rawdah": {
+                    "name": "فرع الروضة بجدة",
+                    "city": "جدة",
+                    "zones": [
+                      "الروضة",
+                      "السلامة"
+                    ],
+                    "fee": 1400,
+                    "eta": 40
+                  }
+                },
+                "state": {
+                  "revision": 7,
+                  "status": "collecting",
+                  "service": "delivery",
+                  "location": null,
+                  "branch_id": null,
+                  "branch": null,
+                  "basket": [
+                    {
+                      "item_id": "breakfast_06",
+                      "line_id": "fffd7b18",
+                      "notes": "",
+                      "options": {
+                        "bread": [
+                          "brown"
+                        ],
+                        "portion": [
+                          "regular"
+                        ]
+                      },
+                      "quantity": 1,
+                      "name": "معصوب ملكي",
+                      "option_names": [
+                        "عادي",
+                        "خبز أسمر"
+                      ],
+                      "unit_price": 2800,
+                      "line_total": 2800,
+                      "missing": [],
+                      "available": null
+                    }
+                  ],
+                  "subtotal": 2800,
+                  "delivery_fee": 0,
+                  "total": 2800,
+                  "eta_minutes": null,
+                  "issues": [
+                    "حدد الفرع أو منطقة التوصيل.",
+                    "نحتاج عنوان التوصيل والمنطقة."
+                  ],
+                  "quote": null,
+                  "order_id": null,
+                  "handoff": null,
+                  "pending_choice": null,
+                  "pending_handoff": null,
+                  "delivery_details": {
+                    "city": "الطائف",
+                    "zone": "الحلقة",
+                    "address": "شارع تجريبي واحد"
+                  }
+                }
+              }
+            }
+          ]
+        },
+        {
+          "input": "طيب رجعها استلام من فرع العليا بالرياض واقرأ ملخص الطلب",
+          "ms": 2336,
+          "reply": "خلني أراجع معك: 1 من معصوب ملكي، عادي، خبز أسمر، بسعر 28.00 ريال. استلام من فرع العليا بالرياض. المجموع 28.00 ريال، والوقت المتوقع 20 دقيقة. نأكد الطلب؟",
+          "transcript": "طيب رجعها استلام من فرع العليا بالرياض واقرأ ملخص الطلب",
+          "state": {
+            "revision": 9,
+            "status": "awaiting_confirmation",
+            "service": "pickup",
+            "location": null,
+            "branch_id": "ruh_olaya",
+            "branch": {
+              "name": "فرع العليا بالرياض",
+              "city": "الرياض",
+              "zones": [
+                "العليا",
+                "السليمانية"
+              ],
+              "fee": 1200,
+              "eta": 35
+            },
+            "basket": [
+              {
+                "item_id": "breakfast_06",
+                "line_id": "fffd7b18",
+                "notes": "",
+                "options": {
+                  "bread": [
+                    "brown"
+                  ],
+                  "portion": [
+                    "regular"
+                  ]
+                },
+                "quantity": 1,
+                "name": "معصوب ملكي",
+                "option_names": [
+                  "عادي",
+                  "خبز أسمر"
+                ],
+                "unit_price": 2800,
+                "line_total": 2800,
+                "missing": [],
+                "available": true
+              }
+            ],
+            "subtotal": 2800,
+            "delivery_fee": 0,
+            "total": 2800,
+            "eta_minutes": 20,
+            "issues": [],
+            "quote": {
+              "presented": false,
+              "revision": 9,
+              "text": "خلني أراجع معك: 1 من معصوب ملكي، عادي، خبز أسمر، بسعر 28.00 ريال. استلام من فرع العليا بالرياض. المجموع 28.00 ريال، والوقت المتوقع 20 دقيقة. نأكد الطلب؟",
+              "text_hash": "b084cb0174466d0af1365e13faae350cc5fbb09f8a287f9b501a2c3a58cda01f",
+              "token": "f5ff7c64608f4d7a80c5b8ad6e1a55da"
+            },
+            "order_id": null,
+            "handoff": null,
+            "pending_choice": null,
+            "pending_handoff": null,
+            "delivery_details": {}
+          },
+          "events": [
+            {
+              "tool": "set_service",
+              "args": {
+                "service": "pickup"
+              },
+              "result": {
+                "revision": 8,
+                "status": "collecting",
+                "service": "pickup",
+                "location": null,
+                "branch_id": null,
+                "branch": null,
+                "basket": [
+                  {
+                    "item_id": "breakfast_06",
+                    "line_id": "fffd7b18",
+                    "notes": "",
+                    "options": {
+                      "bread": [
+                        "brown"
+                      ],
+                      "portion": [
+                        "regular"
+                      ]
+                    },
+                    "quantity": 1,
+                    "name": "معصوب ملكي",
+                    "option_names": [
+                      "عادي",
+                      "خبز أسمر"
+                    ],
+                    "unit_price": 2800,
+                    "line_total": 2800,
+                    "missing": [],
+                    "available": null
+                  }
+                ],
+                "subtotal": 2800,
+                "delivery_fee": 0,
+                "total": 2800,
+                "eta_minutes": null,
+                "issues": [
+                  "حدد الفرع أو منطقة التوصيل."
+                ],
+                "quote": null,
+                "order_id": null,
+                "handoff": null,
+                "pending_choice": null,
+                "pending_handoff": null,
+                "delivery_details": {}
+              }
+            },
+            {
+              "tool": "list_branches",
+              "args": {},
+              "result": {
+                "ruh_olaya": {
+                  "name": "فرع العليا بالرياض",
+                  "city": "الرياض",
+                  "zones": [
+                    "العليا",
+                    "السليمانية"
+                  ],
+                  "fee": 1200,
+                  "eta": 35
+                },
+                "ruh_narjis": {
+                  "name": "فرع النرجس بالرياض",
+                  "city": "الرياض",
+                  "zones": [
+                    "النرجس",
+                    "الياسمين"
+                  ],
+                  "fee": 1500,
+                  "eta": 40
+                },
+                "ruh_malqa": {
+                  "name": "فرع الملقا بالرياض",
+                  "city": "الرياض",
+                  "zones": [
+                    "الملقا",
+                    "حطين"
+                  ],
+                  "fee": 1000,
+                  "eta": 30
+                },
+                "jed_rawdah": {
+                  "name": "فرع الروضة بجدة",
+                  "city": "جدة",
+                  "zones": [
+                    "الروضة",
+                    "السلامة"
+                  ],
+                  "fee": 1400,
+                  "eta": 40
+                }
+              }
+            },
+            {
+              "tool": "set_branch",
+              "args": {
+                "branch_id": "ruh_olaya"
+              },
+              "result": {
+                "revision": 9,
+                "status": "ready_for_readback",
+                "service": "pickup",
+                "location": null,
+                "branch_id": "ruh_olaya",
+                "branch": {
+                  "name": "فرع العليا بالرياض",
+                  "city": "الرياض",
+                  "zones": [
+                    "العليا",
+                    "السليمانية"
+                  ],
+                  "fee": 1200,
+                  "eta": 35
+                },
+                "basket": [
+                  {
+                    "item_id": "breakfast_06",
+                    "line_id": "fffd7b18",
+                    "notes": "",
+                    "options": {
+                      "bread": [
+                        "brown"
+                      ],
+                      "portion": [
+                        "regular"
+                      ]
+                    },
+                    "quantity": 1,
+                    "name": "معصوب ملكي",
+                    "option_names": [
+                      "عادي",
+                      "خبز أسمر"
+                    ],
+                    "unit_price": 2800,
+                    "line_total": 2800,
+                    "missing": [],
+                    "available": true
+                  }
+                ],
+                "subtotal": 2800,
+                "delivery_fee": 0,
+                "total": 2800,
+                "eta_minutes": 20,
+                "issues": [],
+                "quote": null,
+                "order_id": null,
+                "handoff": null,
+                "pending_choice": null,
+                "pending_handoff": null,
+                "delivery_details": {}
+              }
+            },
+            {
+              "tool": "checkout",
+              "args": {},
+              "result": {
+                "terminal": true,
+                "reply": "خلني أراجع معك: 1 من معصوب ملكي، عادي، خبز أسمر، بسعر 28.00 ريال. استلام من فرع العليا بالرياض. المجموع 28.00 ريال، والوقت المتوقع 20 دقيقة. نأكد الطلب؟",
+                "quote": {
+                  "revision": 9,
+                  "token": "f5ff7c64608f4d7a80c5b8ad6e1a55da",
+                  "presented": false,
+                  "text": "خلني أراجع معك: 1 من معصوب ملكي، عادي، خبز أسمر، بسعر 28.00 ريال. استلام من فرع العليا بالرياض. المجموع 28.00 ريال، والوقت المتوقع 20 دقيقة. نأكد الطلب؟",
+                  "text_hash": "b084cb0174466d0af1365e13faae350cc5fbb09f8a287f9b501a2c3a58cda01f"
+                }
+              }
+            }
+          ]
+        }
+      ],
+      "passed": true
+    },
+    {
+      "name": "incremental_address",
+      "turns": [
+        {
+          "input": "أبي شكشوكة عادي خبز صاج، توصيل.",
+          "ms": 2817,
+          "reply": "ضفت 1 من شكشوكة. بأي مدينة وحي؟",
+          "transcript": "أبي شكشوكة عادي خبز صاج، توصيل.",
+          "state": {
+            "revision": 2,
+            "status": "collecting",
+            "service": "delivery",
+            "location": null,
+            "branch_id": null,
+            "branch": null,
+            "basket": [
+              {
+                "item_id": "breakfast_01",
+                "line_id": "c7a0a8ab",
+                "notes": "",
+                "options": {
+                  "bread": [
+                    "saj"
+                  ],
+                  "portion": [
+                    "regular"
+                  ]
+                },
+                "quantity": 1,
+                "name": "شكشوكة",
+                "option_names": [
+                  "عادي",
+                  "صاج"
+                ],
+                "unit_price": 2200,
+                "line_total": 2200,
+                "missing": [],
+                "available": null
+              }
+            ],
+            "subtotal": 2200,
+            "delivery_fee": 0,
+            "total": 2200,
+            "eta_minutes": null,
+            "issues": [
+              "حدد الفرع أو منطقة التوصيل.",
+              "نحتاج عنوان التوصيل والمنطقة."
+            ],
+            "quote": null,
+            "order_id": null,
+            "handoff": null,
+            "pending_choice": null,
+            "pending_handoff": null,
+            "delivery_details": {}
+          },
+          "events": [
+            {
+              "tool": "set_service",
+              "args": {
+                "service": "delivery"
+              },
+              "result": {
+                "revision": 1,
+                "status": "collecting",
+                "service": "delivery",
+                "location": null,
+                "branch_id": null,
+                "branch": null,
+                "basket": [],
+                "subtotal": 0,
+                "delivery_fee": 0,
+                "total": 0,
+                "eta_minutes": null,
+                "issues": [
+                  "حدد الفرع أو منطقة التوصيل.",
+                  "نحتاج عنوان التوصيل والمنطقة.",
+                  "السلة فارغة."
+                ],
+                "quote": null,
+                "order_id": null,
+                "handoff": null,
+                "pending_choice": null,
+                "pending_handoff": null,
+                "delivery_details": {}
+              }
+            },
+            {
+              "tool": "search_menu",
+              "args": {
+                "query": "شكشوكة"
+              },
+              "result": {
+                "total_matches": 1,
+                "items": [
+                  {
+                    "id": "breakfast_01",
+                    "name": "شكشوكة",
+                    "name_en": "Shakshuka",
+                    "category": "الفطور",
+                    "category_id": "breakfast",
+                    "base": 2200,
+                    "available": [
+                      "ruh_narjis",
+                      "ruh_malqa",
+                      "jed_rawdah"
+                    ],
+                    "groups": {
+                      "portion": {
+                        "name": "الحجم",
+                        "required": true,
+                        "min": 1,
+                        "max": 1,
+                        "options": {
+                          "regular": {
+                            "name": "عادي",
+                            "name_en": "Regular",
+                            "delta": 0
+                          },
+                          "large": {
+                            "name": "كبير",
+                            "name_en": "Large",
+                            "delta": 800
+                          }
+                        }
+                      },
+                      "bread": {
+                        "name": "اختيار الخبز",
+                        "required": true,
+                        "min": 1,
+                        "max": 1,
+                        "options": {
+                          "tamees": {
+                            "name": "تميس",
+                            "name_en": "Tamees",
+                            "delta": 0
+                          },
+                          "saj": {
+                            "name": "صاج",
+                            "name_en": "Saj",
+                            "delta": 0
+                          },
+                          "brown": {
+                            "name": "خبز أسمر",
+                            "name_en": "Brown bread",
+                            "delta": 200
+                          }
+                        }
+                      },
+                      "extras": {
+                        "name": "إضافات",
+                        "required": false,
+                        "min": 0,
+                        "max": 3,
+                        "options": {
+                          "cheese": {
+                            "name": "جبن",
+                            "name_en": "Cheese",
+                            "delta": 400
+                          },
+                          "honey": {
+                            "name": "عسل",
+                            "name_en": "Honey",
+                            "delta": 300
+                          },
+                          "cream": {
+                            "name": "قشطة",
+                            "name_en": "Cream",
+                            "delta": 500
+                          },
+                          "eggs": {
+                            "name": "بيضتان",
+                            "name_en": "Two eggs",
+                            "delta": 600
+                          }
+                        }
+                      }
+                    },
+                    "available_here": null
+                  }
+                ]
+              }
+            },
+            {
+              "tool": "add_item",
+              "args": {
+                "item_id": "breakfast_01",
+                "quantity": 1,
+                "options": {
+                  "portion": [
+                    "regular"
+                  ],
+                  "bread": [
+                    "saj"
+                  ]
+                },
+                "notes": ""
+              },
+              "result": {
+                "revision": 2,
+                "status": "collecting",
+                "service": "delivery",
+                "location": null,
+                "branch_id": null,
+                "branch": null,
+                "basket": [
+                  {
+                    "line_id": "c7a0a8ab",
+                    "item_id": "breakfast_01",
+                    "quantity": 1,
+                    "options": {
+                      "portion": [
+                        "regular"
+                      ],
+                      "bread": [
+                        "saj"
+                      ]
+                    },
+                    "notes": "",
+                    "name": "شكشوكة",
+                    "option_names": [
+                      "عادي",
+                      "صاج"
+                    ],
+                    "unit_price": 2200,
+                    "line_total": 2200,
+                    "missing": [],
+                    "available": null
+                  }
+                ],
+                "subtotal": 2200,
+                "delivery_fee": 0,
+                "total": 2200,
+                "eta_minutes": null,
+                "issues": [
+                  "حدد الفرع أو منطقة التوصيل.",
+                  "نحتاج عنوان التوصيل والمنطقة."
+                ],
+                "quote": null,
+                "order_id": null,
+                "handoff": null,
+                "pending_choice": null,
+                "pending_handoff": null,
+                "delivery_details": {}
+              }
+            }
+          ]
+        },
+        {
+          "input": "الرياض",
+          "ms": 1668,
+          "reply": "بأي حي؟",
+          "transcript": "الرياض",
+          "state": {
+            "revision": 3,
+            "status": "collecting",
+            "service": "delivery",
+            "location": null,
+            "branch_id": null,
+            "branch": null,
+            "basket": [
+              {
+                "item_id": "breakfast_01",
+                "line_id": "c7a0a8ab",
+                "notes": "",
+                "options": {
+                  "bread": [
+                    "saj"
+                  ],
+                  "portion": [
+                    "regular"
+                  ]
+                },
+                "quantity": 1,
+                "name": "شكشوكة",
+                "option_names": [
+                  "عادي",
+                  "صاج"
+                ],
+                "unit_price": 2200,
+                "line_total": 2200,
+                "missing": [],
+                "available": null
+              }
+            ],
+            "subtotal": 2200,
+            "delivery_fee": 0,
+            "total": 2200,
+            "eta_minutes": null,
+            "issues": [
+              "حدد الفرع أو منطقة التوصيل.",
+              "نحتاج عنوان التوصيل والمنطقة."
+            ],
+            "quote": null,
+            "order_id": null,
+            "handoff": null,
+            "pending_choice": null,
+            "pending_handoff": null,
+            "delivery_details": {
+              "city": "الرياض"
+            }
+          },
+          "events": [
+            {
+              "tool": "set_delivery_details",
+              "args": {
+                "city": "الرياض"
+              },
+              "result": {
+                "revision": 3,
+                "status": "collecting",
+                "service": "delivery",
+                "location": null,
+                "branch_id": null,
+                "branch": null,
+                "basket": [
+                  {
+                    "item_id": "breakfast_01",
+                    "line_id": "c7a0a8ab",
+                    "notes": "",
+                    "options": {
+                      "bread": [
+                        "saj"
+                      ],
+                      "portion": [
+                        "regular"
+                      ]
+                    },
+                    "quantity": 1,
+                    "name": "شكشوكة",
+                    "option_names": [
+                      "عادي",
+                      "صاج"
+                    ],
+                    "unit_price": 2200,
+                    "line_total": 2200,
+                    "missing": [],
+                    "available": null
+                  }
+                ],
+                "subtotal": 2200,
+                "delivery_fee": 0,
+                "total": 2200,
+                "eta_minutes": null,
+                "issues": [
+                  "حدد الفرع أو منطقة التوصيل.",
+                  "نحتاج عنوان التوصيل والمنطقة."
+                ],
+                "quote": null,
+                "order_id": null,
+                "handoff": null,
+                "pending_choice": null,
+                "pending_handoff": null,
+                "delivery_details": {
+                  "city": "الرياض"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "input": "النرجس",
+          "ms": 1868,
+          "reply": "واسم الشارع ورقم المبنى؟",
+          "transcript": "النرجس",
+          "state": {
+            "revision": 4,
+            "status": "collecting",
+            "service": "delivery",
+            "location": null,
+            "branch_id": "ruh_narjis",
+            "branch": {
+              "name": "فرع النرجس بالرياض",
+              "city": "الرياض",
+              "zones": [
+                "النرجس",
+                "الياسمين"
+              ],
+              "fee": 1500,
+              "eta": 40
+            },
+            "basket": [
+              {
+                "item_id": "breakfast_01",
+                "line_id": "c7a0a8ab",
+                "notes": "",
+                "options": {
+                  "bread": [
+                    "saj"
+                  ],
+                  "portion": [
+                    "regular"
+                  ]
+                },
+                "quantity": 1,
+                "name": "شكشوكة",
+                "option_names": [
+                  "عادي",
+                  "صاج"
+                ],
+                "unit_price": 2200,
+                "line_total": 2200,
+                "missing": [],
+                "available": true
+              }
+            ],
+            "subtotal": 2200,
+            "delivery_fee": 0,
+            "total": 2200,
+            "eta_minutes": 40,
+            "issues": [
+              "نحتاج عنوان التوصيل والمنطقة."
+            ],
+            "quote": null,
+            "order_id": null,
+            "handoff": null,
+            "pending_choice": null,
+            "pending_handoff": null,
+            "delivery_details": {
+              "city": "الرياض",
+              "zone": "النرجس"
+            }
+          },
+          "events": [
+            {
+              "tool": "set_delivery_details",
+              "args": {
+                "zone": "النرجس"
+              },
+              "result": {
+                "revision": 4,
+                "status": "collecting",
+                "service": "delivery",
+                "location": null,
+                "branch_id": "ruh_narjis",
+                "branch": {
+                  "name": "فرع النرجس بالرياض",
+                  "city": "الرياض",
+                  "zones": [
+                    "النرجس",
+                    "الياسمين"
+                  ],
+                  "fee": 1500,
+                  "eta": 40
+                },
+                "basket": [
+                  {
+                    "item_id": "breakfast_01",
+                    "line_id": "c7a0a8ab",
+                    "notes": "",
+                    "options": {
+                      "bread": [
+                        "saj"
+                      ],
+                      "portion": [
+                        "regular"
+                      ]
+                    },
+                    "quantity": 1,
+                    "name": "شكشوكة",
+                    "option_names": [
+                      "عادي",
+                      "صاج"
+                    ],
+                    "unit_price": 2200,
+                    "line_total": 2200,
+                    "missing": [],
+                    "available": true
+                  }
+                ],
+                "subtotal": 2200,
+                "delivery_fee": 0,
+                "total": 2200,
+                "eta_minutes": 40,
+                "issues": [
+                  "نحتاج عنوان التوصيل والمنطقة."
+                ],
+                "quote": null,
+                "order_id": null,
+                "handoff": null,
+                "pending_choice": null,
+                "pending_handoff": null,
+                "delivery_details": {
+                  "city": "الرياض",
+                  "zone": "النرجس"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "input": "شارع الاختبار",
+          "ms": 1172,
+          "reply": "ورقم المبنى؟",
+          "transcript": "شارع الاختبار",
+          "state": {
+            "revision": 5,
+            "status": "collecting",
+            "service": "delivery",
+            "location": null,
+            "branch_id": "ruh_narjis",
+            "branch": {
+              "name": "فرع النرجس بالرياض",
+              "city": "الرياض",
+              "zones": [
+                "النرجس",
+                "الياسمين"
+              ],
+              "fee": 1500,
+              "eta": 40
+            },
+            "basket": [
+              {
+                "item_id": "breakfast_01",
+                "line_id": "c7a0a8ab",
+                "notes": "",
+                "options": {
+                  "bread": [
+                    "saj"
+                  ],
+                  "portion": [
+                    "regular"
+                  ]
+                },
+                "quantity": 1,
+                "name": "شكشوكة",
+                "option_names": [
+                  "عادي",
+                  "صاج"
+                ],
+                "unit_price": 2200,
+                "line_total": 2200,
+                "missing": [],
+                "available": true
+              }
+            ],
+            "subtotal": 2200,
+            "delivery_fee": 0,
+            "total": 2200,
+            "eta_minutes": 40,
+            "issues": [
+              "نحتاج عنوان التوصيل والمنطقة."
+            ],
+            "quote": null,
+            "order_id": null,
+            "handoff": null,
+            "pending_choice": null,
+            "pending_handoff": null,
+            "delivery_details": {
+              "city": "الرياض",
+              "street": "شارع الاختبار",
+              "zone": "النرجس"
+            }
+          },
+          "events": [
+            {
+              "tool": "set_delivery_details",
+              "args": {
+                "street": "شارع الاختبار"
+              },
+              "result": {
+                "revision": 5,
+                "status": "collecting",
+                "service": "delivery",
+                "location": null,
+                "branch_id": "ruh_narjis",
+                "branch": {
+                  "name": "فرع النرجس بالرياض",
+                  "city": "الرياض",
+                  "zones": [
+                    "النرجس",
+                    "الياسمين"
+                  ],
+                  "fee": 1500,
+                  "eta": 40
+                },
+                "basket": [
+                  {
+                    "item_id": "breakfast_01",
+                    "line_id": "c7a0a8ab",
+                    "notes": "",
+                    "options": {
+                      "bread": [
+                        "saj"
+                      ],
+                      "portion": [
+                        "regular"
+                      ]
+                    },
+                    "quantity": 1,
+                    "name": "شكشوكة",
+                    "option_names": [
+                      "عادي",
+                      "صاج"
+                    ],
+                    "unit_price": 2200,
+                    "line_total": 2200,
+                    "missing": [],
+                    "available": true
+                  }
+                ],
+                "subtotal": 2200,
+                "delivery_fee": 0,
+                "total": 2200,
+                "eta_minutes": 40,
+                "issues": [
+                  "نحتاج عنوان التوصيل والمنطقة."
+                ],
+                "quote": null,
+                "order_id": null,
+                "handoff": null,
+                "pending_choice": null,
+                "pending_handoff": null,
+                "delivery_details": {
+                  "city": "الرياض",
+                  "zone": "النرجس",
+                  "street": "شارع الاختبار"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "input": "مبنى اثنا عشر",
+          "ms": 1008,
+          "reply": "خلني أراجع معك: 1 من شكشوكة، عادي، صاج، بسعر 22.00 ريال. التوصيل إلى الرياض، حي النرجس، شارع الاختبار، مبنى اثنا عشر من فرع النرجس بالرياض. رسوم التوصيل 15.00 ريال. المجموع 37.00 ريال، والوقت المتوقع 40 دقيقة. نأكد الطلب؟",
+          "transcript": "مبنى اثنا عشر",
+          "state": {
+            "revision": 7,
+            "status": "awaiting_confirmation",
+            "service": "delivery",
+            "location": {
+              "address": "شارع الاختبار، مبنى اثنا عشر",
+              "city": "الرياض",
+              "zone": "النرجس"
+            },
+            "branch_id": "ruh_narjis",
+            "branch": {
+              "name": "فرع النرجس بالرياض",
+              "city": "الرياض",
+              "zones": [
+                "النرجس",
+                "الياسمين"
+              ],
+              "fee": 1500,
+              "eta": 40
+            },
+            "basket": [
+              {
+                "item_id": "breakfast_01",
+                "line_id": "c7a0a8ab",
+                "notes": "",
+                "options": {
+                  "bread": [
+                    "saj"
+                  ],
+                  "portion": [
+                    "regular"
+                  ]
+                },
+                "quantity": 1,
+                "name": "شكشوكة",
+                "option_names": [
+                  "عادي",
+                  "صاج"
+                ],
+                "unit_price": 2200,
+                "line_total": 2200,
+                "missing": [],
+                "available": true
+              }
+            ],
+            "subtotal": 2200,
+            "delivery_fee": 1500,
+            "total": 3700,
+            "eta_minutes": 40,
+            "issues": [],
+            "quote": {
+              "presented": false,
+              "revision": 7,
+              "text": "خلني أراجع معك: 1 من شكشوكة، عادي، صاج، بسعر 22.00 ريال. التوصيل إلى الرياض، حي النرجس، شارع الاختبار، مبنى اثنا عشر من فرع النرجس بالرياض. رسوم التوصيل 15.00 ريال. المجموع 37.00 ريال، والوقت المتوقع 40 دقيقة. نأكد الطلب؟",
+              "text_hash": "7ddace08255080d16d03c16581c42bee91b1e92f4d16aef72a1df6f26ab5ee44",
+              "token": "3728b0552a064bce819b7aae9143bce6"
+            },
+            "order_id": null,
+            "handoff": null,
+            "pending_choice": null,
+            "pending_handoff": null,
+            "delivery_details": {
+              "building": "اثنا عشر",
+              "city": "الرياض",
+              "street": "شارع الاختبار",
+              "zone": "النرجس"
+            }
+          },
+          "events": [
+            {
+              "tool": "set_delivery_details",
+              "args": {
+                "building": "اثنا عشر"
+              },
+              "result": {
+                "revision": 7,
+                "status": "ready_for_readback",
+                "service": "delivery",
+                "location": {
+                  "city": "الرياض",
+                  "zone": "النرجس",
+                  "address": "شارع الاختبار، مبنى اثنا عشر"
+                },
+                "branch_id": "ruh_narjis",
+                "branch": {
+                  "name": "فرع النرجس بالرياض",
+                  "city": "الرياض",
+                  "zones": [
+                    "النرجس",
+                    "الياسمين"
+                  ],
+                  "fee": 1500,
+                  "eta": 40
+                },
+                "basket": [
+                  {
+                    "item_id": "breakfast_01",
+                    "line_id": "c7a0a8ab",
+                    "notes": "",
+                    "options": {
+                      "bread": [
+                        "saj"
+                      ],
+                      "portion": [
+                        "regular"
+                      ]
+                    },
+                    "quantity": 1,
+                    "name": "شكشوكة",
+                    "option_names": [
+                      "عادي",
+                      "صاج"
+                    ],
+                    "unit_price": 2200,
+                    "line_total": 2200,
+                    "missing": [],
+                    "available": true
+                  }
+                ],
+                "subtotal": 2200,
+                "delivery_fee": 1500,
+                "total": 3700,
+                "eta_minutes": 40,
+                "issues": [],
+                "quote": null,
+                "order_id": null,
+                "handoff": null,
+                "pending_choice": null,
+                "pending_handoff": null,
+                "delivery_details": {
+                  "city": "الرياض",
+                  "street": "شارع الاختبار",
+                  "zone": "النرجس",
+                  "building": "اثنا عشر"
+                }
+              }
+            },
+            {
+              "tool": "checkout",
+              "args": {},
+              "result": {
+                "terminal": true,
+                "reply": "خلني أراجع معك: 1 من شكشوكة، عادي، صاج، بسعر 22.00 ريال. التوصيل إلى الرياض، حي النرجس، شارع الاختبار، مبنى اثنا عشر من فرع النرجس بالرياض. رسوم التوصيل 15.00 ريال. المجموع 37.00 ريال، والوقت المتوقع 40 دقيقة. نأكد الطلب؟",
+                "quote": {
+                  "revision": 7,
+                  "token": "3728b0552a064bce819b7aae9143bce6",
+                  "presented": false,
+                  "text": "خلني أراجع معك: 1 من شكشوكة، عادي، صاج، بسعر 22.00 ريال. التوصيل إلى الرياض، حي النرجس، شارع الاختبار، مبنى اثنا عشر من فرع النرجس بالرياض. رسوم التوصيل 15.00 ريال. المجموع 37.00 ريال، والوقت المتوقع 40 دقيقة. نأكد الطلب؟",
+                  "text_hash": "7ddace08255080d16d03c16581c42bee91b1e92f4d16aef72a1df6f26ab5ee44"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "input": "خلاص",
+          "ms": 1199,
+          "reply": "خلني أراجع معك: 1 من شكشوكة، عادي، صاج، بسعر 22.00 ريال. التوصيل إلى الرياض، حي النرجس، شارع الاختبار، مبنى اثنا عشر من فرع النرجس بالرياض. رسوم التوصيل 15.00 ريال. المجموع 37.00 ريال، والوقت المتوقع 40 دقيقة. نأكد الطلب؟",
+          "transcript": "خلاص",
+          "state": {
+            "revision": 7,
+            "status": "awaiting_confirmation",
+            "service": "delivery",
+            "location": {
+              "address": "شارع الاختبار، مبنى اثنا عشر",
+              "city": "الرياض",
+              "zone": "النرجس"
+            },
+            "branch_id": "ruh_narjis",
+            "branch": {
+              "name": "فرع النرجس بالرياض",
+              "city": "الرياض",
+              "zones": [
+                "النرجس",
+                "الياسمين"
+              ],
+              "fee": 1500,
+              "eta": 40
+            },
+            "basket": [
+              {
+                "item_id": "breakfast_01",
+                "line_id": "c7a0a8ab",
+                "notes": "",
+                "options": {
+                  "bread": [
+                    "saj"
+                  ],
+                  "portion": [
+                    "regular"
+                  ]
+                },
+                "quantity": 1,
+                "name": "شكشوكة",
+                "option_names": [
+                  "عادي",
+                  "صاج"
+                ],
+                "unit_price": 2200,
+                "line_total": 2200,
+                "missing": [],
+                "available": true
+              }
+            ],
+            "subtotal": 2200,
+            "delivery_fee": 1500,
+            "total": 3700,
+            "eta_minutes": 40,
+            "issues": [],
+            "quote": {
+              "presented": false,
+              "revision": 7,
+              "text": "خلني أراجع معك: 1 من شكشوكة، عادي، صاج، بسعر 22.00 ريال. التوصيل إلى الرياض، حي النرجس، شارع الاختبار، مبنى اثنا عشر من فرع النرجس بالرياض. رسوم التوصيل 15.00 ريال. المجموع 37.00 ريال، والوقت المتوقع 40 دقيقة. نأكد الطلب؟",
+              "text_hash": "7ddace08255080d16d03c16581c42bee91b1e92f4d16aef72a1df6f26ab5ee44",
+              "token": "666aa5efe6cd41a0a8be1ca78457c93b"
+            },
+            "order_id": null,
+            "handoff": null,
+            "pending_choice": null,
+            "pending_handoff": null,
+            "delivery_details": {
+              "building": "اثنا عشر",
+              "city": "الرياض",
+              "street": "شارع الاختبار",
+              "zone": "النرجس"
+            }
+          },
+          "events": [
+            {
+              "tool": "confirm",
+              "args": {},
+              "result": {
+                "error": "نحتاج قراءة الطلب الحالي كاملاً وموافقة واضحة قبل التأكيد."
+              }
+            },
+            {
+              "tool": "checkout",
+              "args": {},
+              "result": {
+                "terminal": true,
+                "reply": "خلني أراجع معك: 1 من شكشوكة، عادي، صاج، بسعر 22.00 ريال. التوصيل إلى الرياض، حي النرجس، شارع الاختبار، مبنى اثنا عشر من فرع النرجس بالرياض. رسوم التوصيل 15.00 ريال. المجموع 37.00 ريال، والوقت المتوقع 40 دقيقة. نأكد الطلب؟",
+                "quote": {
+                  "revision": 7,
+                  "token": "666aa5efe6cd41a0a8be1ca78457c93b",
+                  "presented": false,
+                  "text": "خلني أراجع معك: 1 من شكشوكة، عادي، صاج، بسعر 22.00 ريال. التوصيل إلى الرياض، حي النرجس، شارع الاختبار، مبنى اثنا عشر من فرع النرجس بالرياض. رسوم التوصيل 15.00 ريال. المجموع 37.00 ريال، والوقت المتوقع 40 دقيقة. نأكد الطلب؟",
+                  "text_hash": "7ddace08255080d16d03c16581c42bee91b1e92f4d16aef72a1df6f26ab5ee44"
+                }
+              },
+              "source": "readback_guard"
+            }
+          ]
+        }
+      ],
+      "passed": true
+    }
+  ],
+  "passed": true
+}

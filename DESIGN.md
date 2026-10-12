@@ -1,83 +1,77 @@
-# Design
+# Design: simple conversation, explicit state
 
-## Architecture and ownership
+## Product reasoning
 
-One conversational LLM plus a deterministic state machine implemented as derived state and guarded tools. No framework graph or multiple agents are needed. The LLM interprets Arabic and selects operations; Python owns branch selection, valid options, integer prices, checkout, and order creation.
+The caller should be able to give information in any order, pause and correct a choice without restarting. The UI therefore has a single call action, an audio-reactive orb and a compact receipt. Debug traces live separately. We removed landing-page content, repeated greetings and generic saved-change announcements because they distract from the actual task.
+
+The complexity belongs where mistakes matter: identifying which item changed, recalculating its total, distinguishing yes-to-half-sugar from yes-to-an-order, and rejecting a slow response overtaken by new speech. A natural voice alone does not solve these problems.
+
+## Architecture
 
 ```mermaid
 flowchart LR
-  A[Arabic microphone / file] --> B[STT]
-  B --> C[Bounded LLM tool loop]
-  C <--> D[Menu retrieval: five candidates]
-  C <--> E[Validated order engine]
-  E --> F[SQLite session + order + request replay]
-  C --> G[Arabic reply]
-  E --> H[Exact checkout readback]
-  H --> G
-  G --> I[TTS]
-  I --> J[Audio player]
-  J -->|audio ended| K[Readback acknowledgement]
-  K --> E
+  C[Caller] <--> M[LiveKit / GPT-Live]
+  M --> V[Bounded audio verification]
+  V --> P[Planner + current state + retrieved menu]
+  P --> D[Validated domain tools]
+  D --> T[(SQLite transaction)]
+  T --> R[Actual change / next missing question]
+  R --> M
+  T --> Q[Exact checkout speech]
+  Q --> B[Browser playback receipt]
+  B --> A[Explicit acceptance of unchanged quote]
+  A --> T
 ```
 
-## Journey
-
-```mermaid
-stateDiagram-v2
-  [*] --> Collecting
-  Collecting --> Collecting: early information / clarification / menu search
-  Collecting --> Ready: service + branch + valid complete basket
-  Ready --> AwaitingConfirmation: checkout tool emits exact readback
-  AwaitingConfirmation --> Completed: played current quote + explicit acceptance
-  AwaitingConfirmation --> Collecting: edit / location change / interruption
-  Ready --> Collecting: changed dependencies
-  Collecting --> Handoff: complaint / human request
-  Ready --> Handoff: complaint / human request
-  AwaitingConfirmation --> Handoff: complaint / human request
-  Completed --> Handoff: post-order change / complaint
-```
-
-Information calls can retrieve the menu without creating a basket. A draft basket may exist before fulfillment details. Missing required choices are visible validation issues and prevent checkout; there are no silently assumed sizes, breads or spice levels.
-
-The database stores service, current location, branch ID, basket lines (stable line IDs, item IDs, quantities, option IDs and notes), revision, quote token, order ID, handoff ticket, bounded history and recent tool events. Menu data stays outside conversation history. Search exposes at most five candidates with their exact option constraints. Audio bytes are processed in memory and returned, not stored by the normal app. Local evaluation scripts explicitly save synthetic audio.
-
-## Dependency invalidation
-
-| Changed answer | Deterministic effect |
+| Component | Responsibility |
 |---|---|
-| Delivery → pickup | Clear delivery address, zero fee, invalidate quote; existing branch is shown for correction |
-| Pickup → delivery | Require a fresh address; do not silently reuse an older delivery address |
-| Delivery location | Select serving branch, recalculate fee/ETA and revalidate every basket line |
-| Unsupported new location | Clear old location/branch; block checkout instead of retaining old delivery details |
-| Supported zone with incomplete new address | Clear old address, retain the new serving branch, require street/building |
-| Pickup branch | Revalidate every item at the new branch |
-| Quantity, options, notes, removal | Increment revision and discard quote; reprice from CSV |
-| Interrupt | Stop client playback, increment cancellation epoch, clear quote |
+| Browser / LiveKit | Microphone capture, transport, playback and interruption signals |
+| GPT-Live | Conversational timing and spoken delivery; delegates restaurant work |
+| Independent transcription | Verify the bounded captured PCM before business/control actions |
+| GPT-4.1 planner | Interpret language, retrieve menu candidates and choose validated tools |
+| Domain engine | Valid options, availability, required fields, integer prices and exact readback |
+| SQLite boundary | Atomic state, revisions, epochs, receipts and one order per session |
 
-Unavailable lines remain visible rather than being silently dropped or replaced. Customer decides the resolution. `view()` derives totals, availability and missing choices from canonical inputs, so cached prices cannot outlive a branch/basket change.
+Two model responsibilities—voice and business interpretation—are sufficient here. There is no extra intent-classifier service or framework of specialist agents, and no competing second live turn detector. Narrow deterministic controls complement the planner rather than replacing open-ended language understanding.
 
-## Confirmation and duplicates
+## Why this stack
 
-`checkout` emits an exact server-generated Arabic summary and stops the model loop. The summary is not rewritten by the LLM. A fresh token is tied to the current revision. The browser acknowledges that token only on audio `ended`; the explicitly labelled text test path can acknowledge a displayed summary. Replayed audio acknowledgements for old tokens fail.
+Python/FastAPI keeps tools, rules and regression assertions together. SQLite gives the single-host prototype real transactions and unique constraints without another infrastructure service. LiveKit provides WebRTC/media lifecycle. Hosted models allow product iteration without GPU provisioning; the open-weight candidates in EVALUATION.md are a separate proposed evaluation, not the running stack. A small React orb and static caller app avoid requiring a second frontend server just to run the demo.
 
-A secondary guard converts recognized model-authored confirmation invitations into the same authoritative checkout. It is a limited language heuristic, not a universal semantic verifier. Known option labels and size aliases are canonicalized only when they resolve uniquely to a real option; unknown values still fail. STT gets a bounded fixture vocabulary hint, while the conversational LLM receives only retrieved candidates, not the complete menu.
+## Context management
 
-Short confirmation phrases are accepted only after that acknowledged quote. Exact normalized phrases prevent «نعم بس احذف وجبة» from being treated as acceptance. Other utterances clear the old quote so a later yes cannot answer the wrong question. The model cannot set the confirmation flag. A narrower phrase whitelist can require clarification for uncommon valid expressions; that is safer than guessing and is a known conversational limitation.
+The planner receives structured CURRENT STATE, the last **12 user/assistant messages**, and current-turn tool results. Menu retrieval returns at most **five candidates** per search rather than embedding the 1,728 CSV rows in every prompt. Historical tool transcripts do not accumulate across turns. The loop permits at most ten tool steps; V2 delegation has a 45-second outer timeout.
 
-HTTP request IDs are scoped to a session. SQLite stores request input hashes and complete responses: repeating the same request returns its previous result; using its ID with different input returns 409. Identical mutating tools repeated within one turn reuse their result. A unique order-per-session database constraint plus persisted order ID prevents duplicate checkout even across request IDs or process restart. Repeating two deliberately identical separate basket lines in one utterance should be represented as one quantity or distinct notes/options because tool deduplication intentionally collapses exact duplicates.
+Durable state is the memory of the order: stable line IDs, menu/option IDs, quantities, notes, service, branch, address fields, revision, quote, order ID and pending proposals. History helps interpret references; it is not evidence that a change was saved. Required fields and totals are derived from current state. Ambiguous references are clarified rather than guessed. This bounds context growth but does not imply constant token usage or perfect long-range recall.
 
-Each LLM turn operates on a deep copy. Up to ten serial tool calls run under a 90-second outer timeout; provider calls have a 35-second timeout. Only a completed response commits the new basket/history/request/order in one SQLite transaction. Provider failure discards speculative changes and invalidates any previous quote. Malformed tool arguments produce an error result for bounded correction. Unknown IDs, illegal options and out-of-range quantities cannot enter canonical state.
+## Non-linear conversation
 
-Per-session async locks serialize turns; independent sessions can progress independently. An interrupt can increment an epoch while provider work awaits. The turn compares epochs before committing; stale work returns 409. A completed order cannot be retrospectively cancelled by interrupting audio; the UI retrieves authoritative state. Multiple workers require database-backed locking/epochs before deployment.
+Delivery city, neighborhood, street and building persist independently. They may arrive in any order. Changing city clears dependent old address details; changing neighborhood clears street/building; changing street requires the building again. Switching to pickup clears delivery details. Unsupported locations invalidate the previous destination instead of quietly retaining it.
 
-## Context and failures
+Questions target missing state. An acknowledgment compares actual before/after state: “خليت الكمية اثنين.” A failed or no-op edit does not receive a success claim. Pending menu proposals bind yes to a line/group/option/revision and expire. Staff offers have separate proposal state, so yes cannot accidentally confirm an order. The 37 reusable phrases live in data/conversation-copy.json; copy changes cannot authorize transactions.
 
-The system receives structured current state and the last 12 user/assistant messages, plus current-turn retrieval/tool results. Completed tool transcripts stay out of future prompts. A maximum basket of 30 lines, notes of 300 characters, text of 1,200 characters, five retrieval candidates and bounded loops constrain growth. This is bounded context, not a claim that every turn has the same token count.
+## Revisions, epochs and checkout
 
-On STT failure there is no agent mutation. On LLM failure no speculative basket change commits. On TTS failure the already committed turn remains visible as text; there is no automatic claim that the audio was heard. Checkout remains unacknowledged until the complete readback is consumed. Complaints and common human-request phrases have a deterministic route, so text handoff works during LLM outage; spoken handoff still needs STT.
+A revision identifies the current order; an epoch invalidates work superseded by new speech. Provider calls run outside database transactions. A completed staged bundle commits only when both still match. Tools validate IDs/options and calculate prices in integer halalas from the unchanged CSV. Repeated operation IDs replay stored responses; conflicting reuse is rejected.
 
-Menu data lacks ingredients/allergens/opening hours. The prompt requires the agent to say it does not have that information and offer staff assistance; do not infer allergen safety from a dish name. This language behavior must also be checked in live model tests.
+Checkout emits an exact server-generated summary tied to the current revision: every item, quantity, option, note, fulfillment, branch, applicable fee, total and ETA. The voice model does not paraphrase this summary. A current completed playback receipt and separate explicit acceptance are required to create the mock order. Edits or interruption invalidate stale readback. A unique order-per-session constraint prevents duplicate orders across repeated yes responses and process restarts.
 
-## Before real customers
+Playback acknowledgment is not proof that a human actually heard the speakers. Backend tests that simulate receipts are labelled as such. Generated provider audio, including muted output, is also not a receipt.
 
-Add continuous VAD/full-duplex streaming, real call transfer with success/failure acknowledgements, POS inventory reservations, authenticated sessions, retention/deletion controls, encrypted production storage, monitoring and structured redaction, geocoded address confirmation, rate limiting, durable distributed cancellation, and staff-reviewed Arabic quality tests. Provider model aliases must be pinned to verified snapshots with recorded latency/cost. Connect order creation to a real idempotent POS API. A local order ID is not a restaurant acceptance receipt.
+## Recognition and latency tradeoffs
+
+Human testing exposed a complaint misheard as a request to stay quiet. Bounded audio verification, quantity/negation/question disagreement checks and distinct wait/recover/end routes address that failure without letting captions directly authorize an order.
+
+Later testing exposed provider timestamps ahead of the captured PCM clock after stalls. Fragments now carry the capture position observed when they arrived; ahead-of-audio timestamps use that anchor plus pre/post-roll. This is a bounded alignment heuristic, not forced alignment. Missing/expired audio still requires clarification.
+
+High-frequency diagnostic writes now run through a bounded background queue and batch database writes. Speech invalidates pending work once per unsettled burst; the flag resets before verification so new speech can supersede that work. The caption settlement interval is 750 ms. The orb reads the existing microphone locally instead of waiting only for participant-level updates. It never acquires another microphone or routes input to the speakers.
+
+Verification adds latency: settlement, transcription, tool calls and speech scheduling remain sequential for business turns. We do not claim the hosted-model feel of unrestricted social chat. Stage timings and end-to-end first useful audible response must both be measured. A future faster policy must pass the same order-invariant tests; removing confirmation or guessing through uncertainty is not an acceptable optimization.
+
+## Failure behavior and production boundary
+
+No usable transcript means clarification. Failed speculative planner work does not commit. Failed TTS does not mark a quote heard. Cancellation clears only an unconfirmed draft and keeps the call open. Explicit hang-up has a bounded closing line; the End button disconnects directly. Missing ingredients, hours and live tracking cannot be inferred from dish names or free-text notes.
+
+Local traces connect speech, verification, tools, revisions, receipts and state; audio and databases are ignored by Git. Diagnostic queue drops are counted. Synthetic tests establish specific behavior, not a Saudi-speaker benchmark or a production SLO.
+
+Real deployment still requires authenticated tenants, managed persistence/retention, distributed ownership, actual POS/payment/staff integrations, service-area and stock data, load testing and monitored rollout. PRODUCT.md proposes the safe-change workbench. This challenge prototype favors clear ownership, a simple caller experience and honest evidence over claims of production readiness.

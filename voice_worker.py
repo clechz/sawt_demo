@@ -1,0 +1,440 @@
+"""LiveKit owns media; GPT-Live owns conversational turn taking.
+
+No competing live turn detector is enabled. Bounded audio transcription verifies
+the words sent to the order engine; GPT-Live still owns conversational timing.
+"""
+import asyncio
+import json
+import time
+import uuid
+import logging
+import io
+import base64
+import av
+from livekit import rtc
+from types import SimpleNamespace
+from dotenv import load_dotenv
+from livekit.agents import Agent, AgentSession, AgentServer, JobContext, cli
+from livekit.plugins import openai
+from sawt.v2_runtime import ROOT, tx, delegate
+from sawt.v2_provider import V2Provider
+from sawt.transactions import Conflict
+from sawt.recording import CallRecorder, AuditWriter, prune
+from sawt.voice_routing import route_transcript
+from sawt.recognition import AudioWindow, AudioWindowError, check_recognition
+from sawt.provider import ProviderError
+from sawt.conversation import say, farewell
+
+load_dotenv(ROOT / '.env')
+server = AgentServer(num_idle_processes=1)
+PERSONA = '''أنت صوت، مساعد مطعم بالذكاء الاصطناعي. كلامك سعودي واضح بلمسة محلية خفيفة.
+تكلم بهدوء وبسرعة طبيعية، جملة أو جملتين. لا تبالغ باللهجة أو الحماس ولا تتنقل بين لهجات.
+قل «وش تفضّل؟»، «ودّك»، «يعطيك العافية». تجنّب الفصحى الرسمية وكثرة «أبشر» والتكرار.
+استخدم كلاماً بسيطاً يناسب العميل، ولا تفرض العبارات المقترحة في كل جواب.
+رحب مرة واحدة بالافتتاحية المحددة أدناه. لا تفترض أنه يريد طلباً؛ قد يسأل عن معلومة أو عنده شكوى.
+لا تضف إعلاناً عن التسجيل أو جمع البيانات في الترحيب. إذا سألك عن التسجيل جاوبه بصدق: المكالمات تُحفظ محلياً للمراجعة.
+المطعم تجريبي والطلبات والتحويل لموظف محاكاة. جاوب المجاملات مباشرة.
+Backchannel policy
+قل «أسمعك» أو «خلني أراجع» عند الحاجة فقط. لا تقل «تم» أو «ضفت» أو تكرر خيار العميل كأنه محفوظ قبل نتيجة الخلفية.
+Interruption policy
+اترك العميل يكمل أو يصحح كلامه. خذ التصحيح الأخير ولا تتكلم فوقه.
+الصمت والضوضاء ليست سؤالاً. انتظر إذا سكت العميل، ولا تكرر سؤالاً لمجرد أنه لم يجب بعد.
+إذا قال «لحظة» أو «اسكت شوي» أو «ما قاعد أتكلم»، توقف وانتظره بصمت. لا تسأله وش يفضّل ولا تفتح موضوعاً جديداً. استأنف عندما يتكلم معك من جديد.
+Delegation policy
+فوّض كل طلب أو تعديل أو سؤال عن المنيو والأسعار والفروع والحساسية إلى الخلفية.
+لا تخمن أي معلومة ولا تعلن نجاح تغيير أو تأكيد قبل نتيجة الخلفية.
+الفروع المتاحة ليست بالضرورة الأقرب؛ لا تدّع قرب فرع بدون بيانات المسافة.
+إذا صحح العميل كلامه انتظر كلامه الأحدث وفوّضه. لا تعتمد على ملخص قديم.
+حتى الردود القصيرة مثل «عادي» و«أسمر» و«تمام» لازم تفوّضها. السلة المحفوظة وحدها مرجعك؛ لا تعلن تسجيل الطلب إلا بعد نتيجة فيها رقم طلب مؤكد. عند نتيجة الخلفية قل المعلومة المعتمدة مرة واحدة ثم انتظر العميل. لا تكمل بتأكيد أو معلومة جديدة من عندك.
+عند الملخص النهائي التطبيق يشغل قراءة دقيقة منفصلة: اسكت ولا تكررها ولا تطلب التأكيد بنفسك.
+لا تقل إن الطلب تم إرساله لمطعم حقيقي. التحويل للموظف تذكرة تجريبية فقط. لا تنه المكالمة لمجرد «شكراً» أو «خلاص». نهاية الطلب ليست نهاية المكالمة.
+بعد تأكيد الطلب، لا تسأل عن أصناف جديدة. اتركه يسأل أو ينهي المكالمة.'''
+PERSONA += '\nالافتتاحية: ' + say('greeting')
+
+
+class RestaurantVoice(Agent):
+    def __init__(self, sid, room):
+        super().__init__(instructions=PERSONA, llm=openai.realtime.GPTLiveModel(delegation='client', voice='marin'))
+        self.sid, self.room = sid, room
+        self.provider = V2Provider()
+        self.pending = None
+        self.last_input = 0.0
+        self.input_invalidated = False
+        self.latest = ''
+        self.fragments = []
+        self.fragment_spans = []
+        self.input_audio = AudioWindow()
+        self.consumed = 0
+        self.current_item = None
+        self.processed = ''
+        self.pending_end = -1
+        self.output_held = False
+        self.waiting = False
+        self.tasks = set()
+        self.reading = False
+        self.checkout_context = False
+        self.last_heard_quote = None
+        self.provider_failed = False
+        self.ending = False
+        self.recorder = CallRecorder(ROOT / 'runtime/recordings', sid)
+        self.audit_writer = AuditWriter(tx, sid)
+
+    def spawn(self, coro):
+        task = asyncio.create_task(coro)
+        self.tasks.add(task)
+        task.add_done_callback(self.tasks.discard)
+        return task
+
+    def audit(self, kind, payload):
+        try:
+            self.audit_writer.append(kind, payload)
+        except Exception:
+            logging.getLogger('sawt').error('Unable to persist voice audit event: %s', kind)
+
+    async def send(self, kind, **data):
+        await self.room.local_participant.publish_data(json.dumps({'type': kind, **data}).encode(), reliable=True, topic='sawt')
+
+    async def on_enter(self):
+        self.duplex_session.on('delegation_created', self.on_delegation)
+        self.duplex_session.on('openai_server_event_received', self.on_provider_event)
+        self.duplex_session.on('openai_client_event_queued', self.on_client_event)
+        self.session.on('user_input_transcribed', self.on_transcript)
+        self.spawn(self.watch_lifetime())
+        self.duplex_session.append_commentary(say('greeting'))
+        tx.event(self.sid, 'voice.connected', {'transport': 'livekit', 'model': 'gpt-live-1'})
+        await self.send('ready')
+
+    def on_client_event(self, event):
+        if event.get('type') == 'session.input_audio.append':
+            self.input_audio.append(event.get('audio', ''))
+            self.recorder.append('caller', event.get('audio', ''))
+
+    def on_provider_event(self, event):
+        kind = event.get('type', '')
+        if self.provider_failed or getattr(self,'ending',False):
+            return
+        if kind == 'session.output_audio.delta':
+            self.recorder.append('generated-assistant', event.get('delta', ''))
+        if kind == 'session.input_transcript.delta':
+            self.last_input = time.monotonic()
+            self.fragments.append(event.get('delta', ''))
+            span = {k:event.get(k) for k in ('start_ms','end_ms')}
+            span['captured_ms'] = self.input_audio.duration_ms
+            self.fragment_spans.append(span)
+            self.audit('transcript.fragment', {**span, 'text':event.get('delta',''), 'captured_ms':self.input_audio.duration_ms})
+            # One durable invalidation per unsettled burst. Reset before any
+            # verification/transaction work so new speech always supersedes it.
+            if not self.input_invalidated:
+                row = tx.load(self.sid)
+                quote = row['state']['quote']
+                epoch = tx.interrupt(self.sid, invalidate_quote=bool(quote and not quote['presented']))
+                self.input_invalidated = True
+                self.spawn(self.send('input', epoch=epoch))
+            if self.reading:
+                self.reading = False
+                self.spawn(self.send('readback.cancelled'))
+        elif kind in ('session.output_transcript.delta', 'session.usage.updated', 'session.closed', 'error'):
+            self.audit(kind, {k: v for k, v in event.items() if k not in ('event_id', 'audio', 'delta')} |
+                     ({'text': event.get('delta', '')} if 'transcript' in kind else {}))
+            if kind in ('error', 'session.closed') and not tx.load(self.sid)['closed']:
+                self.provider_failed = True
+                self.spawn(self.close_failed_voice())
+
+    async def close_failed_voice(self):
+        if self.pending and not self.pending.done():
+            self.pending.cancel()
+        tx.interrupt(self.sid, close=True)
+        await self.send('error', fatal=True, message=say('voice_error'))
+        await self.session.aclose()
+        await self.room.disconnect()
+
+    def on_transcript(self, event):
+        if getattr(self,'ending',False):return
+        self.current_item = event.item_id
+        route = route_transcript(event.transcript, checkout=self.checkout_context)
+        # Suppress speculative order speech while the caller's business turn is
+        # unresolved. The microphone and the model's listening remain enabled.
+        if route != 'social' and not self.output_held:
+            self.output_held = True
+            self.session.output.set_audio_enabled(False)
+        if event.is_final:
+            tx.event(self.sid, 'transcript.user', {'text': event.transcript, 'item_id': event.item_id})
+            if route != 'social':
+                # SDK is_final only closes a caption segment. Never execute a
+                # hangup/pause/order from it before joining and checking audio.
+                self.on_delegation(SimpleNamespace(id=None))
+            elif route_transcript(''.join(self.fragments[self.consumed:]), checkout=self.checkout_context) != 'social':
+                self.on_delegation(SimpleNamespace(id=None))
+            else:
+                self.consumed = len(self.fragments)
+                self.waiting = False
+                self.output_held = False
+                self.session.output.set_audio_enabled(True)
+
+    async def verify_transcript(self, start, end, text, epoch):
+        await self.send('processing', stage='recognizing', epoch=epoch)
+        started = time.perf_counter()
+        wav, window = self.input_audio.wav(self.fragment_spans[start:end])
+        verified = await asyncio.wait_for(self.provider.recognize(wav), timeout=8)
+        row = tx.load(self.sid)
+        if row['closed'] or row['epoch'] != epoch or end != len(self.fragments):
+            raise Conflict('Recognition superseded')
+        self.audit('transcript.verified', {'caption':text, 'text':verified, **window,
+            'duration_ms':round((time.perf_counter()-started)*1000)})
+        check_recognition(text, verified)
+        return verified
+
+    async def clarify_recognition(self, end, epoch):
+        row = tx.load(self.sid)
+        if row['closed'] or row['epoch'] != epoch or end != len(self.fragments):
+            raise Conflict('Recognition superseded')
+        self.consumed = end
+        epoch = tx.interrupt(self.sid)
+        self.reading = self.checkout_context = self.waiting = self.output_held = False
+        self.session.output.set_audio_enabled(True)
+        self.duplex_session.append_commentary(say('unclear'))
+        await self.send('updated', epoch=epoch)
+
+    async def recover_audio(self, end):
+        self.consumed = end
+        self.waiting = self.output_held = False
+        self.session.output.set_audio_enabled(True)
+        self.audit('call.audio_check', {'source':'verified_caller_request'})
+        self.duplex_session.append_commentary(say('audio_check'))
+        await self.send('updated', epoch=tx.load(self.sid)['epoch'])
+
+    async def wait_requested(self, end=None):
+        end = len(self.fragments) if end is None else end
+        # A scheduled pause must not swallow speech that arrived after it.
+        self.consumed = max(self.consumed, end)
+        if end < len(self.fragments):
+            return
+        if self.pending and self.pending is not asyncio.current_task() and not self.pending.done():
+            self.pending.cancel()
+        self.waiting = True
+        self.pending_end = self.consumed
+        self.processed = ''
+        self.reading = False
+        self.checkout_context = False
+        self.output_held = True
+        self.session.output.set_audio_enabled(False)
+        epoch = tx.interrupt(self.sid)
+        self.audit('call.wait_requested', {'source': 'explicit_caller_control'})
+        self.duplex_session.append_instructions('العميل طلب الانتظار. انتظر بصمت، ولا تكرر سؤالاً. استأنف عندما يتكلم معك من جديد.')
+        await self.send('waiting', epoch=epoch)
+
+    async def end_requested(self):
+        if self.ending:return
+        self.ending = True
+        session = self.session
+        if self.pending and self.pending is not asyncio.current_task() and not self.pending.done():
+            self.pending.cancel()
+        # Supersede pending mutations now, but keep media alive for the closing
+        # line. Ending a call neither creates nor cancels a confirmed order.
+        tx.interrupt(self.sid)
+        closing_text = farewell(tx.load(self.sid)['state'])
+        self.audit('call.end_requested', {'source': 'explicit_caller_command'})
+        try:
+            await self.send('ending')
+            await asyncio.wait_for(self.play_closing(closing_text),timeout=8)
+            self.audit('call.goodbye_completed', {'text':closing_text})
+        except Exception as exc:
+            self.audit('call.goodbye_failed', {'error_type':type(exc).__name__})
+        finally:
+            tx.interrupt(self.sid, close=True)
+            try:
+                await self.send('ended')
+            finally:
+                try:
+                    await session.aclose()
+                finally:
+                    await self.room.disconnect()
+
+    async def play_closing(self, text):
+        encoded = await self.provider.speak(text)
+        # Explicit audio avoids asking the duplex model to invent a final turn.
+        async def frames():
+            with av.open(io.BytesIO(encoded)) as container:
+                resampler = av.AudioResampler(format='s16',layout='mono',rate=24000)
+                for frame in container.decode(audio=0):
+                    for pcm in resampler.resample(frame):
+                        data=bytes(pcm.planes[0])[:pcm.samples*2]
+                        self.recorder.append('generated-assistant',base64.b64encode(data).decode())
+                        yield rtc.AudioFrame(data,24000,1,pcm.samples)
+                for pcm in resampler.resample(None):
+                    data=bytes(pcm.planes[0])[:pcm.samples*2]
+                    self.recorder.append('generated-assistant',base64.b64encode(data).decode())
+                    yield rtc.AudioFrame(data,24000,1,pcm.samples)
+        self.duplex_session.append_instructions('التطبيق ينهي المكالمة الآن. لا تتكلم ولا تفوض أي طلب جديد.')
+        await self.session.interrupt(force=True)
+        self.session.output.set_audio_enabled(True)
+        speech = self.session.say(text,audio=frames())
+        await speech.wait_for_playout()
+
+    def on_delegation(self, delegation):
+        if getattr(self,'ending',False):return
+        if getattr(self, 'waiting', False) and len(self.fragments) <= self.consumed:
+            return
+        # Coalesce repeated requests for the same changing utterance.
+        if self.pending and not self.pending.done():
+            if self.pending_end == len(self.fragments):
+                # A fallback and a model event can describe the same utterance.
+                # Keep the existing job instead of paying for it twice.
+                if delegation.id:
+                    self.duplex_session.append_thinking('The current request is already being checked. Wait for its verified result.', delegation_id=delegation.id)
+                return
+            self.pending.cancel()
+        self.pending_end = len(self.fragments)
+        self.pending = self.spawn(self.work(delegation.id))
+
+    async def work(self, delegation_id):
+        try:
+            while time.monotonic() - self.last_input < .75:
+                await asyncio.sleep(.1)
+            self.input_invalidated = False
+            end = len(self.fragments)
+            self.pending_end = end
+            text = ''.join(self.fragments[self.consumed:end]).strip()
+            identity = str(self.current_item) + ':' + text
+            if not text or identity == self.processed:
+                self.duplex_session.append_thinking('The current request has already been processed. Use the latest verified result.', delegation_id=delegation_id)
+                if not self.reading and not self.checkout_context:
+                    self.output_held = False
+                    self.session.output.set_audio_enabled(True)
+                return
+            self.processed = identity
+            row = tx.load(self.sid)
+            try:
+                text = await self.verify_transcript(self.consumed, end, text, row['epoch'])
+            except (AudioWindowError, ProviderError, TimeoutError) as exc:
+                self.audit('transcript.unverified', {'error_type':type(exc).__name__,
+                    'reason':str(exc) if isinstance(exc,AudioWindowError) else 'recognition_service_unavailable'})
+                await self.clarify_recognition(end, row['epoch'])
+                return
+            if not text:
+                # No intelligible speech is not an order or a confirmation.
+                self.consumed = end
+                if not row['state']['quote']:
+                    self.reading = self.checkout_context = False
+                self.output_held = self.reading or self.checkout_context or self.waiting
+                self.session.output.set_audio_enabled(not self.output_held)
+                self.duplex_session.append_thinking('No intelligible new caller speech was found. Wait silently; do not infer a request.')
+                await self.send('waiting' if self.waiting else 'updated', epoch=row['epoch'])
+                return
+            route = route_transcript(text, checkout=self.checkout_context)
+            if route == 'end':
+                self.consumed = end
+                await self.end_requested()
+                return
+            if route == 'wait':
+                await self.wait_requested()
+                return
+            if route == 'recover':
+                await self.recover_audio(end)
+                return
+            if route == 'social':
+                self.consumed = end
+                self.waiting = self.output_held = False
+                self.session.output.set_audio_enabled(True)
+                await self.send('updated', epoch=row['epoch'])
+                return
+            self.waiting = False
+            row = tx.load(self.sid)
+            async def progress(stage, epoch):
+                # If the caller has corrected the request, drop old UI updates
+                # at the same boundary that guards the durable transaction.
+                current = tx.load(self.sid)
+                if current['closed'] or current['epoch'] != epoch:
+                    raise Conflict('Superseded progress')
+                self.audit('delegation.progress', {'stage': stage, 'epoch': epoch})
+                await self.send('processing', stage=stage, epoch=epoch)
+            result = await delegate(self.sid, text, delegation_id or 'transcript-' + uuid.uuid4().hex, row['epoch'], progress=progress, voice_provider=self.provider)
+            self.consumed = end
+            quote = result['state']['quote']
+            if quote and not quote['presented']:
+                self.reading = True
+                self.checkout_context = True
+                self.session.output.set_audio_enabled(False)
+                self.output_held = True
+                self.duplex_session.append_instructions('التطبيق يشغل الملخص الدقيق الآن. لا تتكلم حتى يعطيك نتيجة طلب العميل التالية.')
+                await self.send('readback', token=quote['token'], revision=quote['revision'])
+            else:
+                self.reading = False
+                self.checkout_context = False
+                self.output_held = False
+                self.session.output.set_audio_enabled(True)
+                # Injection limit is 500 tokens; a byte bound also works without
+                # assuming English tokenization for Arabic text.
+                speech = result['reply'].encode('utf-8')[:480].decode('utf-8', errors='ignore')
+                self.duplex_session.append_commentary(speech, delegation_id=delegation_id)
+                verified = 'CONFIRMED order ' + result['state']['order_id'] if result['state']['order_id'] else 'DRAFT ONLY. No order has been placed. Do not say registered, confirmed, or ready for pickup.'
+                self.duplex_session.append_thinking(verified, delegation_id=delegation_id)
+                await self.send('updated', epoch=tx.load(self.sid)['epoch'])
+        except (asyncio.CancelledError, Conflict):
+            self.processed = ''
+            tx.event(self.sid, 'delegation.superseded', {'delegation_id': delegation_id})
+            # Committed tools remain in storage; the next request sees them.
+        except Exception as exc:
+            self.processed = ''
+            self.audit('delegation.failed', {'delegation_id': delegation_id, 'error_type': type(exc).__name__})
+            self.session.output.set_audio_enabled(True)
+            self.output_held = False
+            self.duplex_session.append_commentary(say('backend_error'), delegation_id=delegation_id)
+            await self.send('error', message='تعذر إكمال الخطوة. حاول مرة ثانية أو اطلب موظف.')
+
+    async def watch_lifetime(self):
+        # Keep the session object: Agent.session becomes unavailable after a
+        # browser disconnect even while this task is awaiting the DB read.
+        session = self.session
+        deadline = time.monotonic() + 600
+        while True:
+            await asyncio.sleep(1)
+            if self.ending:return
+            try:
+                row = await asyncio.to_thread(tx.load, self.sid)
+            except Exception:
+                await self.send('error', message=say('storage_error'))
+                await session.aclose()
+                await self.room.disconnect()
+                return
+            quote = row['state']['quote']
+            if quote and quote['presented'] and quote['token'] != self.last_heard_quote:
+                self.last_heard_quote = quote['token']
+                self.reading = False
+                self.duplex_session.append_thinking('The application has finished playing the exact checkout summary to the caller. Await their explicit acceptance or correction; delegate even a short yes. Do not repeat the summary.')
+            if row['closed'] or time.time() - row['created'] > 600 or time.monotonic() > deadline:
+                if not row['closed']:
+                    tx.interrupt(self.sid, close=True)
+                await self.send('ended')
+                await session.aclose()
+                await self.room.disconnect()
+                return
+
+
+@server.rtc_session(agent_name='sawt-v2')
+async def entrypoint(ctx: JobContext):
+    sid = ctx.job.metadata
+    if not sid or tx.load(sid)['closed']:
+        ctx.shutdown(reason='Session already closed')
+        return
+    await asyncio.to_thread(prune, ROOT / 'runtime/recordings')
+    session = AgentSession()
+    voice = RestaurantVoice(sid, ctx.room)
+    @ctx.room.on('participant_disconnected')
+    def disconnected(participant):
+        if participant.identity == 'caller-' + sid:
+            tx.interrupt(sid, close=True)
+    async def cleanup():
+        for task in list(voice.tasks):
+            task.cancel()
+        await asyncio.to_thread(voice.recorder.close)
+        await asyncio.to_thread(voice.audit_writer.close)
+        await voice.provider.aclose()
+        tx.event(sid, 'voice.disconnected', {})
+    ctx.add_shutdown_callback(cleanup)
+    await ctx.connect()
+    await session.start(agent=voice, room=ctx.room)
+
+
+if __name__ == '__main__':
+    cli.run_app(server)

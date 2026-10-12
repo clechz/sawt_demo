@@ -1,0 +1,89 @@
+SAWT RECOGNITION INVESTIGATION — 2026-10-12
+
+Actual complaint and cause
+In call ec22739db61847d9a813ba0c80de3d1d, the live captions rendered the
+complaint as "ما قاعد أتكلم" (I am not speaking). The user confirmed that they
+meant "أنت ما قاعد تتكلم" (the bot was not speaking). Re-transcribing the
+approved final audio segment with GPT-Transcribe recovered the latter meaning.
+The earlier whole-recording secondary transcription returned only a price
+question and was incomplete; it was not reliable ground truth for the call.
+
+The application had treated short, imperfect live captions as finalized commands.
+SDK inspection found its is_final closes a caption segment after an audio gap;
+it is not a provider-confirmed utterance boundary. A wrong pronoun could therefore
+activate the opposite behavior. The SDK's placeholder confidence=1 was not an
+accuracy signal. No evidence establishes a microphone/hardware fault: capture
+reported no dropped chunks and only ~0.00036% clipped samples. Raw device audio
+before browser processing was not available, so echo/noise causes are not ruled out.
+
+Changes
+- Retain a bounded 45-second PCM ring of the same audio supplied to GPT-Live.
+- Join caption fragments and check the corresponding audio with GPT-Transcribe
+  before transactional actions or pause/hang-up/recovery controls.
+- Preserve 1.4 seconds of pre-roll and 450 ms of post-roll. An initial 350 ms
+  pre-roll test cut off "كم" and misread a question as an item request. Testing
+  the same clip with wider context retained the question; the final replay passed.
+- Use Arabic/English language hints and a small restaurant vocabulary.
+- Ask for clarification when verification fails, audio timing is invalid, or
+  the two recognitions disagree on selected critical signals: price-question
+  prefix, explicit negation, or quantity. This is a bounded heuristic.
+- Discard results when newer speech changes the call epoch/fragment boundary.
+- Distinguish inability to hear the bot from asking the bot to wait silently.
+- Generic shawarma cannot silently choose chicken or beef. Unstated variants
+  require clarification before adding/replacing an item.
+- Each voice call owns its provider connection pool; one cleanup cannot close
+  another call's HTTP pool. A captured session reference fixes a post-disconnect
+  lifetime-task error. These code findings do not establish the cause of every
+  earlier browser disconnect.
+
+Observed tests
+1. Approved original price question + complaint, then synthetic wait/order/
+   negated hang-up: all 7 checks passed over actual LiveKit media.
+   The corrected complaint selected audio recovery; received caller-side audio
+   RMS showed speech after recovery. Explicit wait produced quiet output.
+2. Synthetic edge replay: quantity 3 -> 2 without duplicates; English two large
+   karak/no ice/half sugar; no shawarma after a negative request; yes without
+   completed readback could not confirm; low-amplitude noise left basket unchanged.
+   All 7 checks passed.
+3. Final per-call-pool price smoke passed while overlapping a browser connection.
+   The browser disconnected early, so this is not evidence that two complete
+   simultaneous order journeys passed.
+   A later browser-free test ran two real media price calls concurrently. Both
+   passed; persisted timestamps prove the second request completed after the
+   first call closed. This validates that limited isolation case, not full load
+   or two concurrent checkout journeys. See concurrency-lifecycle.json.
+4. Browser checkout reached completed readback/waiting for confirmation in one
+   attempt, but the final new full checkout was not completed. Chrome testing was
+   stopped and its test tab closed at the user's request. Earlier complete browser
+   evidence remains historical evidence, not a fresh final-configuration pass.
+5. New spoken hang-up: saved goodbye-completed event, actual received closing
+   audio, closed call, and no order created. This test used media APIs, no browser.
+6. Full Python/JS regression results and product interaction checks are recorded
+   in RELEASE-TEST-REPORT.txt. No test count is a count of native Saudi callers.
+
+Latency/cost tradeoff
+The six bounded ASR requests in the original-audio replay took 326–666 ms, median
+447 ms. These are recognition request durations, not total reply latency or a
+production p95. Verification adds a provider request and cost to non-social
+utterances. GPT-Live still owns conversational timing; no second live VAD was added.
+
+Limits
+An earlier segment around 12–25 seconds remains unclear. No claim that every word
+in the call has been recovered. Tests do not establish 100% recognition, accent
+naturalness, every microphone/noise condition, broad load reliability or production
+readiness. ASR and disagreement heuristics can both fail on new phrasing. Further
+native-human microphone testing is needed, with explicit expected meanings.
+
+Evidence
+evidence/v2/recognition-live-replay.json
+evidence/v2/recognition-edge-replay.json
+evidence/v2/recognition-concurrent-price.json
+evidence/v2/concurrency-lifecycle.json
+evidence/v2/recognition-farewell.json
+tests/test_recognition.py
+
+Official behavior references
+https://developers.openai.com/api/docs/guides/live-conversations
+https://developers.openai.com/api/docs/guides/live-delegation
+https://developers.openai.com/api/docs/guides/transcription
+https://developers.openai.com/api/docs/guides/speech-to-text

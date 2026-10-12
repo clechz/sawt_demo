@@ -1,0 +1,5 @@
+Official Sawt header logo, retrieved 2026-10-11 from https://www.sawt.sa/en/.
+Source: rendered SVG symbol #svg10571090399 in the element named "Sawt logo".
+Original path and viewBox preserved. The site's light fill token is resolved to
+#f0f0ff, and an SVG namespace is added for standalone local delivery.
+Logo and brand belong to Sawt.

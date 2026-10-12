@@ -1,0 +1,388 @@
+{
+  "passed": true,
+  "scope": "Real planner and transactions, seeded cancellation states; no audio or browser. Unknown-fact wording requires manual inspection of saved replies.",
+  "cases": [
+    {
+      "name": "price_information",
+      "passed": true,
+      "text": "بكم سندويش شاورما الدجاج واللحم؟",
+      "reply": "سعر سندويش شاورما الدجاج يبدأ من 18 ريال، وسعر سندويش شاورما اللحم يبدأ من 22 ريال.",
+      "tools": [
+        "search_menu"
+      ],
+      "state": {
+        "revision": 0,
+        "status": "collecting",
+        "service": null,
+        "location": null,
+        "branch_id": null,
+        "branch": null,
+        "basket": [],
+        "subtotal": 0,
+        "delivery_fee": 0,
+        "total": 0,
+        "eta_minutes": null,
+        "issues": [
+          "حدد توصيل أو استلام.",
+          "حدد الفرع أو منطقة التوصيل.",
+          "السلة فارغة."
+        ],
+        "quote": null,
+        "order_id": null,
+        "handoff": null,
+        "pending_choice": null,
+        "pending_handoff": null,
+        "delivery_details": {}
+      }
+    },
+    {
+      "name": "menu_discovery",
+      "passed": true,
+      "text": "وش فئات الأكل اللي عندكم؟",
+      "reply": "عندنا الفطور، الشوربات والسلطات، المقبلات، الأرز والأطباق السعودية، المشويات، أطباق الدجاج، البرجر والسندويتشات، البيتزا والمناقيش، الباستا، المأكولات البحرية، الحلويات، والمشروبات. إذا حاب تعرف عن فئة معينة أو صنف محدد بلغني.",
+      "tools": [
+        "list_categories"
+      ],
+      "state": {
+        "revision": 0,
+        "status": "collecting",
+        "service": null,
+        "location": null,
+        "branch_id": null,
+        "branch": null,
+        "basket": [],
+        "subtotal": 0,
+        "delivery_fee": 0,
+        "total": 0,
+        "eta_minutes": null,
+        "issues": [
+          "حدد توصيل أو استلام.",
+          "حدد الفرع أو منطقة التوصيل.",
+          "السلة فارغة."
+        ],
+        "quote": null,
+        "order_id": null,
+        "handoff": null,
+        "pending_choice": null,
+        "pending_handoff": null,
+        "delivery_details": {}
+      }
+    },
+    {
+      "name": "branch_information",
+      "passed": true,
+      "text": "عندكم فرع في جدة؟ أنا بس أسأل، ما أبي أطلب.",
+      "reply": "نعم، عندنا فرع في جدة بحي الروضة. إذا تحتاج تفاصيل أكثر عن الفرع أو الخدمة، بلغني.",
+      "tools": [
+        "list_branches"
+      ],
+      "state": {
+        "revision": 0,
+        "status": "collecting",
+        "service": null,
+        "location": null,
+        "branch_id": null,
+        "branch": null,
+        "basket": [],
+        "subtotal": 0,
+        "delivery_fee": 0,
+        "total": 0,
+        "eta_minutes": null,
+        "issues": [
+          "حدد توصيل أو استلام.",
+          "حدد الفرع أو منطقة التوصيل.",
+          "السلة فارغة."
+        ],
+        "quote": null,
+        "order_id": null,
+        "handoff": null,
+        "pending_choice": null,
+        "pending_handoff": null,
+        "delivery_details": {}
+      }
+    },
+    {
+      "name": "opening_hours",
+      "passed": true,
+      "text": "متى يقفل فرع النرجس اليوم؟",
+      "reply": "ما عندي هالمعلومة، وما أبي أعطيك جواب غلط. التحويل لموظف مو مفعّل هنا، لكن أقدر أسجل طلب تواصل للتجربة. تبي أسجله؟",
+      "tools": [
+        "list_branches",
+        "offer_handoff"
+      ],
+      "state": {
+        "revision": 0,
+        "status": "collecting",
+        "service": null,
+        "location": null,
+        "branch_id": null,
+        "branch": null,
+        "basket": [],
+        "subtotal": 0,
+        "delivery_fee": 0,
+        "total": 0,
+        "eta_minutes": null,
+        "issues": [
+          "حدد توصيل أو استلام.",
+          "حدد الفرع أو منطقة التوصيل.",
+          "السلة فارغة."
+        ],
+        "quote": null,
+        "order_id": null,
+        "handoff": null,
+        "pending_choice": null,
+        "pending_handoff": {
+          "reason": "متى يقفل فرع النرجس اليوم؟",
+          "revision": 0
+        },
+        "delivery_details": {}
+      },
+      "followup": {
+        "text": "نعم",
+        "reply": "تمام، سجلت لك طلب تواصل.",
+        "tools": [
+          "handoff"
+        ]
+      }
+    },
+    {
+      "name": "allergen_unknown",
+      "passed": true,
+      "text": "عندي حساسية سمسم. هل الشكشوكة مضمونة خالية من السمسم؟",
+      "reply": "ما عندي تفاصيل المكونات، فما أقدر أضمن لك إنه يناسب حساسيتك. التحويل لموظف مو مفعّل هنا، لكن أقدر أسجل طلب تواصل للتجربة. تبي أسجله؟",
+      "tools": [
+        "offer_handoff"
+      ],
+      "state": {
+        "revision": 0,
+        "status": "collecting",
+        "service": null,
+        "location": null,
+        "branch_id": null,
+        "branch": null,
+        "basket": [],
+        "subtotal": 0,
+        "delivery_fee": 0,
+        "total": 0,
+        "eta_minutes": null,
+        "issues": [
+          "حدد توصيل أو استلام.",
+          "حدد الفرع أو منطقة التوصيل.",
+          "السلة فارغة."
+        ],
+        "quote": null,
+        "order_id": null,
+        "handoff": null,
+        "pending_choice": null,
+        "pending_handoff": {
+          "reason": "سؤال عن مكونات الشكشوكة أو الحساسية من السمسم",
+          "revision": 0
+        },
+        "delivery_details": {}
+      },
+      "followup": {
+        "text": "لا شكرا",
+        "reply": "تمام.",
+        "tools": []
+      }
+    },
+    {
+      "name": "external_order_tracking",
+      "passed": true,
+      "text": "طلبي من أمس رقمه 123، وين وصل المندوب؟",
+      "reply": "ما عندي هالمعلومة، وما أبي أعطيك جواب غلط. التحويل لموظف مو مفعّل هنا، لكن أقدر أسجل طلب تواصل للتجربة. تبي أسجله؟",
+      "tools": [
+        "offer_handoff"
+      ],
+      "state": {
+        "revision": 0,
+        "status": "collecting",
+        "service": null,
+        "location": null,
+        "branch_id": null,
+        "branch": null,
+        "basket": [],
+        "subtotal": 0,
+        "delivery_fee": 0,
+        "total": 0,
+        "eta_minutes": null,
+        "issues": [
+          "حدد توصيل أو استلام.",
+          "حدد الفرع أو منطقة التوصيل.",
+          "السلة فارغة."
+        ],
+        "quote": null,
+        "order_id": null,
+        "handoff": null,
+        "pending_choice": null,
+        "pending_handoff": {
+          "reason": "طلبي من أمس رقمه 123، وين وصل المندوب؟",
+          "revision": 0
+        },
+        "delivery_details": {}
+      }
+    },
+    {
+      "name": "complaint",
+      "passed": true,
+      "text": "عندي شكوى، أبي أكلم موظف.",
+      "reply": "سجلت لك طلب تواصل. بس للتوضيح، التحويل لموظف مو مفعّل في النسخة التجريبية.",
+      "tools": [
+        "handoff"
+      ],
+      "state": {
+        "revision": 0,
+        "status": "handoff",
+        "service": null,
+        "location": null,
+        "branch_id": null,
+        "branch": null,
+        "basket": [],
+        "subtotal": 0,
+        "delivery_fee": 0,
+        "total": 0,
+        "eta_minutes": null,
+        "issues": [
+          "حدد توصيل أو استلام.",
+          "حدد الفرع أو منطقة التوصيل.",
+          "السلة فارغة."
+        ],
+        "quote": null,
+        "order_id": null,
+        "handoff": {
+          "reason": "عندي شكوى، أبي أكلم موظف.",
+          "ticket": "H-0CAA75E8"
+        },
+        "pending_choice": null,
+        "pending_handoff": null,
+        "delivery_details": {}
+      }
+    },
+    {
+      "name": "negated_complaint",
+      "passed": true,
+      "text": "ما أبي موظف ولا عندي شكوى، بس بكم سندويش الشاورما؟",
+      "reply": "سعر ساندويتش شاورما الدجاج يبدأ من 18 ريال، وسعر ساندويتش شاورما اللحم يبدأ من 22 ريال حسب اختيارات الخبز والإضافات.",
+      "tools": [
+        "search_menu"
+      ],
+      "state": {
+        "revision": 0,
+        "status": "collecting",
+        "service": null,
+        "location": null,
+        "branch_id": null,
+        "branch": null,
+        "basket": [],
+        "subtotal": 0,
+        "delivery_fee": 0,
+        "total": 0,
+        "eta_minutes": null,
+        "issues": [
+          "حدد توصيل أو استلام.",
+          "حدد الفرع أو منطقة التوصيل.",
+          "السلة فارغة."
+        ],
+        "quote": null,
+        "order_id": null,
+        "handoff": null,
+        "pending_choice": null,
+        "pending_handoff": null,
+        "delivery_details": {}
+      }
+    },
+    {
+      "name": "cancel_draft",
+      "passed": true,
+      "text": "الغ طلبي",
+      "reply": "تمام، لغيت الطلب.",
+      "tools": [
+        "cancel_draft"
+      ],
+      "state": {
+        "revision": 4,
+        "status": "collecting",
+        "service": null,
+        "location": null,
+        "branch_id": null,
+        "branch": null,
+        "basket": [],
+        "subtotal": 0,
+        "delivery_fee": 0,
+        "total": 0,
+        "eta_minutes": null,
+        "issues": [
+          "حدد توصيل أو استلام.",
+          "حدد الفرع أو منطقة التوصيل.",
+          "السلة فارغة."
+        ],
+        "quote": null,
+        "order_id": null,
+        "handoff": null,
+        "pending_choice": null,
+        "pending_handoff": null,
+        "delivery_details": {}
+      }
+    },
+    {
+      "name": "cancel_confirmed",
+      "passed": true,
+      "text": "الغ طلبي",
+      "reply": "الطلب تأكد، وما أقدر أعدّله أو ألغيه من هنا. هالشي يحتاج موظف.",
+      "tools": [],
+      "state": {
+        "revision": 3,
+        "status": "completed",
+        "service": "pickup",
+        "location": null,
+        "branch_id": "ruh_narjis",
+        "branch": {
+          "name": "فرع النرجس بالرياض",
+          "city": "الرياض",
+          "zones": [
+            "النرجس",
+            "الياسمين"
+          ],
+          "fee": 1500,
+          "eta": 40
+        },
+        "basket": [
+          {
+            "item_id": "breakfast_05",
+            "line_id": "cb26b773",
+            "notes": "",
+            "options": {
+              "bread": [
+                "brown"
+              ],
+              "portion": [
+                "regular"
+              ]
+            },
+            "quantity": 1,
+            "name": "تميس بالعسل",
+            "option_names": [
+              "عادي",
+              "خبز أسمر"
+            ],
+            "unit_price": 1500,
+            "line_total": 1500,
+            "missing": [],
+            "available": true
+          }
+        ],
+        "subtotal": 1500,
+        "delivery_fee": 0,
+        "total": 1500,
+        "eta_minutes": 20,
+        "issues": [],
+        "quote": null,
+        "order_id": "S-SEEDED-TEST",
+        "handoff": null,
+        "pending_choice": null,
+        "pending_handoff": null,
+        "delivery_details": {}
+      }
+    }
+  ]
+}

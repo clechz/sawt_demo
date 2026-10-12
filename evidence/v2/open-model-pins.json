@@ -1,0 +1,20 @@
+[
+  {
+    "model": "CohereLabs/cohere-transcribe-arabic-07-2026",
+    "revision": "c3e911b42149bf7a1e53d5cef9878aee87515a23",
+    "license": "apache-2.0",
+    "checked_at": "2026-10-11T21:45:12.6382021Z"
+  },
+  {
+    "model": "Qwen/Qwen3-30B-A3B-Instruct-2507",
+    "revision": "0d7cf23991f47feeb3a57ecb4c9cee8ea4a17bfe",
+    "license": "apache-2.0",
+    "checked_at": "2026-10-11T21:45:12.6857979Z"
+  },
+  {
+    "model": "ResembleAI/chatterbox",
+    "revision": "5bb1f6ee58e50c3b8d408bc82a6d3740c2db6e18",
+    "license": "mit",
+    "checked_at": "2026-10-11T21:45:12.7220731Z"
+  }
+]

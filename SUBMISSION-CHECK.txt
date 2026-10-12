@@ -1,0 +1,60 @@
+SAWT — FINAL CONVERSATION CHANGES AND VERIFICATION
+2026-10-12
+
+Changes
+- Updated all 37 reusable Arabic templates. Source: data/conversation-copy.json.
+- Acknowledgments describe differences between the saved states, not generic
+  claims that an action succeeded. No-op changes produce no saved-change claim.
+- Short choice answers advance to the next missing field. Repeated item prefixes
+  and verbose saved-basket recaps before address questions are removed.
+- Delivery city, neighborhood, street and building persist independently in any
+  order. Corrections invalidate dependent old address details. Missing details
+  block checkout. Switching to pickup clears delivery details.
+- A complete order plus an explicit completion request goes to exact readback,
+  without another anything-else question. Confirmation/playback gates remain.
+- Pickup readback omits a zero delivery-fee sentence; delivery readback includes
+  destination, branch, fee, total, ETA, all items/options and notes.
+- Accepted staff offers acknowledge the saved demo ticket without repeating the
+  same limitation. Natural free-text ticket offers become stored proposals;
+  a negative capability statement does not accidentally create an offer.
+
+Verification — no Chrome or browser automation used in this work
+- Full Python suite: 414 passed. evidence/v2/submission-copy-tests.xml.
+- 16 JavaScript playback, audio-meter and call-status checks passed.
+- Four real-planner multi-turn journeys passed (30 turns): karak/choice loop,
+  information/allergens, unavailable size and corrections, incremental address.
+  evidence/v2/submission-live-replay.json. Checkout playback in this harness is
+  SIMULATED, not proof of a browser completing checkout.
+- Ten real-planner request cases plus two staff-offer followups passed:
+  evidence/v2/interaction-eval.json.
+- Seven real LiveKit synthetic-audio edge checks passed: quantity three,
+  correction to two without duplication, English modifiers, negated addition,
+  no unconfirmed order, unheard yes blocked, noise leaves basket unchanged.
+  evidence/v2/submission-voice-edges.json.
+- Public HTTPS demo: all 12 checks passed, including login, protected archives,
+  voice readiness, synthetic caller recognition, expected dishes, returned audio,
+  no unconfirmed order, and closure. evidence/v2/private-demo-smoke.json.
+- Final repeated-recap cleanup was tested deterministically after the live run;
+  it changes presentation only. Services were restarted after final changes.
+
+Issues found and fixed during this verification
+The planner initially failed to save a city supplied alone. Added a bounded
+save-before-reply reminder; the live address retest and final full run passed.
+Natural staff-ticket offers initially bypassed proposal storage. Expanded the
+existing bounded wording guard and tested both offers and negated statements.
+These are observed development regressions, not a held-out reliability score.
+
+Remaining submission work / limits
+- Record the required demonstration video under 10 minutes.
+- Confirm reviewers can access the repository and that the submission includes
+  these local changes. The GitHub commit/push status is reported separately in the delivery message.
+- This is a mock restaurant demo: no real POS, dispatch, payment or live staff
+  integration. The temporary HTTPS link needs this computer and services running.
+- No claim of perfect recognition, every possible Arabic phrase, a fresh browser
+  checkout pass, or production load/soak testing. Model-generated replies can
+  still vary. One test-library deprecation warning remains; prior nonfatal
+  LiveKit teardown warnings are documented in RELEASE-TEST-REPORT.txt.
+
+Full editable phrase review: CALL-EXPERIENCE.txt.
+
+Latest audio update: capture-position anchoring for provider clock drift, queued/batched diagnostics, one invalidation per unsettled burst, 750 ms settlement, and a direct local microphone meter. Seven synthetic voice edge checks passed again in evidence/v2/latency-fix-edges.json. Human-perceived latency is not certified; remaining event-loop stalls need further profiling.

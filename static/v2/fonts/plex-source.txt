@@ -1,0 +1,7 @@
+IBM Plex Sans Arabic
+Source family verified in https://www.sawt.sa/en/ CSS on 2026-10-11.
+Local font files use the site's published Google Fonts URLs.
+Regular: https://fonts.gstatic.com/s/ibmplexsansarabic/v15/Qw3CZRtWPQCuHme67tEYUIx3Kh0PHR9N6bs_1vSbfdlA.woff2
+Medium: https://fonts.gstatic.com/s/ibmplexsansarabic/v15/Qw3NZRtWPQCuHme67tEYUIx3Kh0PHR9N6YPO_9CWVsVJKxTs.woff2
+Bold: https://fonts.gstatic.com/s/ibmplexsansarabic/v14/Qw3NZRtWPQCuHme67tEYUIx3Kh0PHR9N6YOG-dCWVsVJKxTs.woff2
+License: Plex-OFL.txt (SIL Open Font License 1.1).

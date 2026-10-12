@@ -1,69 +1,158 @@
-# Sawt — Arabic restaurant voice agent
+# Sawt — Saudi Arabic restaurant voice agent
 
-A local Arabic voice ordering demo with a deterministic basket engine, the supplied 144-item menu, four branches, and a visible tool/state trace. The application records or accepts Arabic audio, transcribes it, uses validated tools to build an order, and generates playable Arabic speech.
+A simple call screen over a stateful ordering system. Speak naturally, give details in any order, change your mind after the total, or ask for information without placing an order. The model interprets the conversation; validated Python tools own prices, availability, saved changes and confirmation.
 
-## Setup (Python 3.12)
+**Current version: V2** (`app_v2.py` + `voice_worker.py`). Orders, delivery zones and staff tickets are simulated. The supplied menu is unchanged: **144 dishes, 12 categories, 4 branches, 1,728 rows**.
 
-Windows PowerShell:
+## Reviewer starting points
+
+| Question | Read |
+|---|---|
+| How do I run it? | Setup below |
+| Why this architecture? How is context managed? | [DESIGN.md](DESIGN.md) |
+| Which open models would you evaluate, and why? | [EVALUATION.md](EVALUATION.md) |
+| How would operations safely change behavior? | [PRODUCT.md](PRODUCT.md) |
+| What should I show in the video? | [DEMO.md](DEMO.md) |
+| What was tested, and what remains uncertain? | [TESTING.md](TESTING.md), [submission checks](SUBMISSION-CHECK.txt) |
+| What does the assistant say? | [37 reusable phrases and request map](CALL-EXPERIENCE.txt) |
+
+## Run V2 locally
+
+### Requirements
+
+- Python **3.12**, Git; two terminals in the repository root.
+- A funded OpenAI API key with access to the configured GPT-Live, transcription, planner and speech models. A ChatGPT subscription alone is not an API credential.
+- A LiveKit Cloud project: its WebSocket URL, API key and API secret.
+- A microphone and a browser supporting WebRTC. Use `localhost` for microphone access; another device requires trusted HTTPS.
+- Node **22+** only for frontend development and the JavaScript checks. Built frontend assets are committed, so Node is not needed merely to run the app.
+
+### Windows PowerShell
 
 ```powershell
 git clone https://github.com/clechz/sawt_demo.git
 cd sawt_demo
-python -m venv .venv
-.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+py -3.12 -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r requirements-v2.txt
 Copy-Item .env.example .env
-# Edit .env: set OPENAI_API_KEY to your funded API key.
-.\.venv\Scripts\python.exe -m uvicorn app:app --host 127.0.0.1 --port 8765
+notepad .env
 ```
 
-macOS/Linux:
+Set these four values in `.env` (never commit the file):
+
+```dotenv
+OPENAI_API_KEY=your-funded-api-key
+LIVEKIT_URL=wss://your-project.livekit.cloud
+LIVEKIT_API_KEY=your-project-api-key
+LIVEKIT_API_SECRET=your-project-api-secret
+```
+
+Keep the model defaults in `.env.example` unless your account requires an explicitly validated alternative. Current live voice uses `GPTLiveModel` with voice `marin` in `voice_worker.py`; changing `LLM_MODEL` changes the tool planner, not that live voice model.
+
+Terminal 1:
+
+```powershell
+.\.venv\Scripts\python.exe -m uvicorn app_v2:app --host 127.0.0.1 --port 8766
+```
+
+Terminal 2, in the same repository:
+
+```powershell
+.\.venv\Scripts\python.exe voice_worker.py start
+```
+
+Wait for the worker's **registered worker** log, then open **http://127.0.0.1:8766**. Click the call action and allow the microphone. End the call before stopping either terminal with Ctrl+C. Restart both processes after changing server configuration or spoken templates.
+
+### macOS / Linux
 
 ```bash
 git clone https://github.com/clechz/sawt_demo.git
 cd sawt_demo
 python3.12 -m venv .venv
-.venv/bin/python -m pip install -r requirements.txt
+.venv/bin/python -m pip install -r requirements-v2.txt
 cp .env.example .env
-# Edit .env to set OPENAI_API_KEY.
-.venv/bin/python -m uvicorn app:app --host 127.0.0.1 --port 8765
+# Edit .env with the same four values above.
+.venv/bin/python -m uvicorn app_v2:app --host 127.0.0.1 --port 8766
 ```
 
-Open http://127.0.0.1:8765 in Chrome or Edge. Allow microphone access, press **تحدث بالعربي**, speak, then press the same button to finish and send. An audio-file upload and text diagnostic path are also available. API keys stay on the server and are excluded from Git. One OpenAI API key is needed; no Twilio, paid database, or GPU is required. `.env` changes are reloaded on the next provider call.
+In a second terminal:
 
-Default models: `gpt-4o-transcribe` → `gpt-4.1` with tools → `gpt-4o-mini-tts` (coral). These are configurable in `.env`. They are separate from the open-weight research recommendations in [EVALUATION.md](EVALUATION.md). See the official [STT](https://developers.openai.com/api/docs/guides/speech-to-text), [TTS](https://developers.openai.com/api/docs/guides/text-to-speech), and [LLM](https://developers.openai.com/api/docs/models/gpt-4.1) documentation. Account access and credit must be checked with live tests.
-
-## Demonstration
-
-Say: «أبي توصيل للرياض حي النرجس شارع التجربة مبنى ١٢. أبي شكشوكة كبير مع تميس بدون إضافات، عدد ٢.»
-
-Then switch to pickup, change quantity, request the final summary, wait for the complete audio readback, and say «اعتمد الطلب». The summary includes all options/notes, branch, fee, total and ETA. A mock `S-######` order is created only after explicit acceptance of the unchanged readback. Use «أبي موظف عندي شكوى» at any point for a mock handoff ticket.
-
-**مقاطعة / إيقاف** stops output, cancels speculative work, and invalidates a checkout readback. Starting a recording while the assistant speaks also interrupts. This is explicit push-to-talk barge-in, not continuous full-duplex voice activity detection. Audio failure leaves the response text available. The text-test acknowledgement button is labelled as such and is not proof of the voice path.
-
-## Mock restaurant assumptions
-
-Menu: the supplied, unmodified `data/restaurant-menu-complex.csv` (144 items / 12 categories / 1,728 option rows / 20 columns). Price = base price + selected option deltas, multiplied by quantity; never sum repeated CSV base prices. Integer halalas avoid floating-point errors. Fixture prices are treated as final customer prices; no additional tax is invented.
-
-Mock zones/fees/ETA: Riyadh Olaya/Sulaymaniyah → Olaya (12 SAR / 35 min); Narjis/Yasmin → Narjis (15 / 40); Malqa/Hittin → Malqa (10 / 30); Jeddah Rawdah/Salamah → Rawdah (14 / 40). Pickup fee is zero; pickup ETA 20 min. Zone boundaries are a fixed lookup, not geocoding. Addresses are free text after city/neighborhood validation. No real payment, dispatch, stock reservation or human telephony connection occurs. Human requests create a local ticket.
-
-## Testing
-
-```powershell
-.\.venv\Scripts\python.exe -m pytest -q --junitxml=test-results.xml
-# Paid real-provider conversational regression tests:
-.\.venv\Scripts\python.exe scripts/live_eval.py
-# Paid audio smoke journey: synthetic Arabic customer → STT → agent → TTS
-.\.venv\Scripts\python.exe scripts/live_eval.py --audio --case delivery_complete
+```bash
+cd sawt_demo
+.venv/bin/python voice_worker.py start
 ```
 
-Replace the executable with `.venv/bin/python` on macOS/Linux. Automated tests use controlled provider outputs. Live reports are written to ignored `runtime/live-text-report.json` and `runtime/live-audio-report.json`; audio-mode MP3 files are also saved there. Synthetic audio is a plumbing check, not a Saudi-speaker quality study. [TESTING.md](TESTING.md) maps the requirements to checks and records remaining manual gates.
+### First call
 
-## Files to review
+Say: **«أبي شكشوكة حجم كبير مع تميس، عدد اثنين، توصيل للرياض حي النرجس شارع التجربة مبنى ١٢.»**
 
-- [DESIGN.md](DESIGN.md): architecture, state, reliability, context and production gaps.
-- [EVALUATION.md](EVALUATION.md): open Arabic model choices, evidence and evaluation design.
-- [PRODUCT.md](PRODUCT.md): safe-change workflow and wireframe.
-- [DEMO.md](DEMO.md): timed recording script and submission checklist.
-- `sawt/domain.py`: business rules; `sawt/agent.py`: bounded tool loop; `sawt/store.py`: durable order/request deduplication.
+Then say **«غيرها استلام من فرع النرجس»**, then **«خلها وحدة بس»**. Request the summary, let the complete readback finish, then say **«اعتمد الطلب»**. Expected totals: delivery **75 SAR**, pickup **60 SAR**, one item for pickup **30 SAR**. The receipt shows a mock order ID only after confirmation.
 
-Local storage is `runtime/orders.sqlite3`; exported traces include the customer-supplied address and conversation. Use fictional data for the demo. Run one server worker: per-session concurrency and cancellation use in-process locks/epochs. This unauthenticated demo is intended for localhost, not public hosting.
+## How the pieces fit
+
+```mermaid
+flowchart LR
+  UI[Minimal call UI] <--> LK[LiveKit audio]
+  LK <--> Voice[GPT-Live: conversational timing]
+  Voice --> Verify[Bounded audio verification]
+  Verify --> Planner[Tool planner + current state]
+  Planner --> Rules[Menu and order rules]
+  Rules --> DB[(SQLite transaction)]
+  DB --> Reply[Actual saved change / next missing question]
+  Reply --> Voice
+  DB --> Readback[Exact checkout speech]
+  Readback --> UI
+  UI --> Receipt[Completed current playback receipt]
+  Receipt --> Confirm[Explicit yes + unchanged quote]
+  Confirm --> DB
+```
+
+The caller sees an orb, a call action and order details. Debugging information stays off the caller screen. The complexity exists at the boundaries where mistakes matter: interpreting a correction, invalidating an old total, distinguishing yes-to-an-option from yes-to-an-order, and rejecting work overtaken by new speech.
+
+## Tests and frontend build
+
+From an activated virtual environment (`.\.venv\Scripts\Activate.ps1` or `source .venv/bin/activate`):
+
+```bash
+python -m pytest -q
+node --experimental-default-type=module --test tests/playback.test.mjs tests/audio-meter.test.mjs tests/call-status.test.mjs
+npm ci --prefix frontend
+npm run build --prefix frontend
+```
+
+If PowerShell blocks activation, use `.\.venv\Scripts\python.exe` instead of `python`; activation is optional. `npm run build` typechecks and regenerates `static/v2/ui` from the React orb source.
+
+Paid provider checks (no Chrome automation):
+
+```bash
+python scripts/v2_interaction_eval.py
+python scripts/v2_release_replay.py
+# Requires the API and voice worker running on localhost:8766:
+python scripts/v2_recognition_replay.py --edges
+```
+
+Offline checks do not need funded provider credentials. Live checks do, and synthetic voice is not a substitute for a held-out Saudi-speaker evaluation. GitHub Actions runs Python/JavaScript tests and the frontend build; it does not run paid calls. Saved evidence distinguishes backend simulation, real media, and human observations.
+
+## Troubleshooting and operating boundaries
+
+- **Configured false:** check `/api/health` and all four credentials; health confirms configuration presence, not provider entitlement.
+- **Call connects but no assistant:** check the worker is registered as `sawt-v2`, both processes use the same `.env`/LiveKit project, and provider credit/access is available.
+- **No microphone:** check the browser permission and selected device. HTTP on a LAN IP is not a secure microphone context; use localhost or trusted HTTPS.
+- **Slow or missed speech:** inspect local `/recordings` and `python scripts/v2_call_audit.py`; distinguish capture, recognition verification, planner and playback timings. A successful backend test alone does not establish good audio latency.
+- **Yes did not confirm:** wait for the whole latest readback. Interruption, edits or failed playback invalidate its receipt.
+- **Already confirmed:** a second yes returns the existing order, never a second order. Real amendments require a staff integration that this demo does not have.
+
+Local state is `runtime/v2.sqlite3`; diagnostic audio is in `runtime/recordings` with bounded retention. These files and `.env` are ignored. Host-only diagnostics can contain transcripts and addresses. Use fictional details when demonstrating. The local API is not a public deployment target: `private_demo.py` provides the optional password gateway, and deployment needs an HTTPS proxy plus a continuously running host. Never expose the unprotected local diagnostics server directly.
+
+Branch zones/fees are fixed fixture assumptions, not geocoding. No payment, inventory reservation, real courier tracking or live human transfer is implemented. The prototype is not presented as production-ready or perfect recognition. A video under ten minutes and reviewer access are submission deliverables, not generated by the app.
+
+## Source map
+
+- `voice_worker.py`: audio lifecycle, verification, interruptions, speech and call closure.
+- `sawt/agent.py`: bounded interpretation/tool loop; no separate intent classifier.
+- `sawt/domain.py`: menu validation, integer-halalas pricing, fulfillment and exact summaries.
+- `sawt/transactions.py`: SQLite revisions, epochs, idempotency and playback receipts.
+- `sawt/clarification.py`, `response_style.py`: contextual answers and actual-change wording.
+- `data/conversation-copy.json`: reusable Arabic copy, separate from business decisions.
+- `frontend/`, `static/v2/`: React orb source and caller app/assets.
+
+The preserved V1 push-to-talk app (`app.py`, port 8765) is historical. Its older setup/design notes are in [docs/legacy-v1](docs/legacy-v1); use the V2 instructions above for this submission.

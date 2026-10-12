@@ -1,0 +1,891 @@
+{
+  "kind": "live_planner_acceptance",
+  "playback": "SIMULATED; browser audio tested separately",
+  "scenarios": [
+    {
+      "name": "incremental_address",
+      "turns": [
+        {
+          "input": "أبي شكشوكة عادي خبز صاج، توصيل.",
+          "ms": 3328,
+          "reply": "ضفت 1 من شكشوكة. بأي مدينة وحي؟",
+          "transcript": "أبي شكشوكة عادي خبز صاج، توصيل.",
+          "state": {
+            "revision": 2,
+            "status": "collecting",
+            "service": "delivery",
+            "location": null,
+            "branch_id": null,
+            "branch": null,
+            "basket": [
+              {
+                "item_id": "breakfast_01",
+                "line_id": "4b1f7be8",
+                "notes": "",
+                "options": {
+                  "bread": [
+                    "saj"
+                  ],
+                  "portion": [
+                    "regular"
+                  ]
+                },
+                "quantity": 1,
+                "name": "شكشوكة",
+                "option_names": [
+                  "عادي",
+                  "صاج"
+                ],
+                "unit_price": 2200,
+                "line_total": 2200,
+                "missing": [],
+                "available": null
+              }
+            ],
+            "subtotal": 2200,
+            "delivery_fee": 0,
+            "total": 2200,
+            "eta_minutes": null,
+            "issues": [
+              "حدد الفرع أو منطقة التوصيل.",
+              "نحتاج عنوان التوصيل والمنطقة."
+            ],
+            "quote": null,
+            "order_id": null,
+            "handoff": null,
+            "pending_choice": null,
+            "pending_handoff": null,
+            "delivery_details": {}
+          },
+          "events": [
+            {
+              "tool": "set_service",
+              "args": {
+                "service": "delivery"
+              },
+              "result": {
+                "revision": 1,
+                "status": "collecting",
+                "service": "delivery",
+                "location": null,
+                "branch_id": null,
+                "branch": null,
+                "basket": [],
+                "subtotal": 0,
+                "delivery_fee": 0,
+                "total": 0,
+                "eta_minutes": null,
+                "issues": [
+                  "حدد الفرع أو منطقة التوصيل.",
+                  "نحتاج عنوان التوصيل والمنطقة.",
+                  "السلة فارغة."
+                ],
+                "quote": null,
+                "order_id": null,
+                "handoff": null,
+                "pending_choice": null,
+                "pending_handoff": null,
+                "delivery_details": {}
+              }
+            },
+            {
+              "tool": "search_menu",
+              "args": {
+                "query": "شكشوكة"
+              },
+              "result": {
+                "total_matches": 1,
+                "items": [
+                  {
+                    "id": "breakfast_01",
+                    "name": "شكشوكة",
+                    "name_en": "Shakshuka",
+                    "category": "الفطور",
+                    "category_id": "breakfast",
+                    "base": 2200,
+                    "available": [
+                      "ruh_narjis",
+                      "ruh_malqa",
+                      "jed_rawdah"
+                    ],
+                    "groups": {
+                      "portion": {
+                        "name": "الحجم",
+                        "required": true,
+                        "min": 1,
+                        "max": 1,
+                        "options": {
+                          "regular": {
+                            "name": "عادي",
+                            "name_en": "Regular",
+                            "delta": 0
+                          },
+                          "large": {
+                            "name": "كبير",
+                            "name_en": "Large",
+                            "delta": 800
+                          }
+                        }
+                      },
+                      "bread": {
+                        "name": "اختيار الخبز",
+                        "required": true,
+                        "min": 1,
+                        "max": 1,
+                        "options": {
+                          "tamees": {
+                            "name": "تميس",
+                            "name_en": "Tamees",
+                            "delta": 0
+                          },
+                          "saj": {
+                            "name": "صاج",
+                            "name_en": "Saj",
+                            "delta": 0
+                          },
+                          "brown": {
+                            "name": "خبز أسمر",
+                            "name_en": "Brown bread",
+                            "delta": 200
+                          }
+                        }
+                      },
+                      "extras": {
+                        "name": "إضافات",
+                        "required": false,
+                        "min": 0,
+                        "max": 3,
+                        "options": {
+                          "cheese": {
+                            "name": "جبن",
+                            "name_en": "Cheese",
+                            "delta": 400
+                          },
+                          "honey": {
+                            "name": "عسل",
+                            "name_en": "Honey",
+                            "delta": 300
+                          },
+                          "cream": {
+                            "name": "قشطة",
+                            "name_en": "Cream",
+                            "delta": 500
+                          },
+                          "eggs": {
+                            "name": "بيضتان",
+                            "name_en": "Two eggs",
+                            "delta": 600
+                          }
+                        }
+                      }
+                    },
+                    "available_here": null
+                  }
+                ]
+              }
+            },
+            {
+              "tool": "add_item",
+              "args": {
+                "item_id": "breakfast_01",
+                "quantity": 1,
+                "options": {
+                  "portion": [
+                    "regular"
+                  ],
+                  "bread": [
+                    "saj"
+                  ]
+                },
+                "notes": ""
+              },
+              "result": {
+                "revision": 2,
+                "status": "collecting",
+                "service": "delivery",
+                "location": null,
+                "branch_id": null,
+                "branch": null,
+                "basket": [
+                  {
+                    "line_id": "4b1f7be8",
+                    "item_id": "breakfast_01",
+                    "quantity": 1,
+                    "options": {
+                      "portion": [
+                        "regular"
+                      ],
+                      "bread": [
+                        "saj"
+                      ]
+                    },
+                    "notes": "",
+                    "name": "شكشوكة",
+                    "option_names": [
+                      "عادي",
+                      "صاج"
+                    ],
+                    "unit_price": 2200,
+                    "line_total": 2200,
+                    "missing": [],
+                    "available": null
+                  }
+                ],
+                "subtotal": 2200,
+                "delivery_fee": 0,
+                "total": 2200,
+                "eta_minutes": null,
+                "issues": [
+                  "حدد الفرع أو منطقة التوصيل.",
+                  "نحتاج عنوان التوصيل والمنطقة."
+                ],
+                "quote": null,
+                "order_id": null,
+                "handoff": null,
+                "pending_choice": null,
+                "pending_handoff": null,
+                "delivery_details": {}
+              }
+            }
+          ]
+        },
+        {
+          "input": "الرياض",
+          "ms": 1551,
+          "reply": "بأي حي؟",
+          "transcript": "الرياض",
+          "state": {
+            "revision": 3,
+            "status": "collecting",
+            "service": "delivery",
+            "location": null,
+            "branch_id": null,
+            "branch": null,
+            "basket": [
+              {
+                "item_id": "breakfast_01",
+                "line_id": "4b1f7be8",
+                "notes": "",
+                "options": {
+                  "bread": [
+                    "saj"
+                  ],
+                  "portion": [
+                    "regular"
+                  ]
+                },
+                "quantity": 1,
+                "name": "شكشوكة",
+                "option_names": [
+                  "عادي",
+                  "صاج"
+                ],
+                "unit_price": 2200,
+                "line_total": 2200,
+                "missing": [],
+                "available": null
+              }
+            ],
+            "subtotal": 2200,
+            "delivery_fee": 0,
+            "total": 2200,
+            "eta_minutes": null,
+            "issues": [
+              "حدد الفرع أو منطقة التوصيل.",
+              "نحتاج عنوان التوصيل والمنطقة."
+            ],
+            "quote": null,
+            "order_id": null,
+            "handoff": null,
+            "pending_choice": null,
+            "pending_handoff": null,
+            "delivery_details": {
+              "city": "الرياض"
+            }
+          },
+          "events": [
+            {
+              "tool": "set_delivery_details",
+              "args": {
+                "city": "الرياض"
+              },
+              "result": {
+                "revision": 3,
+                "status": "collecting",
+                "service": "delivery",
+                "location": null,
+                "branch_id": null,
+                "branch": null,
+                "basket": [
+                  {
+                    "item_id": "breakfast_01",
+                    "line_id": "4b1f7be8",
+                    "notes": "",
+                    "options": {
+                      "bread": [
+                        "saj"
+                      ],
+                      "portion": [
+                        "regular"
+                      ]
+                    },
+                    "quantity": 1,
+                    "name": "شكشوكة",
+                    "option_names": [
+                      "عادي",
+                      "صاج"
+                    ],
+                    "unit_price": 2200,
+                    "line_total": 2200,
+                    "missing": [],
+                    "available": null
+                  }
+                ],
+                "subtotal": 2200,
+                "delivery_fee": 0,
+                "total": 2200,
+                "eta_minutes": null,
+                "issues": [
+                  "حدد الفرع أو منطقة التوصيل.",
+                  "نحتاج عنوان التوصيل والمنطقة."
+                ],
+                "quote": null,
+                "order_id": null,
+                "handoff": null,
+                "pending_choice": null,
+                "pending_handoff": null,
+                "delivery_details": {
+                  "city": "الرياض"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "input": "النرجس",
+          "ms": 2013,
+          "reply": "واسم الشارع ورقم المبنى؟",
+          "transcript": "النرجس",
+          "state": {
+            "revision": 4,
+            "status": "collecting",
+            "service": "delivery",
+            "location": null,
+            "branch_id": "ruh_narjis",
+            "branch": {
+              "name": "فرع النرجس بالرياض",
+              "city": "الرياض",
+              "zones": [
+                "النرجس",
+                "الياسمين"
+              ],
+              "fee": 1500,
+              "eta": 40
+            },
+            "basket": [
+              {
+                "item_id": "breakfast_01",
+                "line_id": "4b1f7be8",
+                "notes": "",
+                "options": {
+                  "bread": [
+                    "saj"
+                  ],
+                  "portion": [
+                    "regular"
+                  ]
+                },
+                "quantity": 1,
+                "name": "شكشوكة",
+                "option_names": [
+                  "عادي",
+                  "صاج"
+                ],
+                "unit_price": 2200,
+                "line_total": 2200,
+                "missing": [],
+                "available": true
+              }
+            ],
+            "subtotal": 2200,
+            "delivery_fee": 0,
+            "total": 2200,
+            "eta_minutes": 40,
+            "issues": [
+              "نحتاج عنوان التوصيل والمنطقة."
+            ],
+            "quote": null,
+            "order_id": null,
+            "handoff": null,
+            "pending_choice": null,
+            "pending_handoff": null,
+            "delivery_details": {
+              "city": "الرياض",
+              "zone": "النرجس"
+            }
+          },
+          "events": [
+            {
+              "tool": "set_delivery_details",
+              "args": {
+                "zone": "النرجس"
+              },
+              "result": {
+                "revision": 4,
+                "status": "collecting",
+                "service": "delivery",
+                "location": null,
+                "branch_id": "ruh_narjis",
+                "branch": {
+                  "name": "فرع النرجس بالرياض",
+                  "city": "الرياض",
+                  "zones": [
+                    "النرجس",
+                    "الياسمين"
+                  ],
+                  "fee": 1500,
+                  "eta": 40
+                },
+                "basket": [
+                  {
+                    "item_id": "breakfast_01",
+                    "line_id": "4b1f7be8",
+                    "notes": "",
+                    "options": {
+                      "bread": [
+                        "saj"
+                      ],
+                      "portion": [
+                        "regular"
+                      ]
+                    },
+                    "quantity": 1,
+                    "name": "شكشوكة",
+                    "option_names": [
+                      "عادي",
+                      "صاج"
+                    ],
+                    "unit_price": 2200,
+                    "line_total": 2200,
+                    "missing": [],
+                    "available": true
+                  }
+                ],
+                "subtotal": 2200,
+                "delivery_fee": 0,
+                "total": 2200,
+                "eta_minutes": 40,
+                "issues": [
+                  "نحتاج عنوان التوصيل والمنطقة."
+                ],
+                "quote": null,
+                "order_id": null,
+                "handoff": null,
+                "pending_choice": null,
+                "pending_handoff": null,
+                "delivery_details": {
+                  "city": "الرياض",
+                  "zone": "النرجس"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "input": "شارع الاختبار",
+          "ms": 1553,
+          "reply": "ورقم المبنى؟",
+          "transcript": "شارع الاختبار",
+          "state": {
+            "revision": 5,
+            "status": "collecting",
+            "service": "delivery",
+            "location": null,
+            "branch_id": "ruh_narjis",
+            "branch": {
+              "name": "فرع النرجس بالرياض",
+              "city": "الرياض",
+              "zones": [
+                "النرجس",
+                "الياسمين"
+              ],
+              "fee": 1500,
+              "eta": 40
+            },
+            "basket": [
+              {
+                "item_id": "breakfast_01",
+                "line_id": "4b1f7be8",
+                "notes": "",
+                "options": {
+                  "bread": [
+                    "saj"
+                  ],
+                  "portion": [
+                    "regular"
+                  ]
+                },
+                "quantity": 1,
+                "name": "شكشوكة",
+                "option_names": [
+                  "عادي",
+                  "صاج"
+                ],
+                "unit_price": 2200,
+                "line_total": 2200,
+                "missing": [],
+                "available": true
+              }
+            ],
+            "subtotal": 2200,
+            "delivery_fee": 0,
+            "total": 2200,
+            "eta_minutes": 40,
+            "issues": [
+              "نحتاج عنوان التوصيل والمنطقة."
+            ],
+            "quote": null,
+            "order_id": null,
+            "handoff": null,
+            "pending_choice": null,
+            "pending_handoff": null,
+            "delivery_details": {
+              "city": "الرياض",
+              "street": "شارع الاختبار",
+              "zone": "النرجس"
+            }
+          },
+          "events": [
+            {
+              "tool": "set_delivery_details",
+              "args": {
+                "city": "الرياض",
+                "zone": "النرجس",
+                "street": "شارع الاختبار"
+              },
+              "result": {
+                "revision": 5,
+                "status": "collecting",
+                "service": "delivery",
+                "location": null,
+                "branch_id": "ruh_narjis",
+                "branch": {
+                  "name": "فرع النرجس بالرياض",
+                  "city": "الرياض",
+                  "zones": [
+                    "النرجس",
+                    "الياسمين"
+                  ],
+                  "fee": 1500,
+                  "eta": 40
+                },
+                "basket": [
+                  {
+                    "item_id": "breakfast_01",
+                    "line_id": "4b1f7be8",
+                    "notes": "",
+                    "options": {
+                      "bread": [
+                        "saj"
+                      ],
+                      "portion": [
+                        "regular"
+                      ]
+                    },
+                    "quantity": 1,
+                    "name": "شكشوكة",
+                    "option_names": [
+                      "عادي",
+                      "صاج"
+                    ],
+                    "unit_price": 2200,
+                    "line_total": 2200,
+                    "missing": [],
+                    "available": true
+                  }
+                ],
+                "subtotal": 2200,
+                "delivery_fee": 0,
+                "total": 2200,
+                "eta_minutes": 40,
+                "issues": [
+                  "نحتاج عنوان التوصيل والمنطقة."
+                ],
+                "quote": null,
+                "order_id": null,
+                "handoff": null,
+                "pending_choice": null,
+                "pending_handoff": null,
+                "delivery_details": {
+                  "city": "الرياض",
+                  "zone": "النرجس",
+                  "street": "شارع الاختبار"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "input": "مبنى اثنا عشر",
+          "ms": 1001,
+          "reply": "خلني أراجع معك: 1 من شكشوكة، عادي، صاج، بسعر 22.00 ريال. التوصيل إلى الرياض، حي النرجس، شارع الاختبار، مبنى اثنا عشر من فرع النرجس بالرياض. رسوم التوصيل 15.00 ريال. المجموع 37.00 ريال، والوقت المتوقع 40 دقيقة. نأكد الطلب؟",
+          "transcript": "مبنى اثنا عشر",
+          "state": {
+            "revision": 7,
+            "status": "awaiting_confirmation",
+            "service": "delivery",
+            "location": {
+              "address": "شارع الاختبار، مبنى اثنا عشر",
+              "city": "الرياض",
+              "zone": "النرجس"
+            },
+            "branch_id": "ruh_narjis",
+            "branch": {
+              "name": "فرع النرجس بالرياض",
+              "city": "الرياض",
+              "zones": [
+                "النرجس",
+                "الياسمين"
+              ],
+              "fee": 1500,
+              "eta": 40
+            },
+            "basket": [
+              {
+                "item_id": "breakfast_01",
+                "line_id": "4b1f7be8",
+                "notes": "",
+                "options": {
+                  "bread": [
+                    "saj"
+                  ],
+                  "portion": [
+                    "regular"
+                  ]
+                },
+                "quantity": 1,
+                "name": "شكشوكة",
+                "option_names": [
+                  "عادي",
+                  "صاج"
+                ],
+                "unit_price": 2200,
+                "line_total": 2200,
+                "missing": [],
+                "available": true
+              }
+            ],
+            "subtotal": 2200,
+            "delivery_fee": 1500,
+            "total": 3700,
+            "eta_minutes": 40,
+            "issues": [],
+            "quote": {
+              "presented": false,
+              "revision": 7,
+              "text": "خلني أراجع معك: 1 من شكشوكة، عادي، صاج، بسعر 22.00 ريال. التوصيل إلى الرياض، حي النرجس، شارع الاختبار، مبنى اثنا عشر من فرع النرجس بالرياض. رسوم التوصيل 15.00 ريال. المجموع 37.00 ريال، والوقت المتوقع 40 دقيقة. نأكد الطلب؟",
+              "text_hash": "7ddace08255080d16d03c16581c42bee91b1e92f4d16aef72a1df6f26ab5ee44",
+              "token": "98ff20b9c9194a3cb61c8c96a879fcf8"
+            },
+            "order_id": null,
+            "handoff": null,
+            "pending_choice": null,
+            "pending_handoff": null,
+            "delivery_details": {
+              "building": "اثنا عشر",
+              "city": "الرياض",
+              "street": "شارع الاختبار",
+              "zone": "النرجس"
+            }
+          },
+          "events": [
+            {
+              "tool": "set_delivery_details",
+              "args": {
+                "building": "اثنا عشر"
+              },
+              "result": {
+                "revision": 7,
+                "status": "ready_for_readback",
+                "service": "delivery",
+                "location": {
+                  "city": "الرياض",
+                  "zone": "النرجس",
+                  "address": "شارع الاختبار، مبنى اثنا عشر"
+                },
+                "branch_id": "ruh_narjis",
+                "branch": {
+                  "name": "فرع النرجس بالرياض",
+                  "city": "الرياض",
+                  "zones": [
+                    "النرجس",
+                    "الياسمين"
+                  ],
+                  "fee": 1500,
+                  "eta": 40
+                },
+                "basket": [
+                  {
+                    "item_id": "breakfast_01",
+                    "line_id": "4b1f7be8",
+                    "notes": "",
+                    "options": {
+                      "bread": [
+                        "saj"
+                      ],
+                      "portion": [
+                        "regular"
+                      ]
+                    },
+                    "quantity": 1,
+                    "name": "شكشوكة",
+                    "option_names": [
+                      "عادي",
+                      "صاج"
+                    ],
+                    "unit_price": 2200,
+                    "line_total": 2200,
+                    "missing": [],
+                    "available": true
+                  }
+                ],
+                "subtotal": 2200,
+                "delivery_fee": 1500,
+                "total": 3700,
+                "eta_minutes": 40,
+                "issues": [],
+                "quote": null,
+                "order_id": null,
+                "handoff": null,
+                "pending_choice": null,
+                "pending_handoff": null,
+                "delivery_details": {
+                  "city": "الرياض",
+                  "street": "شارع الاختبار",
+                  "zone": "النرجس",
+                  "building": "اثنا عشر"
+                }
+              }
+            },
+            {
+              "tool": "checkout",
+              "args": {},
+              "result": {
+                "terminal": true,
+                "reply": "خلني أراجع معك: 1 من شكشوكة، عادي، صاج، بسعر 22.00 ريال. التوصيل إلى الرياض، حي النرجس، شارع الاختبار، مبنى اثنا عشر من فرع النرجس بالرياض. رسوم التوصيل 15.00 ريال. المجموع 37.00 ريال، والوقت المتوقع 40 دقيقة. نأكد الطلب؟",
+                "quote": {
+                  "revision": 7,
+                  "token": "98ff20b9c9194a3cb61c8c96a879fcf8",
+                  "presented": false,
+                  "text": "خلني أراجع معك: 1 من شكشوكة، عادي، صاج، بسعر 22.00 ريال. التوصيل إلى الرياض، حي النرجس، شارع الاختبار، مبنى اثنا عشر من فرع النرجس بالرياض. رسوم التوصيل 15.00 ريال. المجموع 37.00 ريال، والوقت المتوقع 40 دقيقة. نأكد الطلب؟",
+                  "text_hash": "7ddace08255080d16d03c16581c42bee91b1e92f4d16aef72a1df6f26ab5ee44"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "input": "خلاص",
+          "ms": 1658,
+          "reply": "خلني أراجع معك: 1 من شكشوكة، عادي، صاج، بسعر 22.00 ريال. التوصيل إلى الرياض، حي النرجس، شارع الاختبار، مبنى اثنا عشر من فرع النرجس بالرياض. رسوم التوصيل 15.00 ريال. المجموع 37.00 ريال، والوقت المتوقع 40 دقيقة. نأكد الطلب؟",
+          "transcript": "خلاص",
+          "state": {
+            "revision": 7,
+            "status": "awaiting_confirmation",
+            "service": "delivery",
+            "location": {
+              "address": "شارع الاختبار، مبنى اثنا عشر",
+              "city": "الرياض",
+              "zone": "النرجس"
+            },
+            "branch_id": "ruh_narjis",
+            "branch": {
+              "name": "فرع النرجس بالرياض",
+              "city": "الرياض",
+              "zones": [
+                "النرجس",
+                "الياسمين"
+              ],
+              "fee": 1500,
+              "eta": 40
+            },
+            "basket": [
+              {
+                "item_id": "breakfast_01",
+                "line_id": "4b1f7be8",
+                "notes": "",
+                "options": {
+                  "bread": [
+                    "saj"
+                  ],
+                  "portion": [
+                    "regular"
+                  ]
+                },
+                "quantity": 1,
+                "name": "شكشوكة",
+                "option_names": [
+                  "عادي",
+                  "صاج"
+                ],
+                "unit_price": 2200,
+                "line_total": 2200,
+                "missing": [],
+                "available": true
+              }
+            ],
+            "subtotal": 2200,
+            "delivery_fee": 1500,
+            "total": 3700,
+            "eta_minutes": 40,
+            "issues": [],
+            "quote": {
+              "presented": false,
+              "revision": 7,
+              "text": "خلني أراجع معك: 1 من شكشوكة، عادي، صاج، بسعر 22.00 ريال. التوصيل إلى الرياض، حي النرجس، شارع الاختبار، مبنى اثنا عشر من فرع النرجس بالرياض. رسوم التوصيل 15.00 ريال. المجموع 37.00 ريال، والوقت المتوقع 40 دقيقة. نأكد الطلب؟",
+              "text_hash": "7ddace08255080d16d03c16581c42bee91b1e92f4d16aef72a1df6f26ab5ee44",
+              "token": "9d6976e2728c42e1ba4c742b9f08408e"
+            },
+            "order_id": null,
+            "handoff": null,
+            "pending_choice": null,
+            "pending_handoff": null,
+            "delivery_details": {
+              "building": "اثنا عشر",
+              "city": "الرياض",
+              "street": "شارع الاختبار",
+              "zone": "النرجس"
+            }
+          },
+          "events": [
+            {
+              "tool": "confirm",
+              "args": {},
+              "result": {
+                "error": "نحتاج قراءة الطلب الحالي كاملاً وموافقة واضحة قبل التأكيد."
+              }
+            },
+            {
+              "tool": "checkout",
+              "args": {},
+              "result": {
+                "terminal": true,
+                "reply": "خلني أراجع معك: 1 من شكشوكة، عادي، صاج، بسعر 22.00 ريال. التوصيل إلى الرياض، حي النرجس، شارع الاختبار، مبنى اثنا عشر من فرع النرجس بالرياض. رسوم التوصيل 15.00 ريال. المجموع 37.00 ريال، والوقت المتوقع 40 دقيقة. نأكد الطلب؟",
+                "quote": {
+                  "revision": 7,
+                  "token": "9d6976e2728c42e1ba4c742b9f08408e",
+                  "presented": false,
+                  "text": "خلني أراجع معك: 1 من شكشوكة، عادي، صاج، بسعر 22.00 ريال. التوصيل إلى الرياض، حي النرجس، شارع الاختبار، مبنى اثنا عشر من فرع النرجس بالرياض. رسوم التوصيل 15.00 ريال. المجموع 37.00 ريال، والوقت المتوقع 40 دقيقة. نأكد الطلب؟",
+                  "text_hash": "7ddace08255080d16d03c16581c42bee91b1e92f4d16aef72a1df6f26ab5ee44"
+                }
+              },
+              "source": "readback_guard"
+            }
+          ]
+        }
+      ],
+      "passed": true
+    }
+  ],
+  "passed": true
+}

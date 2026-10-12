@@ -1,0 +1,72 @@
+{
+  "url": "https://wellington-harper-curves-jackson.trycloudflare.com",
+  "kind": "real_https_and_livekit_synthetic_voice",
+  "call_id": "6220bfdacd7747c99a827fa170d0d16d",
+  "checks": {
+    "anonymous_blocked": true,
+    "login": true,
+    "root": true,
+    "archives_blocked": true,
+    "lab_blocked": true,
+    "call_token_required": true,
+    "voice_ready": true,
+    "heard_synthetic_caller": true,
+    "two_expected_dishes": true,
+    "no_unconfirmed_order": true,
+    "received_voice_audio": true,
+    "closed": true
+  },
+  "received_audio_frames": 3113,
+  "seconds_after_input": 10.74,
+  "basket": [
+    {
+      "item_id": "breakfast_06",
+      "line_id": "df495b97",
+      "notes": "",
+      "options": {
+        "bread": [
+          "brown"
+        ],
+        "portion": [
+          "regular"
+        ]
+      },
+      "quantity": 3,
+      "name": "معصوب ملكي",
+      "option_names": [
+        "عادي",
+        "خبز أسمر"
+      ],
+      "unit_price": 2800,
+      "line_total": 8400,
+      "missing": [],
+      "available": true
+    },
+    {
+      "item_id": "beverages_09",
+      "line_id": "14b48ddd",
+      "notes": "",
+      "options": {
+        "ice": [
+          "none"
+        ],
+        "size": [
+          "large"
+        ]
+      },
+      "quantity": 1,
+      "name": "شاي كرك",
+      "option_names": [
+        "كبير",
+        "بدون ثلج"
+      ],
+      "unit_price": 1800,
+      "line_total": 1800,
+      "missing": [
+        "السكر"
+      ],
+      "available": true
+    }
+  ],
+  "passed": true
+}
