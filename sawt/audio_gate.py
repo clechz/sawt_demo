@@ -38,6 +38,7 @@ class SpeechGate(AudioOutput):
             self.enabled=True
         if not self.enabled:
             frame=rtc.AudioFrame(bytes(len(frame.data)*2),frame.sample_rate,frame.num_channels,frame.samples_per_channel)
+            rms=0.0
         await self.next_in_chain.capture_frame(frame)
         # A single peak/click does not mean the caller heard a reply. Use the
         # same frame-level RMS threshold as the received-audio acceptance test.

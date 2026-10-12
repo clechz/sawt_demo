@@ -33,6 +33,30 @@ async def test_pickup_saves_once_without_planner_or_repeating_service_question(s
     assert not result['state']['quote'] and not result['state']['order_id']
 
 
+async def test_city_and_zone_answers_are_saved_once_without_another_model_round_trip(store):
+    sid,_=store.create();state=new_state()
+    runtime.engine.act(state,'set_service',{'service':'delivery'})
+    state['history']=[{'role':'assistant','content':say('address_question')}]
+    store.commit_bundle(sid,'seed',0,0,state,[],response={})
+    provider=SimpleNamespace(chat=AsyncMock(side_effect=AssertionError('Unnecessary model call')))
+    result=await runtime.delegate(sid,'الرياض','city',0,voice_provider=provider)
+    assert result['state']['delivery_details']=={'city':'الرياض'}
+    assert result['reply']=='بأي حي؟'
+    result=await runtime.delegate(sid,'حي النرجس','zone',0,voice_provider=provider)
+    assert result['state']['delivery_details']=={'city':'الرياض','zone':'النرجس'}
+    assert not result['state']['location'] and not result['state']['quote']
+
+
+@pytest.mark.parametrize('text',['هل توصلون الرياض؟','مو الرياض','الرياض إذا تقدر','الرياض وغير الكمية اثنين','جدة'])
+def test_delivery_shortcut_cannot_reinterpret_question_negation_mixed_or_wrong_city_zone(text):
+    from sawt.choices import delivery_answer
+    state=new_state();state['service']='delivery';state['delivery_details']={'city':'الرياض'}
+    state['history']=[{'role':'assistant','content':'بأي حي؟'}]
+    assert delivery_answer(state,text) is None
+    state['service']='pickup';state['history']=[{'role':'assistant','content':say('address_question')}]
+    assert delivery_answer(state,'الرياض') is None
+
+
 @pytest.mark.parametrize('text',['لا استلام','استلام ولا توصيل؟','نعم','بستلم بس أبي أغير الطلب','بستلم إذا فيه فرع قريب'])
 def test_service_parser_never_guesses_mixed_or_conditional_requests(text):
     assert service_answer(new_state(),text) is None

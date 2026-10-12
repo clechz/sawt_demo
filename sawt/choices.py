@@ -46,6 +46,26 @@ def caption_draft_answer(menu, state, text):
     pending = current(state)
     return bool(pending and last.endswith(pending['question']) and answer(menu,state,text))
 
+
+def delivery_answer(state, text):
+    """Whole known city/zone answers to our current delivery question only."""
+    from .domain import BRANCHES
+    from .conversation import say
+    if (state['service']!='delivery' or state['location'] or state['order_id']
+            or state['handoff'] or state['quote'] or state.get('pending_handoff')
+            or '?' in text or '؟' in text):return None
+    last=next((h['content'] for h in reversed(state['history']) if h['role']=='assistant'),'')
+    details=state.get('delivery_details',{})
+    value=normalize(text)
+    if not details.get('city') and last.endswith((say('address_question'),'بأي مدينة؟')):
+        city=next((b['city'] for b in BRANCHES.values() if normalize(b['city'])==value),None)
+        if city:return {'city':city}
+    if details.get('city') and not details.get('zone') and last.endswith('بأي حي؟'):
+        zone=next((zone for b in BRANCHES.values() if normalize(b['city'])==normalize(details['city'])
+            for zone in b['zones'] if value in (normalize(zone),normalize('حي '+zone))),None)
+        if zone:return {'zone':zone}
+    return None
+
 ALIASES = {
     ('crust', 'stuffed'): ['بحشو بجبن', 'حشو بجبن', 'حشوة جبن', 'محشو بجبن', 'محشوب جبن', 'محشو جبن', 'محشوة بالجبن', 'عجينة الجبن', 'عجين الجبن'],
     ('flavor', 'cheese'): ['جبن', 'جبنة'],

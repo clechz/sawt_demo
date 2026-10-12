@@ -55,7 +55,7 @@ def test_acknowledgment_only_actual_changes(setup):
     engine.act(state,'update_item',{'line_id':state['basket'][0]['line_id'],'quantity':2})
     assert changes(engine.menu,before,state)==''
 
-@pytest.mark.parametrize('text',['لا تقرأ الطلب','خلاص لا تأكد','كم المجموع؟','خلاص شيل الكرك'])
+@pytest.mark.parametrize('text',['لا تقرأ الطلب','خلاص لا تأكد','كم المجموع؟','خلاص شيل الكرك','اذا كان جاهز غيره واقرأ الطلب','اكتب في الملاحظة واقرأ الطلب'])
 def test_mixed_or_negated_completion_is_not_forced(text):
     assert not finished_order(text)
 
@@ -72,8 +72,9 @@ def test_summary_preserves_delivery_details_and_omits_pickup_fee(setup):
 def test_same_item_prefix_is_not_repeated():
     assert combine('بالنسبة لـشاي كرك، خليته بدون ثلج.','بالنسبة لـشاي كرك، الحجم صغير ولا كبير؟')=='بالنسبة لـشاي كرك، خليته بدون ثلج. الحجم صغير ولا كبير؟'
 
-@pytest.mark.parametrize('utterance',['خلاص','اقرأ لي ملخص الطلب من جديد.'])
-def test_finished_order_gets_readback_without_another_sales_question(setup,monkeypatch,tmp_path,utterance):
+@pytest.mark.parametrize('utterance',['خلاص','اقرأ لي ملخص الطلب من جديد.','طيب رجعها استلام من فرع النرجس بالرياض واقرأ ملخص الطلب'])
+@pytest.mark.parametrize('invalid_confirmation',[False,True])
+def test_finished_order_gets_readback_without_another_sales_question(setup,monkeypatch,tmp_path,utterance,invalid_confirmation):
     import asyncio
     from types import SimpleNamespace
     from unittest.mock import AsyncMock
@@ -85,13 +86,20 @@ def test_finished_order_gets_readback_without_another_sales_question(setup,monke
     tx=Transactions(tmp_path/'test.db',engine);sid,_=tx.create()
     tx.commit_bundle(sid,'seed',0,0,state,[],response={})
     monkeypatch.setattr(runtime,'tx',tx)
-    provider=SimpleNamespace(chat=AsyncMock(return_value={'content':'باقي شي تضيفه؟'}))
+    from tests.test_tool_batches import call
+    outputs=[]
+    if 'رجعها' in utterance:
+        outputs.extend([{'tool_calls':[call('set_service',{'service':'pickup'},'service')]},
+                        {'tool_calls':[call('set_branch',{'branch_id':'ruh_narjis'},'branch')]}])
+    outputs+=([{'tool_calls':[call('confirm',{},'invalid')]}] if invalid_confirmation else [])+[{'content':'باقي شي تضيفه؟'}]
+    provider=SimpleNamespace(chat=AsyncMock(side_effect=outputs))
     result=asyncio.run(runtime.delegate(sid,utterance,'finished',0,voice_provider=provider))
     assert result['state']['quote'] and not result['state']['order_id']
     assert result['reply']==engine.summary(tx.load(sid)['state'])
     assert 'باقي شي' not in result['reply']
 
-def test_repeated_saved_choices_do_not_repeat_basket_before_address(setup,monkeypatch,tmp_path):
+@pytest.mark.parametrize('reply',['طلبك شكشوكة عادي صاج. ممكن تعطيني المدينة والحي؟','طلبك الآن شكشوكة عادي صاج. باقي فقط عنوان التوصيل: في أي مدينة وأي حي؟'])
+def test_repeated_saved_choices_do_not_repeat_basket_before_address(setup,monkeypatch,tmp_path,reply):
     import asyncio
     from types import SimpleNamespace
     from unittest.mock import AsyncMock
@@ -102,7 +110,27 @@ def test_repeated_saved_choices_do_not_repeat_basket_before_address(setup,monkey
     tx=Transactions(tmp_path/'test.db',engine);sid,_=tx.create()
     tx.commit_bundle(sid,'seed',0,0,state,[],response={})
     monkeypatch.setattr(runtime,'tx',tx)
-    provider=SimpleNamespace(chat=AsyncMock(return_value={'content':'طلبك شكشوكة عادي صاج. ممكن تعطيني المدينة والحي؟'}))
+    provider=SimpleNamespace(chat=AsyncMock(return_value={'content':reply}))
     result=asyncio.run(runtime.delegate(sid,'قلت لك عادي صاج كمل','repeat',0,voice_provider=provider))
     assert result['reply']=='بأي مدينة وحي؟'
     assert result['state']['basket'][0]['options']==state['basket'][0]['options']
+
+
+async def test_requested_readback_cannot_hide_a_failed_edit(setup,monkeypatch,tmp_path):
+    from types import SimpleNamespace
+    from unittest.mock import AsyncMock
+    from sawt import v2_runtime as runtime
+    from sawt.transactions import Transactions
+    from tests.test_tool_batches import call
+    engine,state=setup
+    engine.act(state,'set_service',{'service':'pickup'})
+    engine.act(state,'set_branch',{'branch_id':'ruh_narjis'})
+    tx=Transactions(tmp_path/'failed-edit.db',engine);sid,_=tx.create()
+    tx.commit_bundle(sid,'seed',0,0,state,[],response={})
+    monkeypatch.setattr(runtime,'tx',tx)
+    provider=SimpleNamespace(supports_tool_batches=True,chat=AsyncMock(side_effect=[
+        {'tool_calls':[call('update_item',{'line_id':'missing','quantity':2},'bad'),call('finish_draft',{},'finish')]},
+        {'content':'ما قدرت أعدل الكمية.'}]))
+    result=await runtime.delegate(sid,'خلها اثنين واقرأ الطلب','failed',0,voice_provider=provider)
+    assert not result['state']['quote'] and not result['state']['order_id']
+    assert result['state']['basket'][0]['quantity']==1

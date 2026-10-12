@@ -132,7 +132,7 @@ class RestaurantVoice(Agent):
         self.spawn(self.watch_lifetime())
         self.spawn(self.watch_event_loop())
         self.duplex_session.append_commentary(say('greeting'))
-        await asyncio.to_thread(tx.event, self.sid, 'voice.connected', {'transport': 'livekit', 'model': 'gpt-live-1', 'recognition_policy':'contextual-draft-v6', 'release':'conversation-v15'})
+        await asyncio.to_thread(tx.event, self.sid, 'voice.connected', {'transport': 'livekit', 'model': 'gpt-live-1', 'recognition_policy':'contextual-draft-v7', 'release':'conversation-v16'})
         await self.send('ready')
 
     def on_client_event(self, event):

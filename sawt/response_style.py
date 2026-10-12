@@ -1,4 +1,5 @@
 """Short acknowledgments derived from saved changes, not model claims."""
+import re
 from .domain import BRANCHES, normalize
 
 GROUPS = {'portion': 'الحجم', 'size': 'الحجم', 'bread': 'الخبز',
@@ -58,8 +59,14 @@ def combine(acknowledgment, question):
 def finished_order(text):
     if '?' in text or '؟' in text:
         return False
-    # Whole requests only; mixed/negated requests stay with the planner.
-    return normalize(text) in {normalize(x) for x in (
+    value=normalize(text)
+    # An explicit final readback clause after accepted edits must not become
+    # another sales question. This creates only an unheard quote, never an order.
+    # Conditional, quoted and note-taking requests remain with the planner.
+    if not any(mark in text for mark in ('"','«','»','“','”')) and not re.search(r'\b(?:اذا|لو|لما|ملاحظه|اكتب|قلت|قال)\b',value):
+        if re.search(r'\s+و(?:اقرا|اقرالي)\s+(?:لي\s+)?(?:ملخص الطلب|الملخص|الطلب)(?:\s+من جديد)?$',value):
+            return True
+    return value in {normalize(x) for x in (
         'هذا كل الطلب', 'هذا طلبي', 'بس كذا', 'خلاص', 'اقرأ الطلب',
         'اقرأ الملخص', 'اقرأ ملخص الطلب', 'اقرأ لي ملخص الطلب من جديد',
         'خلاص هذا الطلب', 'كذا خلصت')}

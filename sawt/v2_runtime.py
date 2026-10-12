@@ -3,13 +3,14 @@ import asyncio
 import time
 import copy
 import os
+import re
 from dotenv import load_dotenv
 from pathlib import Path
 from .domain import Engine, Menu, explicit_confirmation, normalize
 from .agent import Agent
 from .v2_provider import V2Provider
 from .transactions import Transactions, StagedEngine, Conflict
-from .choices import short_choice, simple_order, service_answer
+from .choices import short_choice, simple_order, service_answer, delivery_answer
 from .clarification import answer as choice_answer, next_question, question_targets, ask as ask_choice
 from .conversation import say
 from .response_style import changes, finished_order, combine
@@ -50,12 +51,19 @@ Use ask_choice for all menu option questions; it creates an authoritative contex
     direct = contextual[0] if contextual else short_choice(engine.menu, row['state'], text)
     simple = simple_order(engine.menu,row['state'],text)
     service = service_answer(row['state'],text)
+    address = delivery_answer(row['state'],text)
     if service:
         state=copy.deepcopy(row['state'])
         await agent.report('set_service')
         result=adapter.act(state,'set_service',{'service':service},utterance=text)
         state,reply=agent.finish(state,text,next_question(engine.menu,state) or say('next_item'),
             [{'tool':'set_service','args':{'service':service},'result':result,'source':'explicit_service_answer'}])
+    elif address:
+        state=copy.deepcopy(row['state'])
+        await agent.report('set_delivery_details')
+        result=adapter.act(state,'set_delivery_details',address,utterance=text)
+        state,reply=agent.finish(state,text,next_question(engine.menu,state),
+            [{'tool':'set_delivery_details','args':address,'result':result,'source':'current_delivery_question'}])
     elif simple:
         state=copy.deepcopy(row['state']);events=[]
         service=simple.pop('service')
@@ -77,7 +85,9 @@ Use ask_choice for all menu option questions; it creates an authoritative contex
     else:
         state, reply = await asyncio.wait_for(agent.turn(row['state'], text), timeout=45)
     canceled = any(e['tool']=='cancel_draft' and not e['result'].get('error') for e in reply['events'])
-    if not canceled and not state['handoff'] and not state.get('pending_handoff') and not state['quote'] and not state['order_id'] and not engine.view(state)['issues'] and finished_order(text):
+    edit_tools={'add_item','update_item','replace_item','remove_item','set_service','set_branch','set_location','set_delivery_details'}
+    rejected=any(e['result'].get('choice_guard') or (e['tool'] in edit_tools and e['result'].get('error')) for e in reply['events'])
+    if not canceled and not rejected and not state['handoff'] and not state.get('pending_handoff') and not state['quote'] and not state['order_id'] and not engine.view(state)['issues'] and finished_order(text):
         result = adapter.act(state, 'checkout', {})
         reply['events'].append({'tool': 'checkout', 'args': {}, 'result': result, 'source': 'finished_order'})
         reply['reply'] = engine.summary(state)
@@ -96,7 +106,7 @@ Use ask_choice for all menu option questions; it creates an authoritative contex
             targets = question_targets(engine.menu, state, reply['reply'])
             if targets and not failed and not changed:
                 reply['reply'] = ask_choice(engine.menu,state,*targets[0])['reply']
-            elif not changed and not failed and state['service']=='delivery' and not state['location'] and ('؟' in reply['reply'] or '?' in reply['reply']) and any(word in normalize(reply['reply']) for word in ('المدينه','الحي','الشارع','المبني')):
+            elif not changed and not failed and state['service']=='delivery' and not state['location'] and ('؟' in reply['reply'] or '?' in reply['reply']) and re.search(r'(?<!\w)(?:ال)?(?:مدينه|حي|شارع|مبني)(?!\w)',normalize(reply['reply'])):
                 # A repeated saved choice can produce a verbose recap before an
                 # address question. Render that question from missing state only.
                 reply['reply'] = next_question(engine.menu,state) or reply['reply']
