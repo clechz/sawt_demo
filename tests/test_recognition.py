@@ -26,6 +26,30 @@ def test_clear_whole_order_requests_are_not_rejected_as_garbled(text):
     check_transcript_clarity(text, text)
 
 
+@pytest.mark.parametrize('text', ['تسمعني؟', 'هلا والله تسمعني', 'حلا والله تسمعني'])
+async def test_audio_check_does_not_wait_for_second_recognizer(monkeypatch, text):
+    from sawt.domain import new_state
+    monkeypatch.setattr(voice_worker.tx,'load',lambda sid:{'closed':False,'epoch':1,'state':new_state()})
+    voice=SimpleNamespace(sid='test',fragments=[text],fragment_spans=[{'start_ms':0,'end_ms':1000}],
+        input_audio=SimpleNamespace(wav=Mock(return_value=(b'bounded test wav',{'start_ms':0,'end_ms':1000}))),
+        send=AsyncMock(),audit=Mock(),provider=SimpleNamespace(recognize=AsyncMock(side_effect=AssertionError('No transcription needed'))))
+    assert await voice_worker.RestaurantVoice.verify_transcript(voice,0,1,text,1)==text
+    voice.input_audio.wav.assert_called_once()
+    voice.provider.recognize.assert_not_awaited()
+    assert voice.audit.call_args.args[1]['source']=='nontransactional_audio_check'
+    assert route_transcript(text)=='recover'
+
+
+@pytest.mark.parametrize('text', [
+    'ما قاعد أتكلم', 'ما قاعد تتكلم', 'انهي المكالمة', 'انتظر شوي', 'نعم',
+    'لا تسمعني', 'أبي اثنين شاورما تسمعني', 'تسمعني وأبي ألغي الطلب', 'إذا تسمعني كنسل طلبي',
+    'قال تسمعني', '«تسمعني»',
+])
+def test_audio_check_shortcut_never_skips_business_or_ambiguous_controls(text):
+    from sawt.voice_routing import caption_audio_check
+    assert not caption_audio_check(text)
+
+
 def test_audio_window_preserves_exact_pcm_and_timing():
     audio=AudioWindow(seconds=3)
     pcm=b'\x01\x02'*24000*2

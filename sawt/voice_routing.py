@@ -10,6 +10,14 @@ END_CALL = {normalize(x) for x in ['انهي المكالمة', 'أنهِ الم
 WAIT = re.compile(r'(?:(?:يا حبيبي|ياخي|يا اخي|يا اخوي|يا رجال|ترا|تري|انا|ترك)\s+)*(?:ما قاعد اتكلم|مو قاعد اتكلم|ما تكلمت|ساكت|اسكت|اسكت شوي|ان\s*تظر|ان\s*تظر شوي|خلني اكمل|لحظه|لحظه خلني اكمل)(?:\s+(?:لو سمحت|الله يعافيك))?')
 RECOVER = re.compile(r'(?:(?:يا حبيبي|ياخي|يا اخي|يا اخوي|يا رجال|ترا|تري|تراك|انت)\s+)*(?:ما قاعد تتكلم|مو قاعد تتكلم|ما اسمعك|ماني سامعك|صوتك ما يطلع|وين صوتك|الو)(?:\s+(?:هلا|خلاص|لو سمحت))*')
 
+
+def caption_audio_check(text):
+    """Closed-set 'can you hear me' only; no order or call-lifecycle effect."""
+    if any(mark in text for mark in ('"','«','»','“','”')):
+        return False
+    return normalize(text) in {normalize(x) for x in [
+        'تسمعني', 'هلا تسمعني', 'هلا والله تسمعني', 'حلا والله تسمعني', 'الو تسمعني', 'انت تسمعني']}
+
 def route_transcript(text, *, checkout=False):
     text = normalize(text)
     # A polite suffix doesn't change an otherwise exact command. In particular
@@ -21,7 +29,7 @@ def route_transcript(text, *, checkout=False):
     # control phrase so negations, quoted notes and mixed orders still delegate.
     if WAIT.fullmatch(text):
         return 'wait'
-    if text in {normalize(x) for x in ['تسمعني','هلا تسمعني','هلا والله تسمعني','الو تسمعني','انت تسمعني']} or RECOVER.fullmatch(text):
+    if caption_audio_check(text) or RECOVER.fullmatch(text):
         return 'recover'
     if not text or (text in SOCIAL and not checkout):
         return 'social'

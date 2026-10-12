@@ -151,7 +151,7 @@ class RestaurantVoice(Agent):
         if self.provider_failed or self.ending:
             return
         self.duplex_session.append_commentary(say('greeting'))
-        await asyncio.to_thread(tx.event, self.sid, 'voice.connected', {'transport': 'livekit', 'model': 'gpt-live-1', 'recognition_policy':'contextual-draft-v8', 'release':'conversation-v24'})
+        await asyncio.to_thread(tx.event, self.sid, 'voice.connected', {'transport': 'livekit', 'model': 'gpt-live-1', 'recognition_policy':'contextual-draft-v9', 'release':'conversation-v25'})
         await self.send('ready')
 
     def on_client_event(self, event):
@@ -252,6 +252,11 @@ class RestaurantVoice(Agent):
         row = await asyncio.to_thread(tx.load, self.sid)
         if row['closed'] or row['epoch'] != epoch or end != len(self.fragments):
             raise Conflict('Recognition superseded')
+        from sawt.voice_routing import caption_audio_check
+        if caption_audio_check(text):
+            self.audit('transcript.verified', {'caption':text, 'text':text, **window,
+                'source':'nontransactional_audio_check', 'duration_ms':round((time.perf_counter()-started)*1000)})
+            return text
         if caption_draft_answer(engine.menu, row['state'], text):
             self.audit('transcript.verified', {'caption':text, 'text':text, **window,
                 'source':'contextual_live_caption', 'duration_ms':round((time.perf_counter()-started)*1000)})
