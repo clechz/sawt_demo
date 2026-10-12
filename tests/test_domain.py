@@ -118,7 +118,7 @@ def test_handoff_anytime(engine,phase):
     assert result['terminal'] and s['handoff'] and s['quote'] is None
     with pytest.raises(RuleError):engine.act(s,'add_item',{'item_id':'chicken_01','quantity':1,'options':{}})
 
-@pytest.mark.parametrize('text',['نعم','إيه','موافق','أكد الطلب','اعتمد الطلب'])
+@pytest.mark.parametrize('text',['نعم','إيه','موافق','أكد الطلب','اعتمد الطلب','نعم، اعتمد الطلب.','نعم، اعتمد.'])
 def test_clear_confirmations(text):assert explicit_confirmation(text)
 
 @pytest.mark.parametrize('text',['نعم بس احذف وجبة','لا','ممكن','تمام غير العنوان','لا تؤكد الطلب','yes remove one'])

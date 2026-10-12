@@ -129,3 +129,10 @@ def test_new_speech_during_verification_invalidates_its_result(monkeypatch):
     with pytest.raises(voice_worker.Conflict):
         asyncio.run(voice_worker.RestaurantVoice.verify_transcript(voice,0,1,'نعم',1))
     voice.audit.assert_not_called()
+
+
+def test_saudi_wahda_is_same_quantity_as_wahida_but_not_two():
+    from sawt.recognition import check_recognition
+    check_recognition('خل الشكشوكة وحدة بدل اثنين', 'خل الشكشوكة واحدة بدل اثنين')
+    with pytest.raises(AudioWindowError):
+        check_recognition('خل الشكشوكة وحدة', 'خل الشكشوكة اثنين')

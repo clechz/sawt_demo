@@ -10,6 +10,18 @@ Hosted execution on 2026-10-11: **14/14 text scenarios passed** with GPT-4.1; **
 
 Real browser verification: uploaded synthetic Arabic audio produced a priced delivery basket; a subsequent readback played to completion and set its token's `presented` flag; uploaded spoken «نعم» created mock order `S-967539`, and its reply played. This browser session spans development configurations and is separate from the final-configuration audio report. Screenshot: `demo-preview.png`. No human microphone or native-listener pronunciation assessment is claimed.
 
+## Cloud verification — 2026-10-12
+
+427 Python regression tests and 20 real-Postgres contract tests passed. A
+headless LiveKit call verified quantity correction, exact totals, rejection of
+unheard/early confirmation, completed readback, order confirmation and repeated
+confirmation without duplicates. Independent Neon/Blob reads verified one
+durable order and private caller, assistant and readback audio. Local servers
+were stopped. No Chrome was used; playback completion was simulated after
+decoding and waiting for the real audio duration. Human microphone/latency and
+accent quality are not established by this test. See
+[evidence](evidence/v2/cloud-deployment.json) and [deployment](CLOUD-DEPLOYMENT.md).
+
 ## Coverage map
 
 | Requirement | Implementation | Evidence / gate |

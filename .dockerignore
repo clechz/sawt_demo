@@ -1,0 +1,10 @@
+*
+!requirements*.txt
+!sawt/
+!sawt/**
+!data/
+!data/**
+!voice_worker.py
+!Dockerfile
+**/__pycache__/
+**/*.pyc

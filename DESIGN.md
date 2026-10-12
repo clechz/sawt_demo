@@ -8,13 +8,18 @@ The complexity belongs where mistakes matter: identifying which item changed, re
 
 ## Architecture
 
+The hosted demo separates the Vercel API from the persistent LiveKit Cloud
+worker. Both use Neon Postgres for the same transaction contract; local runs use
+SQLite. Private Blob storage keeps completed recordings outside ephemeral
+containers. See [cloud deployment](CLOUD-DEPLOYMENT.md) for operational limits.
+
 ```mermaid
 flowchart LR
   C[Caller] <--> M[LiveKit / GPT-Live]
   M --> V[Bounded audio verification]
   V --> P[Planner + current state + retrieved menu]
   P --> D[Validated domain tools]
-  D --> T[(SQLite transaction)]
+  D --> T[(Postgres cloud / SQLite local)]
   T --> R[Actual change / next missing question]
   R --> M
   T --> Q[Exact checkout speech]

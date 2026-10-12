@@ -11,6 +11,7 @@ import json
 import re
 import secrets
 import time
+import os
 from collections import deque
 from urllib.parse import urlsplit, parse_qs
 from starlette.requests import Request
@@ -28,7 +29,10 @@ SCRIPT_HASH = base64.b64encode(hashlib.sha256(LOGIN_SCRIPT.encode()).digest()).d
 
 def settings():
     try:
-        data=json.loads(CONFIG.read_text(encoding='utf8'))
+        data=({'password':os.getenv('SAWT_DEMO_PASSWORD',''),
+               'secret':os.getenv('SAWT_DEMO_SECRET',''),
+               'url':os.getenv('SAWT_PUBLIC_URL','')}
+              if os.getenv('SAWT_PUBLIC_URL') else json.loads(CONFIG.read_text(encoding='utf8')))
         if len(data['password']) < 8 or len(data['secret']) < 32:
             return None
         url=urlsplit(data['url'])

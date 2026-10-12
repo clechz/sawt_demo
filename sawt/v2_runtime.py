@@ -2,6 +2,8 @@
 import asyncio
 import time
 import copy
+import os
+from dotenv import load_dotenv
 from pathlib import Path
 from .domain import Engine, Menu, explicit_confirmation, normalize
 from .agent import Agent
@@ -13,8 +15,10 @@ from .conversation import say
 from .response_style import changes, finished_order, combine
 
 ROOT = Path(__file__).resolve().parents[1]
+load_dotenv(ROOT / '.env')
+RUNTIME = Path(os.getenv('SAWT_RUNTIME_DIR') or ROOT / 'runtime')
 engine = Engine(Menu(ROOT / 'data/restaurant-menu-complex.csv'))
-tx = Transactions(ROOT / 'runtime/v2.sqlite3', engine)
+tx = Transactions(os.getenv('DATABASE_URL') or RUNTIME / 'v2.sqlite3', engine)
 provider = V2Provider()
 
 

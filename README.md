@@ -16,6 +16,14 @@ A simple call screen over a stateful ordering system. Speak naturally, give deta
 | What was tested, and what remains uncertain? | [TESTING.md](TESTING.md), [submission checks](SUBMISSION-CHECK.txt) |
 | What does the assistant say? | [37 reusable phrases and request map](CALL-EXPERIENCE.txt) |
 
+## Hosted demo
+
+The hosted demo is at **https://sawt-demo.vercel.app** and uses a separately shared
+demo password. Vercel serves the UI/API, LiveKit Cloud runs the voice worker,
+Neon Postgres stores transactional order state, and private Vercel Blob stores
+recordings/readbacks. The hosted app does not require a local server or tunnel.
+See [cloud deployment and verification](CLOUD-DEPLOYMENT.md).
+
 ## Run V2 locally
 
 ### Requirements

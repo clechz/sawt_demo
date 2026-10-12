@@ -16,7 +16,8 @@ from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 from livekit import api
-from sawt.v2_runtime import tx, engine, provider, ROOT
+from sawt.v2_runtime import tx, engine, provider, ROOT, RUNTIME
+from sawt import cloud_storage
 from sawt.transactions import Conflict
 from sawt.recording import prune
 
@@ -26,7 +27,7 @@ async def lifespan(app):
     async def retention():
         while True:
             try:
-                await asyncio.to_thread(prune, ROOT / 'runtime/recordings')
+                await asyncio.to_thread(prune, RUNTIME / 'recordings')
             except Exception:
                 logging.getLogger('sawt').exception('Recording retention failed')
             await asyncio.sleep(3600)
@@ -134,11 +135,11 @@ async def create(request: Request, body: StartCall):
     if body.recording_consent is not True:
         raise HTTPException(400, 'يلزم الموافقة على تسجيل المكالمة قبل البدء.')
     sid, token = tx.create(enforce_limits=True)
-    tx.event(sid, 'recording.consent', {'notice_version': '2026-10-11', 'retention_days': 7, 'storage': 'local'})
+    tx.event(sid, 'recording.consent', {'notice_version': '2026-10-11', 'retention_days': 7, 'storage': 'private_cloud' if cloud_storage.enabled() else 'local'})
     jwt = (api.AccessToken(os.environ['LIVEKIT_API_KEY'], os.environ['LIVEKIT_API_SECRET'])
            .with_identity('caller-' + sid).with_ttl(timedelta(minutes=11))
            .with_grants(api.VideoGrants(room_join=True, room='sawt-' + sid, can_publish=True, can_subscribe=True, can_publish_data=True))
-           .with_room_config(api.RoomConfiguration(agents=[api.RoomAgentDispatch(agent_name='sawt-v2', metadata=sid)]))
+           .with_room_config(api.RoomConfiguration(agents=[api.RoomAgentDispatch(agent_name=os.getenv('SAWT_AGENT_NAME','sawt-v2'), metadata=sid)]))
            .to_jwt())
     create_times.append(now)
     return {'id': sid, 'token': token, 'room_token': jwt, 'url': os.environ['LIVEKIT_URL'], 'max_seconds': MAX_SECONDS}
@@ -180,10 +181,15 @@ async def readback_stream(sid: str, receipt_id: str):
         receipt, quote = tx.claim_audio(sid, receipt_id)
     except (KeyError, Conflict):
         raise HTTPException(404, 'Readback is no longer available')
-    capture = ROOT / 'runtime/recordings' / sid
+    capture = RUNTIME / 'recordings' / sid
     capture.mkdir(parents=True, exist_ok=True)
     file = capture / (receipt_id + '.mp3')
     if receipt['duration'] > 0:
+        if cloud_storage.enabled():
+            content = await asyncio.to_thread(cloud_storage.download, sid, file.name)
+            if content is None:
+                raise HTTPException(404, 'Readback file unavailable')
+            return Response(content, media_type='audio/mpeg')
         if not file.is_file():
             raise HTTPException(404, 'Readback file unavailable')
         return FileResponse(file, media_type='audio/mpeg')
@@ -206,6 +212,7 @@ async def readback_stream(sid: str, receipt_id: str):
                 yield chunk
             duration = await asyncio.to_thread(audio_duration, bytes(audio))
             await asyncio.to_thread(file.write_bytes, bytes(audio))
+            await asyncio.to_thread(cloud_storage.upload, file, sid)
             tx.finish_audio(sid, receipt_id, duration)
             tx.event(sid, 'readback.generated', {'receipt_id': receipt_id, 'duration': duration,
                       'tts_ms': round((time.perf_counter()-started)*1000), 'text_hash': quote['text_hash']})
@@ -248,7 +255,7 @@ def recording_details(sid: str, request: Request, after: int = 0):
         row = tx.load(sid)
     except KeyError:
         raise HTTPException(404, 'Unknown call')
-    folder = ROOT / 'runtime/recordings' / sid
+    folder = RUNTIME / 'recordings' / sid
     files = [f.name for f in folder.glob('*') if f.suffix in ('.wav','.mp3','.json')] if folder.exists() else []
     events = tx.events(sid, after)
     return {'state': engine.view(row['state']), 'events': events, 'files': files,
@@ -262,7 +269,7 @@ def recording_file(sid: str, filename: str, request: Request):
     import re
     if not re.fullmatch('[a-f0-9]{32}', sid) or not re.fullmatch(r'(caller|generated-assistant|[a-f0-9]{32})\.(wav|mp3)|capture\.json', filename):
         raise HTTPException(404)
-    file = ROOT / 'runtime/recordings' / sid / filename
+    file = RUNTIME / 'recordings' / sid / filename
     if not file.is_file():
         raise HTTPException(404)
     return FileResponse(file)

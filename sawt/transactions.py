@@ -27,7 +27,12 @@ def encode(value):
 class Transactions:
     def __init__(self, path, engine):
         self.path, self.engine = str(path), engine
-        Path(path).parent.mkdir(parents=True, exist_ok=True)
+        self.postgres = None
+        if self.path.startswith(('postgres://', 'postgresql://')):
+            from .postgres import Database
+            self.postgres = Database(self.path)
+        else:
+            Path(path).parent.mkdir(parents=True, exist_ok=True)
         with self.connect() as db:
             db.executescript('''
             PRAGMA journal_mode=WAL;
@@ -54,6 +59,8 @@ class Transactions:
             ''')
 
     def connect(self):
+        if self.postgres is not None:
+            return self.postgres.connect()
         db = sqlite3.connect(self.path, timeout=10)
         db.row_factory = sqlite3.Row
         return db

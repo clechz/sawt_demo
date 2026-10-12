@@ -4,6 +4,7 @@ Reads credentials only from ignored runtime/private-demo.json. Requires the
 pre-generated runtime/release-order.mp3 fixture. Never outputs credentials.
 """
 import asyncio
+import argparse
 import array
 import math
 import json
@@ -17,8 +18,12 @@ from livekit import rtc
 ROOT=Path(__file__).resolve().parents[1]
 
 async def main():
+    parser=argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--url')
+    parser.add_argument('--output',type=Path,default=ROOT/'evidence/v2/private-demo-smoke.json')
+    args=parser.parse_args()
     config=json.loads((ROOT/'runtime/private-demo.json').read_text(encoding='utf8'))
-    base=config['url']; checks={}; frames=0; events=[]; tasks=[]; call=None; source=None; publication=None
+    base=args.url or config['url']; checks={}; frames=0; events=[]; tasks=[]; call=None; source=None; publication=None
     room=rtc.Room(); audible=[]
     async def listen(track):
         nonlocal frames
@@ -96,7 +101,7 @@ async def main():
             if source:await source.aclose()
             await room.disconnect()
         report['passed']=all(checks.values())
-        (ROOT/'evidence/v2/private-demo-smoke.json').write_text(json.dumps(report,ensure_ascii=False,indent=2),encoding='utf8')
+        args.output.write_text(json.dumps(report,ensure_ascii=False,indent=2),encoding='utf8')
         print(json.dumps({k:v for k,v in report.items() if k!='basket'},indent=2))
         assert report['passed'],checks
 

@@ -22,3 +22,7 @@ private call histories, credentials and local databases are excluded.
 Passing these cases is not a held-out reliability score, native accent rating or
 production latency/load certification. Human testing exposed stalls despite
 earlier passing synthetic runs; DESIGN.md explains the subsequent changes.
+
+- `cloud-deployment.json`: 427 Python checks, 20 real-Postgres contract checks,
+  synthetic cloud voice checkout and independent private-storage verification.
+  Local servers were stopped; no Chrome used. Playback receipt is simulated.

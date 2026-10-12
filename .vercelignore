@@ -1,0 +1,12 @@
+.git
+.env*
+runtime
+evidence
+tests
+frontend/node_modules
+frontend/src
+docs
+*.wav
+*.mp3
+**/__pycache__
+**/*.pyc

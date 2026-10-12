@@ -310,7 +310,7 @@ class Engine:
 
 def explicit_confirmation(text):
     # Exact normalized expressions prevent a model from confirming 'yes, but remove...'.
-    return normalize(text) in {normalize(x) for x in ['نعم', 'اي', 'إيه', 'ايوه', 'أيوه', 'تمام', 'موافق', 'أكد الطلب', 'أؤكد الطلب', 'نعم أكد الطلب', 'اعتمد', 'اعتمد الطلب', 'ايه اكد', 'ايه اكد الطلب']}
+    return normalize(text) in {normalize(x) for x in ['نعم', 'اي', 'إيه', 'ايوه', 'أيوه', 'تمام', 'موافق', 'أكد الطلب', 'أؤكد الطلب', 'نعم أكد الطلب', 'نعم اعتمد الطلب', 'نعم اعتمد', 'اعتمد', 'اعتمد الطلب', 'ايه اكد', 'ايه اكد الطلب']}
 
 def requests_human(text):
     text = normalize(text)

@@ -4,6 +4,7 @@ No competing live turn detector is enabled. Bounded audio transcription verifies
 the words sent to the order engine; GPT-Live still owns conversational timing.
 """
 import asyncio
+import os
 import json
 import time
 import uuid
@@ -16,7 +17,8 @@ from types import SimpleNamespace
 from dotenv import load_dotenv
 from livekit.agents import Agent, AgentSession, AgentServer, JobContext, cli
 from livekit.plugins import openai
-from sawt.v2_runtime import ROOT, tx, delegate
+from sawt.v2_runtime import ROOT, RUNTIME, tx, delegate
+from sawt import cloud_storage
 from sawt.v2_provider import V2Provider
 from sawt.transactions import Conflict
 from sawt.recording import CallRecorder, AuditWriter, prune
@@ -32,7 +34,7 @@ PERSONA = '''أنت صوت، مساعد مطعم بالذكاء الاصطناع
 قل «وش تفضّل؟»، «ودّك»، «يعطيك العافية». تجنّب الفصحى الرسمية وكثرة «أبشر» والتكرار.
 استخدم كلاماً بسيطاً يناسب العميل، ولا تفرض العبارات المقترحة في كل جواب.
 رحب مرة واحدة بالافتتاحية المحددة أدناه. لا تفترض أنه يريد طلباً؛ قد يسأل عن معلومة أو عنده شكوى.
-لا تضف إعلاناً عن التسجيل أو جمع البيانات في الترحيب. إذا سألك عن التسجيل جاوبه بصدق: المكالمات تُحفظ محلياً للمراجعة.
+لا تضف إعلاناً عن التسجيل أو جمع البيانات في الترحيب. إذا سألك عن التسجيل جاوبه بصدق: المكالمات تُحفظ للمراجعة وتحسين التجربة.
 المطعم تجريبي والطلبات والتحويل لموظف محاكاة. جاوب المجاملات مباشرة.
 Backchannel policy
 قل «أسمعك» أو «خلني أراجع» عند الحاجة فقط. لا تقل «تم» أو «ضفت» أو تكرر خيار العميل كأنه محفوظ قبل نتيجة الخلفية.
@@ -76,7 +78,7 @@ class RestaurantVoice(Agent):
         self.last_heard_quote = None
         self.provider_failed = False
         self.ending = False
-        self.recorder = CallRecorder(ROOT / 'runtime/recordings', sid)
+        self.recorder = CallRecorder(RUNTIME / 'recordings', sid)
         self.audit_writer = AuditWriter(tx, sid)
 
     def spawn(self, coro):
@@ -101,7 +103,7 @@ class RestaurantVoice(Agent):
         self.session.on('user_input_transcribed', self.on_transcript)
         self.spawn(self.watch_lifetime())
         self.duplex_session.append_commentary(say('greeting'))
-        tx.event(self.sid, 'voice.connected', {'transport': 'livekit', 'model': 'gpt-live-1'})
+        tx.event(self.sid, 'voice.connected', {'transport': 'livekit', 'model': 'gpt-live-1', 'recognition_policy':'saudi-confirm-v4'})
         await self.send('ready')
 
     def on_client_event(self, event):
@@ -411,13 +413,13 @@ class RestaurantVoice(Agent):
                 return
 
 
-@server.rtc_session(agent_name='sawt-v2')
+@server.rtc_session(agent_name=os.getenv('SAWT_AGENT_NAME','sawt-v2'))
 async def entrypoint(ctx: JobContext):
     sid = ctx.job.metadata
     if not sid or tx.load(sid)['closed']:
         ctx.shutdown(reason='Session already closed')
         return
-    await asyncio.to_thread(prune, ROOT / 'runtime/recordings')
+    await asyncio.to_thread(prune, RUNTIME / 'recordings')
     session = AgentSession()
     voice = RestaurantVoice(sid, ctx.room)
     @ctx.room.on('participant_disconnected')
@@ -429,8 +431,19 @@ async def entrypoint(ctx: JobContext):
             task.cancel()
         await asyncio.to_thread(voice.recorder.close)
         await asyncio.to_thread(voice.audit_writer.close)
-        await voice.provider.aclose()
-        tx.event(sid, 'voice.disconnected', {})
+        try:
+            if cloud_storage.enabled():
+                for artifact in voice.recorder.path.iterdir():
+                    if artifact.suffix in ('.wav','.json'):
+                        await asyncio.to_thread(cloud_storage.upload, artifact, sid)
+                tx.event(sid, 'recording.archived', {'storage':'private_cloud'})
+                await asyncio.to_thread(cloud_storage.prune)
+        except Exception as exc:
+            tx.event(sid, 'recording.archive_failed', {'error_type':type(exc).__name__})
+            logging.getLogger('sawt').exception('Cloud recording archive failed')
+        finally:
+            await voice.provider.aclose()
+            tx.event(sid, 'voice.disconnected', {})
     ctx.add_shutdown_callback(cleanup)
     await ctx.connect()
     await session.start(agent=voice, room=ctx.room)

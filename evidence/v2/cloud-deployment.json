@@ -1,0 +1,99 @@
+{
+  "date": "2026-10-12",
+  "url": "https://sawt-demo.vercel.app",
+  "local_servers_stopped": true,
+  "chrome_used": false,
+  "python_regressions_passed": 427,
+  "postgres_contract_passed": 20,
+  "acceptance": {
+    "passed": true,
+    "checks": {
+      "two_items_exact_total": true,
+      "unheard_yes_not_confirmed": true,
+      "correction_no_duplicate": true,
+      "readback_real_audio": true,
+      "premature_playback_rejected": true,
+      "confirmed_after_readback": true,
+      "repeat_yes_same_order": true,
+      "cloud_worker_audio_received": true,
+      "closed": true
+    },
+    "turns": [
+      {
+        "name": "order",
+        "seconds_after_input": 4.09,
+        "quantity": 2,
+        "total": 6000,
+        "order_created": false
+      },
+      {
+        "name": "yes",
+        "seconds_after_input": 2.84,
+        "quantity": 2,
+        "total": 6000,
+        "order_created": false
+      },
+      {
+        "name": "correct",
+        "seconds_after_input": 3.39,
+        "quantity": 1,
+        "total": 3000,
+        "order_created": false
+      },
+      {
+        "name": "yes",
+        "seconds_after_input": 1.84,
+        "quantity": 1,
+        "total": 3000,
+        "order_created": true
+      },
+      {
+        "name": "yes",
+        "seconds_after_input": 2.19,
+        "quantity": 1,
+        "total": 3000,
+        "order_created": true
+      }
+    ],
+    "playback": "Downloaded and decoded actual cloud speech; elapsed playback receipt simulated; no browser."
+  },
+  "persistence": {
+    "passed": true,
+    "checks": {
+      "closed_call_persisted": true,
+      "exactly_one_durable_order": true,
+      "corrected_order_persisted": true,
+      "caller_and_assistant_archived": true,
+      "readback_archived": true,
+      "archive_private": true,
+      "authorized_download_valid": true
+    }
+  },
+  "smoke": {
+    "checks": {
+      "anonymous_blocked": true,
+      "login": true,
+      "root": true,
+      "archives_blocked": true,
+      "lab_blocked": true,
+      "call_token_required": true,
+      "voice_ready": true,
+      "heard_synthetic_caller": true,
+      "two_expected_dishes": true,
+      "no_unconfirmed_order": true,
+      "received_voice_audio": true,
+      "response_audio_after_saved_order": true,
+      "quantities_correct": true,
+      "closed": true
+    },
+    "seconds_after_input": 6.08,
+    "first_audio_after_completed_seconds": 6.77,
+    "timing_note": "Completion is HTTP-poll observed. Audio is received RMS after completion, not semantic verification or exact first response onset."
+  },
+  "limitations": [
+    "Synthetic audio; no human accent assessment or browser microphone test.",
+    "Earlier cloud attempts exposed Saudi quantity synonyms and explicit confirmation phrases; final run passed after regression fixes.",
+    "Model latency remains variable; cloud hosting does not prove conversational latency.",
+    "Historical local archive was not exported, per user request."
+  ]
+}
