@@ -31,6 +31,7 @@ async def preflight():
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--release',required=True,help='Exact expected worker release')
+    parser.add_argument('--continue-on-failure',action='store_true',help='Run independent remaining gates and retain a failing overall status')
     args=parser.parse_args()
     output=ROOT/'runtime/cloud-suite'/datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S%fZ')
     output.mkdir(parents=True)
@@ -51,6 +52,9 @@ def main():
             print(report['blocked'],flush=True)
             return 2
         for name,script,extra in steps:
+            if name=='storage' and any(s['name']=='checkout' and s['exit_code'] for s in report['steps']):
+                report['steps'].append({'name':'storage','exit_code':1,'skipped':'Checkout prerequisite failed; old order evidence is not reused.'})
+                continue
             print('Running '+name,flush=True)
             result=subprocess.run([sys.executable,'-X','utf8',str(ROOT/'scripts'/script),*extra],
                 cwd=ROOT,env=env,capture_output=True,text=True,encoding='utf8',errors='replace')
@@ -62,9 +66,10 @@ def main():
                 if source.exists():shutil.copyfile(source,output/(name+'.json'))
             if result.returncode:
                 print('Failed '+name+'; inspect '+str(output/(name+'.log')),flush=True)
-                return result.returncode
-        report['passed']=True
-        return 0
+                if not args.continue_on_failure or 'credit_balance_exhausted' in result.stdout+result.stderr:
+                    return result.returncode
+        report['passed']=all(s['exit_code']==0 for s in report['steps'])
+        return 0 if report['passed'] else 1
     except Exception as error:
         report['error_type']=type(error).__name__
         raise

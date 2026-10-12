@@ -49,6 +49,7 @@ PERSONA = '''أنت صوت، مساعد مطعم بالذكاء الاصطناع
 Backchannel policy
 المجاملات رد عليها بود وباختصار، ولا تعيد الترحيب أو سؤال «كيف أساعدك» كل مرة.
 في الطلبات انتظر النتيجة بصمت ثم قل الجواب مباشرة، بلا مقدمة. السؤال القصير تقوله مرة واحدة ثم تسكت لتسمع العميل.
+لا تضف «دقيقة أتأكد» أو «خلني أراجع» أو «خلني أشوف» لنتيجة جاهزة. إذا وصلك سؤال عن الفرع قل السؤال نفسه مباشرة؛ لا تدّع أن التحقق ما زال جارياً.
 لا تقل «تم» أو «ضفت» أو تكرر خيار العميل كأنه محفوظ قبل نتيجة الخلفية.
 Interruption policy
 اترك العميل يكمل أو يصحح كلامه. خذ التصحيح الأخير ولا تتكلم فوقه.
@@ -94,6 +95,7 @@ class RestaurantVoice(Agent):
         self.ending = False
         self.provider_ready = asyncio.Event()
         self.input_ready = asyncio.Event()
+        self.commentary_receipts = {}
         self.recorder = CallRecorder(RUNTIME / 'recordings', sid)
         self.audit_writer = AuditWriter(tx, sid)
 
@@ -151,7 +153,7 @@ class RestaurantVoice(Agent):
         if self.provider_failed or self.ending:
             return
         self.duplex_session.append_commentary(say('greeting'))
-        await asyncio.to_thread(tx.event, self.sid, 'voice.connected', {'transport': 'livekit', 'model': 'gpt-live-1', 'recognition_policy':'contextual-draft-v7', 'release':'conversation-v19'})
+        await asyncio.to_thread(tx.event, self.sid, 'voice.connected', {'transport': 'livekit', 'model': 'gpt-live-1', 'recognition_policy':'contextual-draft-v7', 'release':'conversation-v20'})
         await self.send('ready')
 
     def on_client_event(self, event):
@@ -166,6 +168,10 @@ class RestaurantVoice(Agent):
             return
         if kind == 'session.started':
             self.provider_ready.set()
+        if kind == 'session.commentary.appended':
+            receipt = self.commentary_receipts.get(event.get('client_event_id'))
+            if receipt is not None and not receipt.done():
+                receipt.set_result(None)
         if kind == 'session.output_audio.delta':
             self.recorder.append('generated-assistant', event.get('delta', ''))
         if kind == 'session.input_transcript.delta':
@@ -397,6 +403,27 @@ class RestaurantVoice(Agent):
                 'new_speech':len(self.fragments)!=end,'held':self.output_held,
                 'waiting':self.waiting,'reading':self.reading,'ending':self.ending})
 
+    async def inject_verified_reply(self, speech, delegation_id):
+        # Queueing context does not mean the model has received it. Reopening
+        # output before its receipt can expose "let me check" from the old turn.
+        # This receipt is only an injection boundary, never a playback receipt.
+        event_id='sawt-reply-'+uuid.uuid4().hex
+        receipt=asyncio.get_running_loop().create_future()
+        self.commentary_receipts[event_id]=receipt
+        started=time.monotonic()
+        try:
+            self.duplex_session.send_event({'type':'session.commentary.append',
+                'event_id':event_id,'delegation_id':delegation_id,'content':speech})
+            try:
+                await asyncio.wait_for(receipt,1)
+                accepted=True
+            except TimeoutError:
+                accepted=False
+            self.audit('voice.reply_injected',{'acknowledged':accepted,
+                'wait_ms':round((time.monotonic()-started)*1000)})
+        finally:
+            self.commentary_receipts.pop(event_id,None)
+
     def on_delegation(self, delegation):
         if getattr(self,'ending',False):return
         if getattr(self, 'waiting', False) and len(self.fragments) <= self.consumed:
@@ -497,16 +524,22 @@ class RestaurantVoice(Agent):
             else:
                 self.reading = False
                 self.checkout_context = False
-                self.output_held = False
-                set_output_enabled(self, True, at_boundary=True)
                 # Injection limit is 500 tokens; a byte bound also works without
                 # assuming English tokenization for Arabic text.
                 speech = result['reply'].encode('utf-8')[:480].decode('utf-8', errors='ignore')
-                output_started = time.monotonic()
                 verified = 'CONFIRMED order ' + result['state']['order_id'] if result['state']['order_id'] else 'DRAFT ONLY. No order has been placed. Do not say registered, confirmed, or ready for pickup.'
+                reply_row = await asyncio.to_thread(tx.load, self.sid)
+                if reply_row['closed'] or end != len(self.fragments):
+                    raise Conflict('New caller speech before reply injection')
                 self.duplex_session.append_thinking(verified, delegation_id=delegation_id)
-                self.duplex_session.append_commentary(speech, delegation_id=delegation_id)
-                output_epoch = (await asyncio.to_thread(tx.load, self.sid))['epoch']
+                await self.inject_verified_reply(speech, delegation_id)
+                current = await asyncio.to_thread(tx.load, self.sid)
+                output_epoch = current['epoch']
+                if current['closed'] or end != len(self.fragments) or output_epoch != reply_row['epoch']:
+                    raise Conflict('New caller speech before audible reply')
+                self.output_held = False
+                output_started = time.monotonic()
+                set_output_enabled(self, True, at_boundary=True)
                 self.spawn(self.ensure_reply(result['reply'], output_started, end, output_epoch))
                 await self.send('updated', epoch=output_epoch)
         except ProviderQuotaError:

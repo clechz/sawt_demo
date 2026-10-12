@@ -272,6 +272,60 @@ async def test_failed_connection_never_announces_ready(monkeypatch):
     voice.duplex_session.append_commentary.assert_not_called()
 
 
+async def test_verified_reply_waits_for_matching_context_receipt():
+    sent=[]
+    voice=SimpleNamespace(commentary_receipts={},duplex_session=SimpleNamespace(send_event=sent.append),
+        audit=Mock(),provider_failed=False,ending=False)
+    task=asyncio.create_task(voice_worker.RestaurantVoice.inject_verified_reply(voice,'أي فرع؟','delegation'))
+    await asyncio.sleep(0)
+    assert not task.done()
+    voice_worker.RestaurantVoice.on_provider_event(voice,{'type':'session.commentary.appended','client_event_id':'older-turn'})
+    assert not task.done()
+    voice_worker.RestaurantVoice.on_provider_event(voice,{'type':'session.commentary.appended','client_event_id':sent[0]['event_id']})
+    await asyncio.wait_for(task,.2)
+    assert sent[0]['content']=='أي فرع؟' and sent[0]['delegation_id']=='delegation'
+    assert not voice.commentary_receipts
+    assert voice.audit.call_args.args[1]['acknowledged'] is True
+
+
+async def test_cancelled_reply_does_not_leave_receipt_to_reopen_audio():
+    sent=[]
+    voice=SimpleNamespace(commentary_receipts={},duplex_session=SimpleNamespace(send_event=sent.append),
+        audit=Mock(),provider_failed=False,ending=False)
+    task=asyncio.create_task(voice_worker.RestaurantVoice.inject_verified_reply(voice,'old reply',None))
+    await asyncio.sleep(0)
+    task.cancel()
+    with pytest.raises(asyncio.CancelledError):await task
+    assert not voice.commentary_receipts
+    voice_worker.RestaurantVoice.on_provider_event(voice,{'type':'session.commentary.appended','client_event_id':sent[0]['event_id']})
+    voice.audit.assert_not_called()
+
+
+@pytest.mark.parametrize('new_input_during_injection',[False,True])
+async def test_reply_epoch_tracks_valid_quote_invalidation_not_old_input_epoch(monkeypatch,new_input_during_injection):
+    from tests.test_recognition import work_voice
+    epoch=1
+    monkeypatch.setattr(voice_worker.tx,'load',lambda sid:{'closed':False,'epoch':epoch})
+    async def delegate(*args,**kwargs):
+        nonlocal epoch
+        epoch=2  # A legitimate correction invalidates the prior quote.
+        return {'reply':'تم التعديل.','state':{'quote':None,'order_id':None}}
+    monkeypatch.setattr(voice_worker,'delegate',delegate)
+    voice=work_voice('خل الكمية اثنين')
+    voice.provider=SimpleNamespace()
+    async def inject(*args):
+        nonlocal epoch
+        if new_input_during_injection:epoch=3
+    voice.inject_verified_reply=AsyncMock(side_effect=inject)
+    voice.ensure_reply=AsyncMock();tasks=[]
+    voice.spawn=lambda coroutine:tasks.append(asyncio.create_task(coroutine))
+    await voice_worker.RestaurantVoice.work(voice,None)
+    if tasks:await asyncio.gather(*tasks)
+    voice.inject_verified_reply.assert_awaited_once()
+    assert voice.ensure_reply.await_count==(0 if new_input_during_injection else 1)
+    assert voice.output_held is new_input_during_injection
+
+
 async def test_exhausted_credit_closes_call_instead_of_retrying_speech(monkeypatch):
     from tests.test_recognition import work_voice
     from sawt.v2_provider import ProviderQuotaError, CALLS_UNAVAILABLE
