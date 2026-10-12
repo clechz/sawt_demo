@@ -20,7 +20,7 @@ def route_transcript(text, *, checkout=False):
     # control phrase so negations, quoted notes and mixed orders still delegate.
     if WAIT.fullmatch(text):
         return 'wait'
-    if RECOVER.fullmatch(text):
+    if text in {normalize(x) for x in ['تسمعني','هلا تسمعني','هلا والله تسمعني','الو تسمعني','انت تسمعني']} or RECOVER.fullmatch(text):
         return 'recover'
     if not text or (text in SOCIAL and not checkout):
         return 'social'

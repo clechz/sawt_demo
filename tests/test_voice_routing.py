@@ -138,3 +138,10 @@ def test_new_backend_turn_after_wait_resumes_delegation(monkeypatch):
     voice_worker.RestaurantVoice.on_transcript(voice,SimpleNamespace(transcript='بكم الشاورما؟',item_id='next',is_final=True))
     assert voice.waiting  # released only after checking the new audio
     voice.on_delegation.assert_called_once()
+
+
+def test_microphone_check_bypasses_restaurant_planner_without_swallowing_order():
+    from sawt.voice_routing import route_transcript
+    for text in ['هلا والله تسمعني؟', 'تسمعني', 'ألو تسمعني؟']:
+        assert route_transcript(text) == 'recover'
+    assert route_transcript('تسمعني أبي شاورما') == 'backend'
