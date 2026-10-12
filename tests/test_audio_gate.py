@@ -16,6 +16,13 @@ class Sink(AudioOutput):
     def clear_buffer(self):
         self.cleared+=1
 
+
+async def test_single_click_or_background_noise_cannot_suppress_missing_reply_recovery():
+    sink=Sink();audible=[];gate=SpeechGate(sink,audible.append)
+    for samples in ([100]*240, [501]+[0]*239):
+        await gate.capture_frame(rtc.AudioFrame(array.array('h',samples).tobytes(),24000,1,240))
+    assert not audible
+
 async def test_mute_then_resume_keeps_existing_output_destination_and_timing():
     sink=Sink();audible=[];gate=SpeechGate(sink,audible.append)
     pcm=array.array('h',[1000]*240).tobytes()

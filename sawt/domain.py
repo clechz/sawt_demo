@@ -211,6 +211,9 @@ class Engine:
         if action == 'ask_choice':
             from .clarification import ask
             return ask(self.menu, state, args['line_id'], args['group_id'], args.get('option_id'), utterance)
+        if action == 'finish_draft':
+            from .clarification import next_question
+            return {'terminal':True,'reply':next_question(self.menu,state) or say('next_item')}
         if action == 'set_service':
             service = args['service']
             if service not in ['delivery', 'pickup']: raise RuleError('نوع الخدمة غير صالح.')

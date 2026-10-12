@@ -3,6 +3,14 @@
 Only synthetic test traces and test results are included here. Human recordings,
 private call histories, credentials and local databases are excluded.
 
+Start with `submission-final.json` for the latest automated release status and
+`submission-final-tests.xml` for the Python run. The report records worker
+releases, failed attempts, explicit clarification and audio-timing limits.
+The current gate is **incomplete**: OpenAI credit is exhausted and the final
+cloud retest is pending. The filename does not mean the submission is approved.
+`planner-roundtrip-final.json` is the paired same-model latency measurement;
+it measures planner execution, not end-to-end speech latency.
+
 - `submission-copy-tests.xml`: complete offline Python result.
 - `submission-live-replay.json`: four real-planner journeys; playback receipts
   are simulated by this backend harness.
@@ -27,4 +35,4 @@ earlier passing synthetic runs; DESIGN.md explains the subsequent changes.
   synthetic cloud voice checkout and independent private-storage verification.
   Local servers were stopped; no Chrome used. Playback receipt is simulated.
 
-- `voice-readiness.json`: expanded full cloud-call baseline, failed reruns and fixes. Read its outstanding gates; it does not claim submission readiness.
+- `voice-readiness.json`: expanded full cloud-call baseline, failed reruns and fixes. The final release report supersedes its earlier pending-test list while preserving the failure history.

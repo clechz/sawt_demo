@@ -6,6 +6,44 @@ paraphrase stays a question; a valid menu ID alone never proves customer intent.
 import copy
 import re
 from .domain import normalize
+from .domain import RuleError
+
+
+class SelectionClarification(RuleError):
+    """A missing dish identity takes priority over checkout's missing fields."""
+    def __init__(self, message, question):
+        super().__init__(message)
+        self.question = question
+
+
+def service_answer(state, text):
+    """Whole, explicit service selections only; never a yes or a mixed request."""
+    if state['order_id'] or state['handoff'] or state['quote'] or '?' in text or '؟' in text:
+        return None
+    labels = {
+        'pickup': ['استلام','بستلم','باستلم','أستلم','استلام الفرع','استلام من الفرع','بستلمه','أنا بستلم','pickup'],
+        'delivery': ['توصيل','أبي توصيل','أبغى توصيل','delivery'],
+    }
+    value = normalize(text)
+    return next((key for key, words in labels.items() if value in {normalize(w) for w in words}), None)
+
+
+def caption_draft_answer(menu, state, text):
+    """Low-risk closed-set draft answer from the live recognizer.
+
+    Requires an existing question. No confirmation, quantities, free text,
+    cancellation, service switch or closed-order edits can bypass verification.
+    """
+    from .clarification import answer, current
+    from .domain import explicit_confirmation
+    from .conversation import say
+    if state['order_id'] or state['handoff'] or state['quote'] or explicit_confirmation(text):
+        return False
+    last = next((h['content'] for h in reversed(state['history']) if h['role']=='assistant'), '')
+    if not state['service'] and last.endswith(say('service_question')) and service_answer(state,text):
+        return True
+    pending = current(state)
+    return bool(pending and last.endswith(pending['question']) and answer(menu,state,text))
 
 ALIASES = {
     ('crust', 'stuffed'): ['بحشو بجبن', 'حشو بجبن', 'حشوة جبن', 'محشو بجبن', 'محشوب جبن', 'محشو جبن', 'محشوة بالجبن', 'عجينة الجبن', 'عجين الجبن'],
@@ -72,9 +110,9 @@ def check_item_variant(menu, item, utterance):
         requested={oid for _,_,oid in matches(utterance,'protein',proteins)}
         expected='chicken' if item['id']=='sandwiches_07' else 'beef'
         if expected not in requested:
-            raise RuleError('الشاورما دجاج أو لحم. العميل لم يحدد هذا النوع؛ اسأل أي نوع يقصد ولا تختاره تلقائياً.')
+            raise SelectionClarification('الشاورما دجاج أو لحم. العميل لم يحدد هذا النوع؛ اسأل أي نوع يقصد ولا تختاره تلقائياً.', 'الشاورما دجاج ولا لحم؟')
     if item['name'] == 'فول حجازي' and not matches(utterance, 'variant', {'hijazi': {'name':'حجازي','name_en':'Hijazi'}}):
-        raise RuleError('الفول له أكثر من نوع: فول حجازي وفول قلابة. لم يحدد العميل الحجازي؛ لا تختاره تلقائياً. اسأل أي نوع يفضّل، واحفظ الأصناف الواضحة الأخرى.')
+        raise SelectionClarification('الفول له أكثر من نوع: فول حجازي وفول قلابة. لم يحدد العميل الحجازي؛ لا تختاره تلقائياً. اسأل أي نوع يفضّل، واحفظ الأصناف الواضحة الأخرى.', 'الفول حجازي ولا قلابة؟')
     if not item['name'].startswith('تميس '):
         return
     flavors = {'cheese': {'name': 'الجبن', 'name_en': 'cheese'}, 'honey': {'name': 'العسل', 'name_en': 'honey'}}
@@ -82,7 +120,7 @@ def check_item_variant(menu, item, utterance):
     expected = 'cheese' if 'جبن' in item['name'] else 'honey' if 'عسل' in item['name'] else None
     if expected not in requested:
         available = '، '.join(x['name'] for x in menu.items.values() if x['name'].startswith('تميس '))
-        raise RuleError('لم يحدد العميل هذا النوع من التميس. لا تضفه ولا تستبدله تلقائياً. المتوفر: ' + available + '. اسأل أي نوع يفضّل.')
+        raise SelectionClarification('لم يحدد العميل هذا النوع من التميس. لا تضفه ولا تستبدله تلقائياً. المتوفر: ' + available + '. اسأل أي نوع يفضّل.', 'التميس بالجبن ولا بالعسل؟')
 
 
 def matches(text, group_id, options, *, include_negated=False):
@@ -119,6 +157,27 @@ def stated_single_dish_bread(item, utterance, evidence):
     before=rf'(?:ابي|ابغي|عطني|اريد)\s+{dish}(?:\s+(?:(?:حجم|الحجم)\s+)?(?:عادي|كبير|صغير|وسط))?(?:\s+(?:مع|خبز|بخبز))?'
     if re.fullmatch(before,prefix) and re.fullmatch(r'(?:و?\s*(?:توصيل|استلام))?',suffix):return oid
     return None
+
+
+def simple_order(menu,state,text):
+    """Parse only the bounded singular dish/portion/bread form on an empty draft.
+
+    This is an optional fast path, not a general intent parser. Quantity words,
+    extra dishes, notes, questions and corrections fall back to the planner.
+    """
+    if state['basket'] or state['order_id'] or state['handoff'] or state['quote'] or state.get('pending_handoff'):
+        return None
+    candidates=[]
+    for item in menu.items.values():
+        groups=item['groups']
+        if 'bread' not in groups or 'portion' not in groups:continue
+        bread=stated_single_dish_bread(item,text,matches(text,'bread',groups['bread']['options']))
+        portions={oid for _,_,oid in matches(text,'portion',groups['portion']['options'])}
+        if bread is None or len(portions)!=1:continue
+        normalized=normalize(text)
+        service='delivery' if normalized.endswith('توصيل') else 'pickup' if normalized.endswith('استلام') else None
+        candidates.append({'item_id':item['id'],'quantity':1,'options':{'portion':list(portions),'bread':[bread]},'notes':'','service':service})
+    return candidates[0] if len(candidates)==1 else None
 
 
 def checked_options(menu, item, args, utterance, previous=None):

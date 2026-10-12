@@ -3,6 +3,30 @@ import httpx
 import pytest
 from sawt.v2_provider import V2Provider
 from sawt.provider import ProviderError
+from sawt.v2_provider import ProviderQuotaError, CALLS_UNAVAILABLE
+
+
+@pytest.mark.parametrize('code',['insufficient_quota','credit_balance_exhausted'])
+def test_billing_failure_is_actionable_without_leaking_provider_details(code):
+    response=httpx.Response(429,json={'error':{'code':code,'message':'secret provider details'}})
+    with pytest.raises(ProviderQuotaError) as error:V2Provider.check(response)
+    assert str(error.value)==CALLS_UNAVAILABLE
+
+
+def test_temporary_rate_limit_is_not_reported_as_exhausted_credit():
+    with pytest.raises(ProviderError) as error:
+        V2Provider.check(httpx.Response(429,json={'error':{'code':'rate_limit_exceeded'}}))
+    assert not isinstance(error.value,ProviderQuotaError)
+
+
+async def test_streaming_speech_reads_error_before_classifying_billing(monkeypatch):
+    monkeypatch.setattr('sawt.v2_provider.config',lambda:{'key':'test','tts':'test-tts'})
+    provider=V2Provider();provider._loop=asyncio.get_running_loop()
+    provider._client=httpx.AsyncClient(transport=httpx.MockTransport(lambda request:httpx.Response(429,
+        stream=httpx.ByteStream(b'{"error":{"code":"credit_balance_exhausted"}}'))))
+    try:
+        with pytest.raises(ProviderQuotaError):await provider.speak('test')
+    finally:await provider.aclose()
 
 def test_pool_reused_and_closed(monkeypatch):
     created=[]

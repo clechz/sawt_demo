@@ -6,6 +6,7 @@ receipt is simulated after the actual duration; this is not a human UX rating.
 import argparse
 import asyncio
 import json
+import os
 import sys
 import time
 from pathlib import Path
@@ -78,7 +79,7 @@ async def main():
                 return {**saved,'events':list(audit_events)}
             async def turn(name):
                 prior=await state();floor=max((e['sequence'] for e in prior['events']),default=0)
-                assert any(e['kind']=='voice.connected' and e['payload'].get('recognition_policy')=='saudi-confirm-v4' for e in prior['events']), 'Cloud worker has not rolled over to the tested recognition policy yet'
+                assert any(e['kind']=='voice.connected' and e['payload'].get('release')==os.getenv('SAWT_EXPECT_WORKER_RELEASE','conversation-v14') for e in prior['events']), 'Cloud worker has not rolled over to the expected release yet'
                 for i in range(0,len(audio[name]),4800):await queue.put(audio[name][i:i+4800].ljust(4800,b'\0'))
                 while not queue.empty():await asyncio.sleep(.1)
                 await asyncio.sleep(.25);started=time.monotonic()

@@ -57,7 +57,7 @@ LIVEKIT_API_KEY=your-project-api-key
 LIVEKIT_API_SECRET=your-project-api-secret
 ```
 
-Keep the model defaults in `.env.example` unless your account requires an explicitly validated alternative. Current live voice uses `GPTLiveModel` with voice `marin` in `voice_worker.py`; changing `LLM_MODEL` changes the tool planner, not that live voice model.
+Keep the model defaults in `.env.example` unless your account requires an explicitly validated alternative. `SAWT_VOICE=marin` controls the V2 live voice, exact readback and recovery voice together. `TTS_VOICE` is the legacy V1 setting. Changing `LLM_MODEL` changes the tool planner, not the GPT-Live voice model.
 
 Terminal 1:
 
@@ -104,7 +104,7 @@ Then say **«غيرها استلام من فرع النرجس»**, then **«خل
 flowchart LR
   UI[Minimal call UI] <--> LK[LiveKit audio]
   LK <--> Voice[GPT-Live: conversational timing]
-  Voice --> Verify[Bounded audio verification]
+  Voice --> Verify[Contextual draft answer or bounded audio verification]
   Verify --> Planner[Tool planner + current state]
   Planner --> Rules[Menu and order rules]
   Rules --> DB[(Neon Postgres / local SQLite)]
@@ -137,6 +137,8 @@ Paid provider checks (no Chrome automation):
 ```bash
 python scripts/v2_interaction_eval.py
 python scripts/v2_release_replay.py
+# Full deployed voice suite, sequential calls, stops at first failed gate:
+python scripts/v2_cloud_suite.py --release conversation-v14
 # Requires the API and voice worker running on localhost:8766:
 python scripts/v2_recognition_replay.py --edges
 ```
@@ -146,6 +148,7 @@ Offline checks do not need funded provider credentials. Live checks do, and synt
 ## Troubleshooting and operating boundaries
 
 - **Configured false:** check `/api/health` and all four credentials; health confirms configuration presence, not provider entitlement.
+- **`credit_balance_exhausted` / `insufficient_quota`:** restore OpenAI API credit. Raising the app's 120/hour budget cannot fix provider billing. The cloud suite checks this before starting paid voice journeys, and billing failures close calls instead of asking the caller to repeat.
 - **Call connects but no assistant:** check the worker is registered as `sawt-v2`, both processes use the same `.env`/LiveKit project, and provider credit/access is available.
 - **No microphone:** check the browser permission and selected device. HTTP on a LAN IP is not a secure microphone context; use localhost or trusted HTTPS.
 - **Slow or missed speech:** inspect local `/recordings` and `python scripts/v2_call_audit.py`; distinguish capture, recognition verification, planner and playback timings. A successful backend test alone does not establish good audio latency.

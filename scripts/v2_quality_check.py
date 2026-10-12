@@ -19,7 +19,7 @@ def main():
     node = shutil.which('node')
     if not node:
         raise SystemExit('Node.js is required for the browser playback regression suite.')
-    commands.append([node, '--experimental-default-type=module', '--test', 'tests/playback.test.mjs', 'tests/audio-meter.test.mjs', 'tests/call-status.test.mjs'])
+    commands.append([node, '--experimental-default-type=module', '--test', 'tests/playback.test.mjs', 'tests/audio-meter.test.mjs', 'tests/call-status.test.mjs', 'tests/call-start.test.mjs'])
     if (ROOT / 'runtime/v2.sqlite3').exists():
         commands.append([sys.executable, 'scripts/v2_call_audit.py', '--output', str(output / 'call-quality.json')])
     if args.live:

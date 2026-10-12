@@ -2,6 +2,14 @@
 
 Run from the repository root with `requirements-cloud.txt` installed. These commands use paid provider APIs and the password-protected cloud demo; no Chrome is used.
 
+The sequential cloud command is `python scripts/v2_cloud_suite.py --release conversation-v14`.
+It checks planner access, then runs received-speech review, six order/information
+journeys, three interruption offsets, checkout and private-storage checks.
+It stops at the first failure and preserves logs in a timestamped ignored
+`runtime/cloud-suite/` directory. Restore API credit first if preflight reports
+`credit_balance_exhausted`; it does not retry billing failures. The expected
+release is checked so results from an old worker cannot certify a new deploy.
+
 ```sh
 python -m pytest -q
 node --test tests/audio-meter.test.mjs tests/call-start.test.mjs tests/call-status.test.mjs tests/playback.test.mjs
@@ -11,6 +19,7 @@ python scripts/v2_cloud_journeys.py --only pizza_options information_and_staff -
 python scripts/v2_cloud_acceptance.py
 python scripts/verify_cloud_persistence.py
 python scripts/v2_cloud_interruptions.py
+python scripts/v2_conversation_review.py
 ```
 
 Set `SAWT_DEMO_PASSWORD` in the process environment, or use the ignored local `runtime/private-demo.json`. Cloud journeys save timestamped JSON under `runtime/`. Never commit those raw files: they contain call identifiers, state and transient quote tokens. Caller fixtures are synthetic and cached by a hash of their wording. Historical human recordings are not uploaded by this runner.
@@ -38,11 +47,19 @@ The state-completion hard ceiling defaults to eight seconds; that is a stall det
 
 A release needs all intended cases executed, zero incorrect or unconfirmed orders, no silent substitution, and no unresolved missing-reply failures. Do not describe a run as passing when cases were skipped, rate-limited or failed. The demo has a shared 120-start/hour and four-active-call budget; schedule test runs accordingly and leave room for human testing. The optional `--wait-for-capacity-seconds` flag retries only the existing call-budget response until its deadline; it never changes limits or exempts synthetic calls. Other errors remain failures. The checkout runner accepts the same flag.
 
+Cancellation and the unsupported-bread correction each allow one explicit
+repeat after recognition disagreement. The uncertain turn must leave the
+basket, price, order and handoff unchanged. Reports include the repeat and its
+total elapsed time. A completion after clarification is not a first-pass
+recognition success; there is no automatic retry of a failed order assertion.
+
 ## Reproduced failures, 2026-10-12
 
 The first expanded run passed only one of six complete journeys. It exposed failures that earlier smoke tests missed: natural pizza options looping, a cancellation misheard by secondary STT, a price spelling variant rejected, Adani silently substituted with red tea, an audio-check handler producing no audible response, and merged words losing the negation boundary. The baseline remains in the local run archive. Fixes and rerun results must be reported separately; unit-test counts are not a call-success percentage.
 
-A controlled barge-in sweep (speaking at several offsets during assistant audio), packet loss/reconnect, and a held-out human Saudi accent set are still required before any broad reliability claim. The scripted wait/resume case is not a comprehensive interruption benchmark.
+The controlled barge-in sweep below adds measured interruption offsets. Packet loss/reconnect and a held-out human Saudi accent set remain unmeasured. The scripted wait/resume case is not a comprehensive interruption benchmark.
+
+`v2_conversation_review.py` reproduces an ambiguous shawarma request, its protein/modifier answer, pickup/repeated pickup, branch selection and quantity correction. It records received LiveKit audio and independently transcribes the assistant's actual response. Exact readbacks are downloaded, decoded and given timed simulated playback receipts. These are separate speech sources in the report. Assertions reject repeated service questions after pickup, missing audible responses and selected unwanted filler. This is not an accent rating or proof that every paraphrase is correct.
 
 `v2_cloud_interruptions.py` covers explicit wait requests during measured assistant output at 0.2, 0.8 and 1.5 seconds, subsequent option selection, and terminal transport-disconnect cleanup. An explicit participant disconnect ends this demo's call; automatic recovery from packet loss is a separate, unmeasured LiveKit behavior. This script does not certify arbitrary mid-word corrections or network recovery.
 

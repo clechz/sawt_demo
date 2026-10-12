@@ -1,6 +1,7 @@
 """Per-event-loop connection pool and incremental checkout speech for V2."""
 import asyncio
 import os
+import re
 import httpx
 from .provider import OpenAIProvider, ProviderError, config
 
@@ -8,6 +9,30 @@ STYLE = ('Speak clear, broadly Saudi Arabic with a light regional accent. Warm, 
          'natural medium pace, no exaggerated dialect or theatrical enthusiasm. Short pauses between items. '
          'Read exactly the provided Arabic; preserve every quantity, option, amount and confirmation question. '
          'Say ريال naturally. Do not add words, filler, greetings or music.')
+
+CALLS_UNAVAILABLE = 'خدمة المكالمات غير متاحة حالياً. حاول لاحقاً.'
+
+
+class ProviderQuotaError(ProviderError):
+    """Billing failure: retrying or asking the caller to repeat cannot fix it."""
+
+
+def exhausted_quota(error):
+    return isinstance(error,dict) and any(error.get(k) in
+        ('insufficient_quota','credit_balance_exhausted') for k in ('type','code'))
+
+
+def voice_name():
+    # One V2 identity for live conversation, exact readback and recovery speech.
+    return os.getenv('SAWT_VOICE', 'marin')
+
+
+def spoken_amounts(text):
+    """Keep exact monetary value, avoiding spoken decimal zeroes in Arabic."""
+    def replace(match):
+        whole, fraction = int(match[1]), int(match[2])
+        return f'{whole} ريال' + (f' و{fraction} هللة' if fraction else '')
+    return re.sub(r'(?<![\d.])(\d+)\.(\d{2}) ريال', replace, text)
 
 
 class V2Provider(OpenAIProvider):
@@ -41,6 +66,12 @@ class V2Provider(OpenAIProvider):
     @staticmethod
     def check(response):
         if response.status_code >= 400:
+            if response.status_code == 429:
+                try:
+                    if exhausted_quota(response.json().get('error')):
+                        raise ProviderQuotaError(CALLS_UNAVAILABLE)
+                except (ValueError,AttributeError):
+                    pass
             raise ProviderError(f'تعذر الاتصال بمزود الخدمة (HTTP {response.status_code}).')
 
     async def request(self, path, **kwargs):
@@ -65,8 +96,10 @@ class V2Provider(OpenAIProvider):
         cfg = config()
         try:
             async with self.client().stream('POST', 'https://api.openai.com/v1/audio/speech', headers=self.headers(),
-                json={'model': cfg['tts'], 'voice': cfg['voice'], 'input': text,
+                json={'model': cfg['tts'], 'voice': voice_name(), 'input': spoken_amounts(text),
                       'instructions': STYLE, 'response_format': 'mp3'}) as response:
+                if response.status_code >= 400:
+                    await response.aread()
                 self.check(response)
                 async for chunk in response.aiter_bytes():
                     if chunk:
@@ -77,15 +110,23 @@ class V2Provider(OpenAIProvider):
     async def speak(self, text):
         return b''.join([chunk async for chunk in self.stream_speech(text)])
 
-    async def recognize(self, wav):
+    async def recognize(self, wav, *, context='', recovery=False):
         # Separate from GPT-Live captions: this bounded check supplies the
         # transactional backend, without a second live turn detector.
-        response = await self.request('audio/transcriptions', data={
+        data={
             'model': os.getenv('RECOGNITION_MODEL', 'gpt-transcribe'),
             'languages[]': ['ar', 'en'], 'response_format': 'json',
-            'prompt': 'مكالمة عميل لمطعم سعودي: يسأل عن الأسعار، يختار الحجم والعجينة، يعدل أو يلغي الطلب. انقل كلامه كما سمعته دون تخمين أصناف أو طلبات.',
-            'keywords[]': ['الطلب','إلغاء الطلب','شاي عدني','محشوة جبن','شاورما','تميس','معصوب','قلابة','كرك','شكشوكة','النرجس','الملقا','العليا','الروضة'],
-        }, files={'file': ('caller-turn.wav',wav,'audio/wav')})
+            'prompt': 'مكالمة عميل لمطعم سعودي. انقل الكلام المسموع فقط دون إضافة كلمات من السياق. كلمات شائعة: استلام، بستلم، خبز صاج، بريوش، خبز بر، بدون حار. '+context[:700],
+            'keywords[]': ['الطلب','إلغاء الطلب','استلام','بستلم','صاج','بريوش','خبز بر','شاي عدني','محشوة جبن','شاورما','تميس','معصوب','قلابة','كرك','شكشوكة','النرجس','الملقا','العليا','الروضة'],
+        }
+        if recovery:
+            # A different acoustic model resolves a disagreement, not a vote
+            # for the preferred words. Never give it the disputed transcript.
+            # This supported legacy model is scheduled for removal 2027-02-26.
+            data={'model':os.getenv('RECOGNITION_RECOVERY_MODEL','gpt-4o-transcribe'),
+                  'response_format':'json','prompt':'مكالمة طلبات مطعم سعودي. انقل الكلام المسموع فقط. '+context[:700]}
+        response = await self.request('audio/transcriptions', data=data,
+            files={'file': ('caller-turn.wav',wav,'audio/wav')})
         try:
             text = response.json()['text']
             if not isinstance(text,str):raise ValueError('Invalid transcript')

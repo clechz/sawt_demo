@@ -194,6 +194,8 @@ async def main():
      await call.start(args.wait_for_capacity_seconds);record['call_id']=call.call['id']
      initial=await call.state()
      record['worker_release']=next((e['payload'].get('release') for e in initial['events'] if e['kind']=='voice.connected'),None)
+     if os.getenv('SAWT_EXPECT_WORKER_RELEASE'):
+      assert record['worker_release']==os.environ['SAWT_EXPECT_WORKER_RELEASE'],'Unexpected worker release'
      for spec in specs:
       turn_started=time.monotonic()
       try:result=await call.turn(audio[spec['text']],spec,args.max_state_seconds)

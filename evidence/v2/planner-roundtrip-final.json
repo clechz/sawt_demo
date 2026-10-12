@@ -1,0 +1,137 @@
+{
+  "scope": "Same model and correction request; planner only, not end-to-end voice latency",
+  "runs": [
+    {
+      "version": "before",
+      "repeat": 0,
+      "ms": 2184,
+      "requests": [
+        [
+          "update_item",
+          "checkout"
+        ],
+        [
+          "update_item"
+        ],
+        [
+          "checkout"
+        ]
+      ],
+      "checks": {
+        "quantity": true,
+        "options": true,
+        "total": true,
+        "readback": true,
+        "not_confirmed": true
+      },
+      "passed": true
+    },
+    {
+      "version": "after",
+      "repeat": 0,
+      "ms": 986,
+      "requests": [
+        [
+          "update_item",
+          "checkout"
+        ]
+      ],
+      "checks": {
+        "quantity": true,
+        "options": true,
+        "total": true,
+        "readback": true,
+        "not_confirmed": true
+      },
+      "passed": true
+    },
+    {
+      "version": "after",
+      "repeat": 1,
+      "ms": 669,
+      "requests": [
+        [
+          "update_item",
+          "checkout"
+        ]
+      ],
+      "checks": {
+        "quantity": true,
+        "options": true,
+        "total": true,
+        "readback": true,
+        "not_confirmed": true
+      },
+      "passed": true
+    },
+    {
+      "version": "before",
+      "repeat": 1,
+      "ms": 1933,
+      "requests": [
+        [
+          "update_item",
+          "checkout"
+        ],
+        [
+          "update_item"
+        ],
+        [
+          "checkout"
+        ]
+      ],
+      "checks": {
+        "quantity": true,
+        "options": true,
+        "total": true,
+        "readback": true,
+        "not_confirmed": true
+      },
+      "passed": true
+    },
+    {
+      "version": "before",
+      "repeat": 2,
+      "ms": 1924,
+      "requests": [
+        [
+          "update_item",
+          "checkout"
+        ],
+        [
+          "update_item"
+        ],
+        [
+          "checkout"
+        ]
+      ],
+      "checks": {
+        "quantity": true,
+        "options": true,
+        "total": true,
+        "readback": true,
+        "not_confirmed": true
+      },
+      "passed": true
+    },
+    {
+      "version": "after",
+      "repeat": 2,
+      "ms": 815,
+      "requests": [
+        [
+          "update_item",
+          "checkout"
+        ]
+      ],
+      "checks": {
+        "quantity": true,
+        "options": true,
+        "total": true,
+        "readback": true,
+        "not_confirmed": true
+      },
+      "passed": true
+    }
+  ]
+}

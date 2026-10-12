@@ -45,6 +45,42 @@ def test_missing_bread_is_not_filled_from_mixed_negated_or_conditional_order(set
     engine.act(state,'add_item',{'item_id':'breakfast_01','quantity':1,'options':{},'notes':''},utterance=text)
     assert not state['basket'][0]['options'].get('bread')
 
+
+def test_single_dish_fast_path_commits_validated_state_without_a_model(setup,tmp_path,monkeypatch):
+    import asyncio
+    from unittest.mock import AsyncMock
+    from types import SimpleNamespace
+    from sawt import v2_runtime as runtime
+    from sawt.transactions import Transactions
+    staged,_=setup;tx=Transactions(tmp_path/'fast.db',staged.engine);sid,_=tx.create()
+    monkeypatch.setattr(runtime,'tx',tx)
+    provider=SimpleNamespace(chat=AsyncMock(side_effect=AssertionError('No planner required')))
+    result=asyncio.run(runtime.delegate(sid,'أبي شكشوكة كبير، تميس وتوصيل.','fast',0,voice_provider=provider))
+    assert result['state']['basket'][0]['options']=={'portion':['large'],'bread':['tamees']}
+    assert result['state']['service']=='delivery' and result['state']['total']==3000
+    assert not result['state']['quote'] and not result['state']['order_id']
+    assert 'مدينة' in result['reply'] and 'حي' in result['reply']
+    provider.chat.assert_not_awaited()
+
+
+@pytest.mark.parametrize('text',[
+    'أبي اثنين شكشوكة كبير تميس وتوصيل','أبي 2 شكشوكة كبير تميس وتوصيل',
+    'أبي شكشوكة كبير تميس ومعها شاي','أبي شكشوكة كبير بدون تميس',
+    'أبي شكشوكة كبير تميس لو السعر مجاني','هل عندكم شكشوكة كبير تميس؟',
+    'خلها شكشوكة كبير تميس','أبي شكشوكة كبير تميس وصاج',
+    'أبي شكشوكة كبير تميس توصيل الرياض حي النرجس'])
+def test_single_dish_fast_path_defers_nonmatching_requests(setup,text):
+    from sawt.choices import simple_order
+    engine,state=setup
+    assert simple_order(engine.menu,state,text) is None
+
+
+def test_single_dish_fast_path_does_not_duplicate_an_existing_basket(setup):
+    from sawt.choices import simple_order
+    engine,state=setup
+    engine.act(state,'add_item',{'item_id':'breakfast_01','quantity':1,'options':{},'notes':''},utterance='شكشوكة')
+    assert simple_order(engine.menu,state,'أبي شكشوكة كبير تميس وتوصيل') is None
+
 def test_negated_heat_does_not_authorize_hot(setup):
     engine,state=setup
     shawarma(engine,state,'وجبة مع صاج بدون حار',{'meal':['meal'],'bread':['saj'],'spice_level':['hot']})

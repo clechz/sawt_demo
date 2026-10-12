@@ -35,6 +35,8 @@ async def main():
                 await call.start();row['call_id']=call.call['id']
                 initial=await call.state()
                 row['worker_release']=next(e['payload'].get('release') for e in initial['events'] if e['kind']=='voice.connected')
+                if os.getenv('SAWT_EXPECT_WORKER_RELEASE'):
+                    assert row['worker_release']==os.environ['SAWT_EXPECT_WORKER_RELEASE'],'Unexpected worker release'
                 async with asyncio.timeout(20):
                     while any(at>time.monotonic()-.8 and rms>.01 for at,rms in call.output):await asyncio.sleep(.1)
                 floor=call.cursor

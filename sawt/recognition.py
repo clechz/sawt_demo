@@ -89,6 +89,11 @@ def check_recognition(caption, verified):
     negatives=r'\b(?:لا|مو|بدون|not|no|without|dont)\b'
     if re.search(negatives,a) and b and not re.search(negatives,b):
         raise AudioWindowError('Negation disagreement')
+    pickup = r'\b(?:استلام|بستلم|باستلم|استلم|بستلمه|pickup)\b'
+    delivery = r'\b(?:توصيل|delivery)\b'
+    for intent in (pickup, delivery):
+        if b and bool(re.search(intent,a)) != bool(re.search(intent,b)):
+            raise AudioWindowError('Fulfillment intent disagreement')
     numbers={'واحد':'1','واحدة':'1','واحده':'1','وحده':'1','اثنين':'2','اثنتين':'2','ثلاثة':'3','ثلاثه':'3','اربعة':'4','اربعه':'4',
              'خمسة':'5','خمسه':'5','ستة':'6','سته':'6','سبعة':'7','سبعه':'7','ثمانية':'8','ثمانيه':'8','تسعة':'9','تسعه':'9','عشرة':'10','عشره':'10',
              'ثلاث':'3','اربع':'4','خمس':'5','ست':'6','سبع':'7','ثمان':'8','تسع':'9','عشر':'10',

@@ -1,60 +1,65 @@
-SAWT — FINAL CONVERSATION CHANGES AND VERIFICATION
-2026-10-12
+SAWT — CURRENT SUBMISSION STATUS
+2026-10-12 | conversation-v14 | No Chrome testing
 
-Changes
-- Updated all 37 reusable Arabic templates. Source: data/conversation-copy.json.
-- Acknowledgments describe differences between the saved states, not generic
-  claims that an action succeeded. No-op changes produce no saved-change claim.
-- Short choice answers advance to the next missing field. Repeated item prefixes
-  and verbose saved-basket recaps before address questions are removed.
-- Delivery city, neighborhood, street and building persist independently in any
-  order. Corrections invalidate dependent old address details. Missing details
-  block checkout. Switching to pickup clears delivery details.
-- A complete order plus an explicit completion request goes to exact readback,
-  without another anything-else question. Confirmation/playback gates remain.
-- Pickup readback omits a zero delivery-fee sentence; delivery readback includes
-  destination, branch, fee, total, ETA, all items/options and notes.
-- Accepted staff offers acknowledge the saved demo ticket without repeating the
-  same limitation. Natural free-text ticket offers become stored proposals;
-  a negative capability statement does not accidentally create an offer.
+STATUS: NOT YET CLEARED FOR SUBMISSION
+OpenAI returned HTTP 429 / credit_balance_exhausted for the configured key.
+Restore API credit before testing or recording. App call limits are already
+120 starts per rolling hour and four concurrent calls; provider billing is
+separate. A successful website login does not prove voice availability.
 
-Verification — no Chrome or browser automation used in this work
-- Full Python suite: 414 passed. evidence/v2/submission-copy-tests.xml.
-- 16 JavaScript playback, audio-meter and call-status checks passed.
-- Four real-planner multi-turn journeys passed (30 turns): karak/choice loop,
-  information/allergens, unavailable size and corrections, incremental address.
-  evidence/v2/submission-live-replay.json. Checkout playback in this harness is
-  SIMULATED, not proof of a browser completing checkout.
-- Ten real-planner request cases plus two staff-offer followups passed:
-  evidence/v2/interaction-eval.json.
-- Seven real LiveKit synthetic-audio edge checks passed: quantity three,
-  correction to two without duplication, English modifiers, negated addition,
-  no unconfirmed order, unheard yes blocked, noise leaves basket unchanged.
-  evidence/v2/submission-voice-edges.json.
-- Public HTTPS demo: all 12 checks passed, including login, protected archives,
-  voice readiness, synthetic caller recognition, expected dishes, returned audio,
-  no unconfirmed order, and closure. evidence/v2/private-demo-smoke.json.
-- Final repeated-recap cleanup was tested deterministically after the live run;
-  it changes presentation only. Services were restarted after final changes.
+Current checks
+- 553 Python tests passed; the optional Postgres module skipped in this run.
+- 22 real Postgres contract checks passed separately before the final voice
+  and provider changes; isolated schemas, not customer order writes.
+- 17 JavaScript checks passed, including local microphone/assistant orb
+  activity, autoplay handling, stale status and playback receipt protection.
+- Frontend TypeScript check and production build passed.
+- Private website redirect, login and authenticated API health passed.
+- Latest paid planner run was interrupted by exhausted credit. Completed
+  scenarios do not count as a complete run.
 
-Issues found and fixed during this verification
-The planner initially failed to save a city supplied alone. Added a bounded
-save-before-reply reminder; the live address retest and final full run passed.
-Natural staff-ticket offers initially bypassed proposal storage. Expanded the
-existing bounded wording guard and tested both offers and negated statements.
-These are observed development regressions, not a held-out reliability score.
+Latest voice evidence
+- conversation-v12 received-speech review completed six pickup/correction
+  turns and decoded real checkout speech, with timed simulated receipts.
+- The expanded v12 run passed only three of six journeys. Pizza did not save
+  its draft, quantity recognition disagreed, and staff-offer decline produced
+  no audible reply. Failures remain in evidence/v2/submission-final.json.
+- Older checkout, interruption and storage runs passed on older releases;
+  they do not certify the final voice changes.
 
-Remaining submission work / limits
-- Record the required demonstration video under 10 minutes.
-- Confirm reviewers can access the repository and that the submission includes
-  these local changes. The GitHub commit/push status is reported separately in the delivery message.
-- This is a mock restaurant demo: no real POS, dispatch, payment or live staff
-  integration. The temporary HTTPS link needs this computer and services running.
-- No claim of perfect recognition, every possible Arabic phrase, a fresh browser
-  checkout pass, or production load/soak testing. Model-generated replies can
-  still vary. One test-library deprecation warning remains; prior nonfatal
-  LiveKit teardown warnings are documented in RELEASE-TEST-REPORT.txt.
+Changes awaiting final real-media verification
+- Contextual pickup/option answers, bounded catalog retrieval, dish identity
+  clarification, and finish_draft reduce repeat questions/model round trips.
+- Database I/O no longer blocks the live audio event loop; durable epochs,
+  revisions and confirmation checks remain.
+- Critical recognition disagreements get one bounded independent acoustic
+  recovery attempt, then clarification if still unresolved.
+- RMS-based audible detection avoids treating clicks as successful replies.
+- Live, checkout and recovery share a voice; spoken totals omit decimal zeroes.
+- Exhausted provider credit closes the call with a visible availability error.
 
-Full editable phrase review: CALL-EXPERIENCE.txt.
+Resume verification with funded credentials
+  python scripts/v2_release_replay.py --output runtime/funded-planner.json
+  python scripts/v2_cloud_suite.py --release conversation-v14
 
-Latest audio update: capture-position anchoring for provider clock drift, queued/batched diagnostics, one invalidation per unsettled burst, 750 ms settlement, and a direct local microphone meter. Seven synthetic voice edge checks passed again in evidence/v2/latency-fix-edges.json. Human-perceived latency is not certified; remaining event-loop stalls need further profiling.
+The second command runs sequential received-speech review, all six journeys,
+three interruption offsets, checkout and independent private storage checks.
+It stops on the first failed gate and records logs in runtime/cloud-suite/.
+No Chrome, browser automation or human archive upload is involved.
+
+Before submitting
+1. Pass the final funded suite and address any failures it reveals.
+2. Make a human Saudi microphone call: assess actual useful response time,
+   naturalness, corrections and interruption. Synthetic pass counts cannot
+   establish a premium or perfect human experience.
+3. Record the under-ten-minute demonstration using DEMO.md.
+4. Verify Sawt reviewers can access the private repository and video.
+
+Hosting: https://sawt-demo.vercel.app
+Vercel UI/API, LiveKit Cloud worker, Neon Postgres and private Vercel Blob.
+No dependency on this PC for hosted calls. The old local archive stays on PC.
+Mock orders, fixed delivery zones and staff tickets remain simulations; real
+POS, payment, courier, staff integration and production load tests are absent.
+
+Detailed architecture: DESIGN.md. Reusable language: CALL-EXPERIENCE.txt.
+Current evidence: evidence/v2/submission-final.json and submission-final-tests.xml.

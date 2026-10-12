@@ -393,5 +393,6 @@
   "checkout_rerun": {
     "passed": false,
     "reason": "Test fixture sent position 999, outside the API 600-second bound; correction and first readback passed. Fixture corrected to actual duration; full rerun pending."
-  }
+  },
+  "superseded_by": "submission-final.json"
 }

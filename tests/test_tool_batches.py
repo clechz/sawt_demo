@@ -31,6 +31,31 @@ def test_batch_applies_in_order_with_each_result_and_no_duplicate_add():
     messages=provider.chat.call_args_list[-1].args[0]
     assert [m['tool_call_id'] for m in messages if m['role']=='tool']==['s','r','a','b']
 
+
+def test_new_draft_can_ask_missing_choice_in_one_round_trip_without_guessing_line_id():
+    original,state,reply,provider=run([{'tool_calls':[
+        call('add_item',{'item_id':'breakfast_01','quantity':1,'options':{},'notes':''},'add'),
+        call('finish_draft',{},'finish')]}])
+    assert provider.chat.await_count==1 and len(state['basket'])==1
+    assert state['pending_choice']['line_id']==state['basket'][0]['line_id']
+    assert state['pending_choice']['group_id']=='portion'
+    assert not state['quote'] and not state['order_id'] and not original['basket']
+
+
+def test_finish_draft_cannot_hide_a_failed_item_change():
+    _,state,reply,_=run([{'tool_calls':[
+        call('add_item',{'item_id':'breakfast_01','quantity':1,'options':{'bread':['invented']},'notes':''},'bad'),
+        call('finish_draft',{},'finish')]},{'content':'وش نوع الخبز؟'}])
+    assert not state['basket'] and not state['quote']
+    assert next(e for e in reply['events'] if e['tool']=='finish_draft')['result']['error']
+
+
+def test_finish_draft_in_middle_cannot_skip_remaining_request():
+    _,state,reply,_=run([{'tool_calls':[
+        call('set_service',{'service':'pickup'},'s'),call('finish_draft',{},'f'),
+        call('set_branch',{'branch_id':'ruh_narjis'},'b')]},{'content':'نحتاج تفاصيل الطلب.'}])
+    assert state['service'] is None and not reply['events']
+
 def test_mixed_confirmation_batch_executes_nothing():
     original,state,reply,_=run([
         {'tool_calls':[call('set_service',{'service':'pickup'},'s'),call('confirm',{},'c')]},

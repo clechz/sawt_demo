@@ -58,20 +58,22 @@ def test_cancellation_spelling_variants_remain_full_utterance_only(text):
     assert not requests_cancel('لا '+text)
     assert not requests_cancel(text+' لو السعر غالي')
 
-def test_caption_burst_invalidates_once_but_new_work_can_be_superseded(monkeypatch):
+async def test_caption_burst_invalidates_once_but_new_work_can_be_superseded(monkeypatch):
     interrupt=Mock(return_value=2)
     monkeypatch.setattr(voice_worker.tx,'interrupt',interrupt)
     monkeypatch.setattr(voice_worker.tx,'load',Mock(return_value={'state':{'quote':None}}))
     voice=SimpleNamespace(sid='s',provider_failed=False,ending=False,last_input=0,
         fragments=[],fragment_spans=[],input_audio=SimpleNamespace(duration_ms=1000),
         audit=Mock(),input_invalidated=False,send=AsyncMock(),reading=False,
-        spawn=lambda coroutine:coroutine.close())
+        spawn=asyncio.create_task)
     event={'type':'session.input_transcript.delta','delta':'أبي','start_ms':100,'end_ms':300}
     voice_worker.RestaurantVoice.on_provider_event(voice,event)
     voice_worker.RestaurantVoice.on_provider_event(voice,event)
+    await voice.input_boundary
     assert interrupt.call_count==1 and len(voice.fragments)==2
     voice.input_invalidated=False  # verification starts a new work boundary
     voice_worker.RestaurantVoice.on_provider_event(voice,event)
+    await voice.input_boundary
     assert interrupt.call_count==2
 
 

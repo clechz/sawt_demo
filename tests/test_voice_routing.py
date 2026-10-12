@@ -4,14 +4,14 @@ import voice_worker
 
 def test_short_answer_after_controlled_readback_routes_without_model_delegation(monkeypatch):
     monkeypatch.setattr(voice_worker.tx,'event',Mock())
-    voice=SimpleNamespace(sid='s',checkout_context=True,on_delegation=Mock(),output_held=False,session=Mock())
+    voice=SimpleNamespace(sid='s',checkout_context=True,audit=Mock(),on_delegation=Mock(),output_held=False,session=Mock())
     voice_worker.RestaurantVoice.on_transcript(voice,SimpleNamespace(transcript='نعم',item_id='i',is_final=True))
     voice.on_delegation.assert_called_once()
     assert voice.on_delegation.call_args.args[0].id is None
 
 def test_small_talk_outside_checkout_does_not_force_reasoning(monkeypatch):
     monkeypatch.setattr(voice_worker.tx,'event',Mock())
-    voice=SimpleNamespace(sid='s',checkout_context=False,on_delegation=Mock(),output_held=False,session=Mock(),fragments=['هلا'],consumed=0)
+    voice=SimpleNamespace(sid='s',checkout_context=False,audit=Mock(),on_delegation=Mock(),output_held=False,session=Mock(),fragments=['هلا'],consumed=0)
     voice_worker.RestaurantVoice.on_transcript(voice,SimpleNamespace(transcript='هلا',item_id='i',is_final=True))
     voice.on_delegation.assert_not_called()
 
@@ -31,7 +31,7 @@ def test_repeated_provider_close_events_only_trigger_one_failure_close(monkeypat
 
 def test_short_size_answer_routes_and_holds_speculative_audio(monkeypatch):
     monkeypatch.setattr(voice_worker.tx,'event',Mock())
-    voice=SimpleNamespace(sid='s',checkout_context=False,on_delegation=Mock(),output_held=False,session=Mock())
+    voice=SimpleNamespace(sid='s',checkout_context=False,audit=Mock(),on_delegation=Mock(),output_held=False,session=Mock())
     voice_worker.RestaurantVoice.on_transcript(voice,SimpleNamespace(transcript='حجم عادي عادي',item_id='i',is_final=True))
     voice.on_delegation.assert_called_once()
     voice.session.output.set_audio_enabled.assert_called_once_with(False)
@@ -92,7 +92,7 @@ def test_wait_controls_are_exact_not_negations_orders_or_quoted_notes():
 def test_wait_caption_is_verified_before_it_can_silence_the_bot(monkeypatch):
     from unittest.mock import AsyncMock
     monkeypatch.setattr(voice_worker.tx,'event',Mock())
-    voice=SimpleNamespace(sid='s',checkout_context=False,on_delegation=Mock(),output_held=False,
+    voice=SimpleNamespace(sid='s',checkout_context=False,audit=Mock(),on_delegation=Mock(),output_held=False,
         session=Mock(),fragments=['ما قاعد أتكلم'],wait_requested=AsyncMock(),spawn=lambda coro:coro.close())
     voice_worker.RestaurantVoice.on_transcript(voice,SimpleNamespace(transcript='ما قاعد أتكلم',item_id='i',is_final=True))
     voice.on_delegation.assert_called_once()
@@ -133,7 +133,7 @@ def test_model_delegation_cannot_break_wait_without_fresh_speech():
 
 def test_new_backend_turn_after_wait_resumes_delegation(monkeypatch):
     monkeypatch.setattr(voice_worker.tx,'event',Mock())
-    voice=SimpleNamespace(sid='s',waiting=True,checkout_context=False,output_held=True,
+    voice=SimpleNamespace(sid='s',waiting=True,checkout_context=False,output_held=True,audit=Mock(),
         session=Mock(),on_delegation=Mock())
     voice_worker.RestaurantVoice.on_transcript(voice,SimpleNamespace(transcript='بكم الشاورما؟',item_id='next',is_final=True))
     assert voice.waiting  # released only after checking the new audio

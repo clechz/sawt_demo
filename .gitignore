@@ -29,3 +29,7 @@ evidence/v2/*
 !evidence/v2/cloud-deployment.json
 
 !evidence/v2/voice-readiness.json
+!evidence/v2/submission-final.json
+!evidence/v2/submission-final-tests.xml
+!evidence/v2/planner-roundtrip-final.json
+!evidence/v2/clipping-reproduction.json

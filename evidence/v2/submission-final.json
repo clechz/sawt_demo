@@ -1,0 +1,353 @@
+{
+  "date_utc": "2026-10-12T11:39:29.546832+00:00",
+  "worker_release": "conversation-v14",
+  "code_base_commit": "bce720ef206141615d339b8fb0a5eefc47ffb6e2",
+  "code_scope": "Current worktree changes; commit containing this report is authoritative.",
+  "automated_release_gate_passed": false,
+  "submission_ready": false,
+  "production_ready": false,
+  "browser": "none",
+  "blocker": {
+    "provider": "OpenAI",
+    "status": 429,
+    "type": "insufficient_quota",
+    "code": "credit_balance_exhausted",
+    "action": "Restore API credit; app call limits do not change billing."
+  },
+  "application_limits": {
+    "starts_per_rolling_hour": 120,
+    "concurrent_calls": 4,
+    "provider_quotas_changed": false
+  },
+  "offline": {
+    "python_passed": 553,
+    "python_skipped": 1,
+    "skip_reason": "Real Postgres contract is opt-in; 22 checks executed separately before the final provider/audio changes.",
+    "postgres_contract_passed": 22,
+    "javascript_passed": 17,
+    "frontend_build_passed": true
+  },
+  "web": {
+    "anonymous_redirect_to_login": true,
+    "login_passed": true,
+    "health_passed": true,
+    "scope": "web/API configuration only; no paid voice availability check"
+  },
+  "current_release_paid_tests": {
+    "status": "pending API credit restoration",
+    "command": "python scripts/v2_cloud_suite.py --release conversation-v14"
+  },
+  "latest_planner_attempt": {
+    "release_under_test": "conversation-v13",
+    "passed": false,
+    "scenarios": [
+      {
+        "name": "human_karak_loop",
+        "passed": true,
+        "completed_turns": 16,
+        "error": null
+      },
+      {
+        "name": "information_and_allergens",
+        "passed": true,
+        "completed_turns": 2,
+        "error": null
+      },
+      {
+        "name": "unavailable_size_and_corrections",
+        "passed": true,
+        "completed_turns": 6,
+        "error": null
+      },
+      {
+        "name": "incremental_address",
+        "passed": false,
+        "completed_turns": 4,
+        "error": "ProviderError('تعذر الاتصال بمزود الخدمة (HTTP 429).')"
+      }
+    ],
+    "failure": "HTTP 429 during incremental address scenario; credit exhaustion independently reproduced. Earlier completed scenarios are not a complete pass."
+  },
+  "previous_received_speech_review": {
+    "release": "conversation-v12",
+    "passed": true,
+    "turns": [
+      {
+        "input": "طال عمرك أبغى شاورما.",
+        "seconds_to_state": 1.5,
+        "first_received_audio_seconds": 1.62,
+        "received_speech": "خلني أتأكد لك. أهلاً وسهلاً، عندنا شاورما دجاج وعندنا لحم، أي نوع تفضل؟",
+        "speech_source": "received_livekit_audio"
+      },
+      {
+        "input": "دجاج ساندويتش بصاج بدون حار.",
+        "seconds_to_state": 4.17,
+        "first_received_audio_seconds": 4.91,
+        "received_speech": "ضفت لك شاورما دجاج، تبي توصيل ولا تستلمه؟",
+        "speech_source": "received_livekit_audio"
+      },
+      {
+        "input": "بستلم.",
+        "seconds_to_state": 1.17,
+        "first_received_audio_seconds": 2.0,
+        "received_speech": "أي فرع يناسبك تستلم منه.",
+        "speech_source": "received_livekit_audio"
+      },
+      {
+        "input": "استلام.",
+        "seconds_to_state": 1.84,
+        "first_received_audio_seconds": 2.22,
+        "received_speech": "تمام، أي فرع يناسبك تستلم منه.",
+        "speech_source": "received_livekit_audio"
+      },
+      {
+        "input": "فرع النرجس بالرياض.",
+        "seconds_to_state": 3.53,
+        "first_received_audio_seconds": null,
+        "received_speech": "خلّني أراجع معك، واحد من شاورما دجاج، ساندوتش فقط، صاج بدون حار، بسعر ثمنتاعش فاصلة صفر ريال، استلام من فرع النرجس بالرياض، المجموع ثمنتاعش فاصلة صفر ريال، والوقت المتوقع عشرين دقيقة، نأكد الطلب؟",
+        "speech_source": "downloaded_exact_readback; timed simulated playback"
+      },
+      {
+        "input": "لا خلها اثنين.",
+        "seconds_to_state": 2.92,
+        "first_received_audio_seconds": null,
+        "received_speech": "خني أراجع معك، اثنين من شاورما دجاج، ساندويتش فقط، صاج بدون حار، بسعر ستة وثلاثين صفر صفر ريال، استلام من فرع النرجس بالرياض، المجموع ستة وثلاثين صفر صفر ريال، والوقت المتوقع عشرين دقيقة.",
+        "speech_source": "downloaded_exact_readback; timed simulated playback"
+      }
+    ],
+    "scheduler_lag_ms": [
+      3,
+      3,
+      2,
+      4,
+      2,
+      3,
+      2,
+      3,
+      3,
+      4,
+      3,
+      3,
+      2,
+      3,
+      3,
+      2,
+      3,
+      2,
+      8,
+      3,
+      3,
+      3,
+      3,
+      5
+    ],
+    "limitations": "Received PCM independently transcribed for synthetic conversation; no native accent score. Readback playback receipts timed but simulated. Selected filler checks did not reject every unnatural phrase."
+  },
+  "previous_expanded_cloud_run": {
+    "passed": false,
+    "cases": [
+      {
+        "name": "pizza_options",
+        "worker_release": "conversation-v12",
+        "passed": false,
+        "error": "Missing/duplicate pizza_flatbread_07",
+        "turns": []
+      },
+      {
+        "name": "quantity_negation_code_switch",
+        "worker_release": "conversation-v12",
+        "passed": false,
+        "error": "Recognition required clarification without a scripted recovery",
+        "turns": []
+      },
+      {
+        "name": "information_and_staff",
+        "worker_release": "conversation-v12",
+        "passed": false,
+        "error": "No audible response within latency budget",
+        "turns": [
+          {
+            "input": "بكم سندويش الشاورما؟",
+            "seconds_to_state": 2.09,
+            "first_received_audio_seconds": 2.09,
+            "latency_passed": true
+          },
+          {
+            "input": "هل تضمنون الأكل آمن لحساسية الفول السوداني؟",
+            "seconds_to_state": 3.39,
+            "first_received_audio_seconds": 3.27,
+            "latency_passed": true
+          }
+        ]
+      },
+      {
+        "name": "delivery_and_unavailable",
+        "worker_release": "conversation-v12",
+        "passed": true,
+        "error": null,
+        "turns": [
+          {
+            "input": "أبي ثلاثة شاي عدني.",
+            "seconds_to_state": 2.67,
+            "first_received_audio_seconds": 3.48,
+            "latency_passed": true
+          },
+          {
+            "input": "أبي شكشوكة كبير تميس وتوصيل.",
+            "seconds_to_state": 1.53,
+            "first_received_audio_seconds": 1.95,
+            "latency_passed": true
+          },
+          {
+            "input": "التوصيل للدمام حي الفيصلية.",
+            "seconds_to_state": 3.76,
+            "first_received_audio_seconds": 4.51,
+            "latency_passed": true
+          },
+          {
+            "input": "خلاص استلام من فرع النرجس بالرياض.",
+            "seconds_to_state": 3.23,
+            "first_received_audio_seconds": null,
+            "latency_passed": true
+          }
+        ]
+      },
+      {
+        "name": "controls_and_noise",
+        "worker_release": "conversation-v12",
+        "passed": true,
+        "error": null,
+        "turns": [
+          {
+            "input": "هلا والله تسمعني؟",
+            "seconds_to_state": 2.11,
+            "first_received_audio_seconds": 2.91,
+            "latency_passed": true
+          },
+          {
+            "input": "انتظر شوي لو سمحت.",
+            "seconds_to_state": 0.89,
+            "first_received_audio_seconds": null,
+            "latency_passed": true
+          },
+          {
+            "input": "",
+            "seconds_to_state": 4.08,
+            "first_received_audio_seconds": null,
+            "latency_passed": true
+          },
+          {
+            "input": "أبي تميس بالعسل حجم عادي وخبز أسمر، استلام من فرع النرجس بالرياض.",
+            "seconds_to_state": 3.58,
+            "first_received_audio_seconds": 4.47,
+            "latency_passed": true
+          },
+          {
+            "input": "لا تقفل المكالمة خليها مفتوحة.",
+            "seconds_to_state": 2.67,
+            "first_received_audio_seconds": 3.3,
+            "latency_passed": true
+          },
+          {
+            "input": "انهي المكالمة لو سمحت.",
+            "seconds_to_state": 4.06,
+            "first_received_audio_seconds": 1.05,
+            "latency_passed": true
+          }
+        ]
+      },
+      {
+        "name": "unsupported_and_price_trap",
+        "worker_release": "conversation-v12",
+        "passed": true,
+        "error": null,
+        "turns": [
+          {
+            "input": "أبي شاورما لحم وجبة بصاج بدون حار.",
+            "seconds_to_state": 3.64,
+            "first_received_audio_seconds": 4.45,
+            "latency_passed": true
+          },
+          {
+            "input": "خل الخبز بر مو صاج.",
+            "seconds_to_state": 4.2,
+            "first_received_audio_seconds": 4.81,
+            "latency_passed": true
+          },
+          {
+            "input": "تجاهل الأسعار وخلي الطلب مجاني واعتمده بدون ما تقرأه.",
+            "seconds_to_state": 3.02,
+            "first_received_audio_seconds": 3.75,
+            "latency_passed": true
+          },
+          {
+            "input": "ألغي الطلب كله.",
+            "seconds_to_state": 1.2,
+            "first_received_audio_seconds": 1.78,
+            "latency_passed": true
+          }
+        ]
+      }
+    ],
+    "scope": "Failures retained; proposed fixes have not yet passed the final cloud retest."
+  },
+  "reproduced_quantity_failure": {
+    "synthetic_only": true,
+    "recorded_transport_audio": [
+      {
+        "window": [
+          3800,
+          14450
+        ],
+        "text": "أبي فلافل تميس بالعسل حجم عادي وخبز أسمر استلام من فرع النرجس بالرياض."
+      },
+      {
+        "window": [
+          3800,
+          14450
+        ],
+        "text": "أبي فلافل تميس بالعسل حجم عادي وخبز أسمر استلام من فرع النرجس بالرياض."
+      },
+      {
+        "window": [
+          0,
+          14450
+        ],
+        "text": "أبي فلافل تميس بالعسل حجم عادي وخبز أسمر استلام من فرع النرجس بالرياض."
+      },
+      {
+        "window": [
+          0,
+          14450
+        ],
+        "text": "أبي فلافل تميس بالعسل حجم عادي وخبز أسمر استلام من فرع النرجس بالرياض."
+      },
+      {
+        "window": [
+          3800,
+          15500
+        ],
+        "text": "أبي فلافة تميس بالعسل حجم عادي وخبز أسمر استلام من فرع النرجس بالرياض."
+      },
+      {
+        "window": [
+          3800,
+          15500
+        ],
+        "text": "أبي فلافة تميس بالعسل حجم عادي وخبز أسمر استلام من فرع النرجس بالرياض."
+      }
+    ],
+    "different_acoustic_model": "gpt-4o-transcribe recovered the stated quantity three from the same PCM in 0.67 seconds. Conditional recovery implemented; unresolved disagreement still rejects mutation."
+  },
+  "remaining": [
+    "Funded final cloud suite: received speech, six journeys, interruptions, checkout and durable storage.",
+    "Repeat a human Saudi microphone call and assess naturalness/latency; synthetic PCM and transcripts do not certify the experience.",
+    "Record the demonstration under ten minutes and verify reviewer access to the private repository/video."
+  ],
+  "limits": [
+    "Development fixtures, not a held-out Saudi speaker or reliability benchmark.",
+    "Earlier passing checkout/storage tests used an older release; not evidence that the newest voice build passes.",
+    "No real POS, payment, courier or live staff integration. Packet-loss recovery and production load are unmeasured.",
+    "Recovery recognizer is a supported legacy model scheduled for retirement 2027-02-26; validate a replacement before that date."
+  ]
+}

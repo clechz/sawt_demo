@@ -9,7 +9,7 @@ from .domain import Engine, Menu, explicit_confirmation, normalize
 from .agent import Agent
 from .v2_provider import V2Provider
 from .transactions import Transactions, StagedEngine, Conflict
-from .choices import short_choice
+from .choices import short_choice, simple_order, service_answer
 from .clarification import answer as choice_answer, next_question, question_targets, ask as ask_choice
 from .conversation import say
 from .response_style import changes, finished_order, combine
@@ -24,15 +24,15 @@ provider = V2Provider()
 
 async def delegate(sid, text, delegation_id, epoch, *, progress=None, voice_provider=None):
     started = time.perf_counter()
-    replay = tx.replay_bundle(sid, delegation_id, text)
+    replay = await asyncio.to_thread(tx.replay_bundle, sid, delegation_id, text)
     if replay is not None:
         return replay
-    row = tx.load(sid)
+    row = await asyncio.to_thread(tx.load, sid)
     if row['epoch'] != epoch or row['closed']:
         raise Conflict('Superseded delegation')
     if not explicit_confirmation(text) and row['state']['quote']:
-        epoch = tx.interrupt(sid)
-        row = tx.load(sid)
+        epoch = await asyncio.to_thread(tx.interrupt, sid)
+        row = await asyncio.to_thread(tx.load, sid)
     adapter = StagedEngine(engine, check_choices=True)
     async def announce(stage):
         if progress:
@@ -44,11 +44,30 @@ Every accepted change MUST have a successful mutation tool result. Never imply a
 Use ask_choice for all menu option questions; it creates an authoritative context for a short reply. Save all unambiguous selections before asking it. For ambiguous 'سكر وسط/متوسط', ask_choice(sweetness, half) asks whether the caller means half sugar; do not save it until they agree. A catalog ice option on karak is a demo-menu inconsistency: acknowledge it honestly, offer the listed 'بدون ثلج' via ask_choice and accept their answer. Do not say ice is impossible while asking the caller to select ice. Do not infer service or create a location from a question about branch availability. Never ask a free-text yes/no option question outside ask_choice.
 إذا سأل عن السعر فقط: قل سعر الأصناف المقصودة من المنيو بجملة واحدة ثم توقف. لا تقل «وش تفضل» أو «أي نوع يناسبك» ولا تذكر الوجبات والإضافات التي لم يسأل عنها. لا تحوّل سؤال المعلومة إلى أخذ طلب.
 ''')
-    tx.event(sid, 'delegation.started', {'delegation_id': delegation_id, 'epoch': epoch, 'text': text})
+    await asyncio.to_thread(tx.event, sid, 'delegation.started', {'delegation_id': delegation_id, 'epoch': epoch, 'text': text})
     await agent.report('understanding')
     contextual = choice_answer(engine.menu, row['state'], text)
     direct = contextual[0] if contextual else short_choice(engine.menu, row['state'], text)
-    if direct:
+    simple = simple_order(engine.menu,row['state'],text)
+    service = service_answer(row['state'],text)
+    if service:
+        state=copy.deepcopy(row['state'])
+        await agent.report('set_service')
+        result=adapter.act(state,'set_service',{'service':service},utterance=text)
+        state,reply=agent.finish(state,text,next_question(engine.menu,state) or say('next_item'),
+            [{'tool':'set_service','args':{'service':service},'result':result,'source':'explicit_service_answer'}])
+    elif simple:
+        state=copy.deepcopy(row['state']);events=[]
+        service=simple.pop('service')
+        if service:
+            await agent.report('set_service')
+            result=adapter.act(state,'set_service',{'service':service},utterance=text)
+            events.append({'tool':'set_service','args':{'service':service},'result':result,'source':'unambiguous_single_dish'})
+        await agent.report('add_item')
+        result=adapter.act(state,'add_item',simple,utterance=text)
+        events.append({'tool':'add_item','args':simple,'result':result,'source':'unambiguous_single_dish'})
+        state,reply=agent.finish(state,text,say('next_item'),events)
+    elif direct:
         state = copy.deepcopy(row['state'])
         await agent.report('update_item')
         result = adapter.act(state, 'update_item', direct, utterance=contextual[1] if contextual else text)
@@ -85,7 +104,12 @@ Use ask_choice for all menu option questions; it creates an authoritative contex
                 question = next_question(engine.menu, state)
                 unavailable = list(dict.fromkeys(q['question'] for q in adapter.choice_questions if q['reason'] == 'unavailable'))
                 location_error = next((e['result']['error'] for e in reversed(failed) if e['tool'] in ('set_location','set_delivery_details')), None)
-                if location_error and not state['location']:
+                unresolved_item = next((e['result']['customer_question'] for e in failed if e['result'].get('customer_question')), None)
+                # Ignore a rejected guess only if the correct dish was saved
+                # afterward; otherwise ask about it before unrelated fields.
+                if unresolved_item and not any(e['tool'] in ('add_item','replace_item') and not e['result'].get('error') for e in reply['events']):
+                    reply['reply'] = unresolved_item
+                elif location_error and not state['location']:
                     reply['reply'] = location_error
                 elif unavailable:
                     state['pending_choice'] = None
@@ -101,7 +125,7 @@ Use ask_choice for all menu option questions; it creates an authoritative contex
         state['history'][-1]['content'] = reply['reply']
     await agent.report('saving')
     reply['state'] = engine.view(state)
-    tx.commit_bundle(sid, delegation_id, epoch, row['state']['revision'], state, adapter.operations, text, reply)
-    reply['state'] = engine.view(tx.load(sid)['state'])
-    tx.event(sid, 'delegation.completed', {'delegation_id': delegation_id, 'duration_ms': round((time.perf_counter()-started)*1000), 'reply': reply['reply']})
+    await asyncio.to_thread(tx.commit_bundle, sid, delegation_id, epoch, row['state']['revision'], state, adapter.operations, text, reply)
+    reply['state'] = engine.view((await asyncio.to_thread(tx.load, sid))['state'])
+    await asyncio.to_thread(tx.event, sid, 'delegation.completed', {'delegation_id': delegation_id, 'duration_ms': round((time.perf_counter()-started)*1000), 'reply': reply['reply']})
     return reply

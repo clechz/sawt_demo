@@ -115,7 +115,7 @@ def code_free_caller(host):
 
 
 @app.post('/api/calls')
-async def create(request: Request, body: StartCall):
+def create(request: Request, body: StartCall):
     # No code is needed on explicitly configured LAN networks when access is unset.
     load_dotenv(ROOT / '.env', override=True)
     access = os.getenv('SAWT_ACCESS_CODE', '')
@@ -146,14 +146,14 @@ def state(sid: str, request: Request, after: int = 0):
 
 
 @app.post('/api/calls/{sid}/end')
-async def end(sid: str, request: Request):
+def end(sid: str, request: Request):
     authorized(sid, request)
     tx.interrupt(sid, close=True)
     return {'closed': True}
 
 
 @app.post('/api/calls/{sid}/readback')
-async def readback(sid: str, request: Request):
+def readback(sid: str, request: Request):
     row = authorized(sid, request)
     quote = row['state']['quote']
     if row['closed'] or not quote:
@@ -172,7 +172,7 @@ def audio_duration(audio):
 @app.get('/api/calls/{sid}/readback/{receipt_id}')
 async def readback_stream(sid: str, receipt_id: str):
     try:
-        receipt, quote = tx.claim_audio(sid, receipt_id)
+        receipt, quote = await asyncio.to_thread(tx.claim_audio, sid, receipt_id)
     except (KeyError, Conflict):
         raise HTTPException(404, 'Readback is no longer available')
     capture = RUNTIME / 'recordings' / sid
@@ -197,22 +197,22 @@ async def readback_stream(sid: str, receipt_id: str):
             async for chunk in provider.stream_speech(quote['text']):
                 elapsed = time.perf_counter() - started
                 if elapsed - checked > .5 or first:
-                    tx.current_receipt(sid, receipt_id)
+                    await asyncio.to_thread(tx.current_receipt, sid, receipt_id)
                     checked = elapsed
                 if first:
-                    tx.event(sid, 'readback.first_byte', {'receipt_id': receipt_id, 'tts_first_byte_ms': round(elapsed*1000)})
+                    await asyncio.to_thread(tx.event, sid, 'readback.first_byte', {'receipt_id': receipt_id, 'tts_first_byte_ms': round(elapsed*1000)})
                     first = False
                 audio.extend(chunk)
                 yield chunk
             duration = await asyncio.to_thread(audio_duration, bytes(audio))
             await asyncio.to_thread(file.write_bytes, bytes(audio))
             await asyncio.to_thread(cloud_storage.upload, file, sid)
-            tx.finish_audio(sid, receipt_id, duration)
-            tx.event(sid, 'readback.generated', {'receipt_id': receipt_id, 'duration': duration,
+            await asyncio.to_thread(tx.finish_audio, sid, receipt_id, duration)
+            await asyncio.to_thread(tx.event, sid, 'readback.generated', {'receipt_id': receipt_id, 'duration': duration,
                       'tts_ms': round((time.perf_counter()-started)*1000), 'text_hash': quote['text_hash']})
         except BaseException as exc:
-            tx.fail_audio(sid, receipt_id)
-            tx.event(sid, 'readback.failed', {'receipt_id': receipt_id, 'error_type': type(exc).__name__})
+            await asyncio.to_thread(tx.fail_audio, sid, receipt_id)
+            await asyncio.to_thread(tx.event, sid, 'readback.failed', {'receipt_id': receipt_id, 'error_type': type(exc).__name__})
             raise
     return StreamingResponse(chunks(), media_type='audio/mpeg', headers={'X-Accel-Buffering': 'no'})
 

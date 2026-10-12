@@ -1,5 +1,28 @@
 # Requirement coverage and honest execution record
 
+For the latest release status, start with [VOICE-TESTS.md](VOICE-TESTS.md) and
+`evidence/v2/submission-final.json`. It separates offline tests, actual media
+journeys, explicit clarification attempts, interruption offsets, checkout and
+independent storage verification. `voice-readiness.json` retains the earlier
+failed runs; a later successful rerun does not erase them.
+
+**Current gate: incomplete.** The latest offline run passed 553 Python and 17
+JavaScript checks; frontend typecheck/build passed. The configured OpenAI key
+then returned HTTP 429, `credit_balance_exhausted`, interrupting the paid planner
+run. The final `conversation-v14` cloud voice suite has not passed yet. Restore
+API credit and run `python scripts/v2_cloud_suite.py --release conversation-v14`.
+The previous expanded `conversation-v12` cloud run passed three of six journeys;
+pizza draft persistence, a quantity-recognition disagreement, and a missing
+spoken reply failed. These failures remain visible in the current report.
+
+The current architecture uses continuous LiveKit/GPT-Live audio and Neon
+Postgres in the cloud. The push-to-talk pipeline and local-only limitations
+below belong to earlier versions. Tests use synthetic audio without Chrome;
+human microphone permissions, native accent quality and packet-loss recovery
+are not certified by those results.
+
+## Historical execution record and requirement map
+
 **Current submission:** V2 setup is in README.md; curated synthetic evidence is in [evidence/v2](evidence/v2/README.md). The latest audio-clock, background-diagnostic and microphone-meter changes are explained in DESIGN.md. A passing synthetic run does not override a human report of poor latency.
 
 **Current V2 evidence:** see `RELEASE-TEST-REPORT.txt`, `RECOGNITION-REPORT.txt`, and `CALL-EXPERIENCE.txt`. Current tests add bounded audio verification, correction/negation checks, stateful staff offers, whole-draft cancellation and audible closing. Run `python scripts/v2_quality_check.py` for the offline suite. The counts, batch STT/TTS timings and push-to-talk limitations below are preserved **V1 historical results**, not current V2 results.

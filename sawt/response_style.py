@@ -17,7 +17,8 @@ def changes(menu, before, after):
         item = menu.get(line['item_id'])
         prior = old.get(key)
         if prior is None:
-            parts.append(f"ضفت {line['quantity']} من {item['name']}")
+            parts.append('ضفت لك ' + item['name'] if line['quantity']==1 else
+                         f"ضفت {NUMBERS.get(line['quantity'],line['quantity'])} من {item['name']}")
             continue
         prefix = 'بالنسبة لـ' + item['name'] + '، ' if len(new) > 1 else ''
         if prior['item_id'] != line['item_id']:

@@ -17,6 +17,7 @@ TOOLS = [
     tool('get_item', 'Get exact menu item and options. Always inspect before choosing options.', {'item_id': S}, ['item_id']),
     tool('list_branches', 'Get branches, cities and mock delivery zones.'),
     tool('get_state', 'Read authoritative current order, missing choices and availability.'),
+    tool('finish_draft', 'After saving ALL clear additions/changes, finish this turn with the next missing question derived from state. Terminal; MAY be the LAST tool after successful mutations in the SAME batch. Especially useful after add_item when you do not yet know the generated line_id. Does NOT checkout, confirm or invent facts. For information questions answer their facts instead; for a finished complete order use checkout.'),
     tool('ask_choice', 'Ask ONE exact menu option clarification, after saving every clear change first. Terminal. Specify option_id only to ask whether an ambiguous phrase means that option (e.g. medium sugar -> half?). A yes then applies ONLY to this choice. Never invent a free-text yes/no choice question.', {'line_id': S, 'group_id': S, 'option_id': S}, ['line_id', 'group_id']),
     tool('set_service', 'Set delivery/pickup. Switching clears address and quote; pickup has zero delivery fee.', {'service': {'type': 'string', 'enum': ['delivery', 'pickup']}}, ['service']),
     tool('set_location', 'Set/correct delivery address, select serving branch and revalidate basket. Ask city/zone if ambiguous. Unsupported area invalidates old address.', {'city': S, 'zone': S, 'address': S}, ['city', 'zone', 'address']),
@@ -117,14 +118,20 @@ class Agent:
         reminded_address = False
         reminded_service = False
         tool_count = 0
+        rejected_batch = False
         batching = getattr(self.provider, 'supports_tool_batches', False)
         if batching:
+            from .catalog_context import retrieve
+            catalog = retrieve(self.engine.menu, text, state)
+            if catalog:
+                messages[0]['content'] += '\nVERIFIED RETRIEVAL (already inspected; read-only):\n' + json.dumps(catalog,ensure_ascii=False)
+                messages[0]['content'] += '\nUse these exact definitions without repeating a search/get_item/list_branches call when they answer the request. Missing dish identity takes priority over service/address. For plain shawarma ask chicken or beef; do not guess. This lookup never saves an item; valid additions and changes still need mutation tools.'
             # History retains speech, not tool schemas. Supply the authoritative
             # schemas for existing lines so corrections need no repeated lookup.
             item_ids = list(dict.fromkeys(x['item_id'] for x in state['basket']))[:8]
             if item_ids:
                 messages[0]['content'] += '\nCATALOG DEFINITIONS FOR CURRENT BASKET (already inspected):\n' + json.dumps([self.engine.menu.get(item_id) for item_id in item_ids], ensure_ascii=False)
-            messages[0]['content'] += '\nLatency policy: return independent tool calls together in one response. They execute IN ORDER, not concurrently. Batch independent searches, then batch known valid edits. Do not repeat list_branches/get_item when their exact results are already in CURRENT STATE or this turn. To avoid another round trip, checkout or ask_choice MAY be the LAST call after known valid edits in the same batch; it runs only if every preceding call succeeds without rejected choices. For ask_choice the exact line_id must already be known; never invent a new line ID. Other terminal tools (confirm, handoff, offer_handoff, cancel_draft) must be called ALONE. Never guess IDs or omit validation to reduce calls.'
+            messages[0]['content'] += '\nLatency policy: return independent tool calls together in one response. They execute IN ORDER, not concurrently. Batch all clear edits, then append finish_draft as the LAST call in that SAME batch. It renders the next missing question from saved state, so you need neither another model turn nor a generated line_id. Use checkout instead when the caller finished a complete order; ask_choice when offering a specific interpretation. These terminal calls run only if every preceding edit succeeds without rejected choices. Do not repeat list_branches/get_item when exact definitions are already supplied. For ask_choice the line_id must already be known; never invent it. Other terminal tools (confirm, handoff, offer_handoff, cancel_draft) must be called ALONE. Never guess IDs or omit validation to reduce calls.'
         for step in range(10):
             message = await self.provider.chat(messages, TOOLS)
             if not isinstance(message, dict): raise ProviderError('استجابة النموذج غير صالحة.')
@@ -150,14 +157,20 @@ class Agent:
                         messages.append({'role':'system','content':'Your reply asks a menu option question. You MUST use ask_choice to persist the exact question before the caller can answer yes. Save all clear fields first, then call ask_choice with the real line_id and group_id. If offering one specific interpretation, supply option_id. Do not ask an untracked free-text option question. Candidate line/group pairs: '+json.dumps(targets)})
                         continue
                 requested_food = re.search(r'\b(?:ابي|ابغي|اريد|ضيف|اضف|ابغالي|عطني|اعطني|هات|حطلي)\b', normalize(text))
+                previous_order_request = any(h['role']=='user' and re.search(r'\b(?:ابي|ابغي|اريد|عطني|اعطني)\b',normalize(h['content'])) for h in original['history'][-6:])
+                previous_question = next((h['content'] for h in reversed(original['history']) if h['role']=='assistant'),'')
+                dish_answer = bool(not original['basket'] and previous_order_request and ('؟' in previous_question or '?' in previous_question)
+                                   and '?' not in text and '؟' not in text)
                 inspected_menu = any(e['tool'] in ('search_menu', 'get_item') for e in events)
                 saved_change = state['basket'] != original['basket']
                 pending_answer = bool(original.get('pending_choice') and inspected_menu)
                 unresolved_search = any(e['tool']=='search_menu' and
                     (e['result'].get('partial_matches_only') or e['result'].get('total_matches')==0) for e in events)
-                if (requested_food or pending_answer) and inspected_menu and not unresolved_search and not saved_change and not reminded_to_save and step < 8:
+                catalog_order = batching and not rejected_batch and not any(e['result'].get('error') for e in events) and catalog.get('menu_candidates') and (dish_answer or catalog.get('unique_current_name_word') or any(
+                    normalize(item['name']) in normalize(text) for item in catalog['menu_candidates']['items']))
+                if (requested_food or pending_answer or dish_answer) and (inspected_menu or catalog_order) and (not unresolved_search or dish_answer) and not saved_change and not reminded_to_save and step < 8:
                     reminded_to_save = True
-                    messages.append({'role': 'system', 'content': 'Your proposed response did not save the caller request. For a clear order command such as عطني كرك, you MUST call add_item NOW with the menu item ID, the quantity from the current conversation, options={} for unspecified choices, and notes="". Missing size/ice/sugar is NOT a reason to wait. For an option answer use update_item NOW for every clear field. Ask clarification only after saving. Only an information-only query or genuinely ambiguous dish may remain unsaved. Latest caller request: ' + text})
+                    messages.append({'role': 'system', 'content': 'Your proposed response did not save the caller request. A short answer to your dish question (e.g. دجاج ساندويتش after شاورما دجاج ولا لحم) continues their order; it is not a new information enquiry. For a clear dish request call add_item with its exact ID and stated quantity, options={} for unspecified choices, and notes="". Missing or misheard bread/size is NOT a reason to discard a known dish: save its draft and ask only the unresolved option. Use update_item for existing lines. Genuinely ambiguous or unavailable dishes and information questions remain unsaved. Never substitute an alternative without permission. Latest caller request: ' + text})
                     continue
                 return self.finish(state, text, reply, events)
             if (not isinstance(calls, list) or not 1 <= len(calls) <= (8 if batching else 1)
@@ -167,15 +180,16 @@ class Agent:
             tool_count += len(calls)
             if tool_count > 10:
                 raise ProviderError('تجاوز الطلب عدد الخطوات المسموح. لم نعتمد التغييرات الجديدة.')
-            terminal = {'ask_choice','checkout','confirm','handoff','offer_handoff','cancel_draft'}
+            terminal = {'finish_draft','ask_choice','checkout','confirm','handoff','offer_handoff','cancel_draft'}
             names = [c['function'].get('name') for c in calls]
             mutations = {'add_item','update_item','replace_item','remove_item','set_service','set_branch','set_location','set_delivery_details'}
-            terminal_last = (len(calls)>1 and names[-1] in {'ask_choice','checkout'}
+            terminal_last = (len(calls)>1 and names[-1] in {'finish_draft','ask_choice','checkout'}
                              and all(name in mutations for name in names[:-1]))
             if len(calls)>1 and any(name in terminal for name in names) and not terminal_last:
+                rejected_batch = True
                 messages.append({'role':'assistant','content':message.get('content'),'tool_calls':calls})
                 for c in calls:
-                    messages.append({'role':'tool','tool_call_id':c['id'],'content':'No tools in this batch executed. Only ask_choice or checkout may follow mutation tools as the final call. Other terminal tools must be alone.'})
+                    messages.append({'role':'tool','tool_call_id':c['id'],'content':'No tools in this batch executed. Only finish_draft, ask_choice or checkout may follow mutation tools as the final call. Other terminal tools must be alone.'})
                 continue
             messages.append({'role': 'assistant', 'content': message.get('content'), 'tool_calls': calls})
             batch_failed = False
@@ -201,6 +215,8 @@ class Agent:
                         seen[key] = result
                 except (RuleError, KeyError, TypeError, ValueError) as exc:
                     result = {'error': str(exc) if isinstance(exc, RuleError) else 'صيغة الأداة غير صالحة. صحح المعطيات.'}
+                    if getattr(exc, 'question', None):
+                        result['customer_question'] = exc.question
                     # Give the model authoritative repair data after a bad option ID.
                     # Selected options in the state are not the complete menu schema.
                     if isinstance(args, dict) and call.get('function', {}).get('name') in ['add_item', 'update_item', 'replace_item']:
