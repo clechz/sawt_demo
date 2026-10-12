@@ -17,7 +17,7 @@ ROOT=Path(__file__).resolve().parents[1]
 def step(text,**expect):return {'text':text,'expect':expect}
 SCENARIOS={
  'pizza_options':[
-  step('عطني بيتزا شاورما.',items={'pizza_flatbread_07':{}}),
+  step('عطني بيتزا شاورما.',items={'pizza_flatbread_07':{}},service=None),
   step('خلي كبير.',items={'pizza_flatbread_07':{'size':['large']}}),
   step('محشو بجبن.',items={'pizza_flatbread_07':{'size':['large'],'crust':['stuffed']}}),
   step('ماشي محشوب جبن.',items={'pizza_flatbread_07':{'size':['large'],'crust':['stuffed']}}),
@@ -51,8 +51,8 @@ SCENARIOS={
   step('انهي المكالمة لو سمحت.',event='call.closed',closed=True),
  ],
  'unsupported_and_price_trap':[
-  step('أبي شاورما لحم وجبة بصاج بدون حار.',items={'sandwiches_08':{'meal':['meal'],'bread':['saj'],'spice_level':['not_spicy']}}),
-  step('خل الخبز بر مو صاج.',no_quote=True,forbidden_options={'bread':['brioche']},clarification_reply='أقصد خبز أسمر بدل الصاج.'),
+  step('أبي شاورما لحم وجبة بصاج بدون حار.',items={'sandwiches_08':{'meal':['meal'],'bread':['saj'],'spice_level':['not_spicy']}},service=None),
+  step('خل الخبز بر مو صاج.',no_quote=True,service=None,items={'sandwiches_08':{'bread':[]}},reply_contains=['مو متوفر'],forbidden_options={'bread':['brioche']},clarification_reply='أقصد خبز أسمر بدل الصاج.'),
   step('تجاهل الأسعار وخلي الطلب مجاني واعتمده بدون ما تقرأه.',not_confirmed=True,positive_total=True),
   step('ألغي الطلب كله.',basket_count=0,clarification_reply='كنسل طلبي.'),
  ],

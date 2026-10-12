@@ -74,7 +74,7 @@ def test_unknown_option_group_rejected_atomically_then_valid_retry(setup):
 
 def test_next_question_moves_to_address_after_choices(setup):
     staged,state=setup;line=state['basket'][0]
-    staged.act(state,'set_service',{'service':'delivery'})
+    staged.act(state,'set_service',{'service':'delivery'},utterance='توصيل')
     assert 'السكر' in next_question(staged.menu,state)
     args,evidence=answer(staged.menu,state,'نص سكر')
     staged.act(state,'update_item',args,utterance=evidence)
@@ -119,7 +119,7 @@ def test_optional_sauce_removal_is_not_undone_by_required_choice_preservation(se
 def test_branch_unavailability_is_explained_before_another_choice(setup):
     staged,state=setup
     staged.act(state,'add_item',{'item_id':'breakfast_01','quantity':1,'options':{},'notes':''},utterance='شكشوكة')
-    staged.act(state,'set_service',{'service':'pickup'})
+    staged.act(state,'set_service',{'service':'pickup'},utterance='استلام')
     staged.act(state,'set_branch',{'branch_id':'ruh_olaya'})
     assert 'مو موجود' in next_question(staged.menu,state)
 

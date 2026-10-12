@@ -10,7 +10,7 @@ from .domain import Engine, Menu, explicit_confirmation, normalize
 from .agent import Agent
 from .v2_provider import V2Provider
 from .transactions import Transactions, StagedEngine, Conflict
-from .choices import short_choice, simple_order, service_answer, delivery_answer
+from .choices import short_choice, simple_order, service_answer, delivery_answer, bread_correction
 from .clarification import answer as choice_answer, next_question, question_targets, ask as ask_choice
 from .conversation import say
 from .response_style import changes, finished_order, combine
@@ -48,7 +48,8 @@ Use ask_choice for all menu option questions; it creates an authoritative contex
     await asyncio.to_thread(tx.event, sid, 'delegation.started', {'delegation_id': delegation_id, 'epoch': epoch, 'text': text})
     await agent.report('understanding')
     contextual = choice_answer(engine.menu, row['state'], text)
-    direct = contextual[0] if contextual else short_choice(engine.menu, row['state'], text)
+    bread = bread_correction(engine.menu, row['state'], text)
+    direct = contextual[0] if contextual else bread[0] if bread else short_choice(engine.menu, row['state'], text)
     simple = simple_order(engine.menu,row['state'],text)
     service = service_answer(row['state'],text)
     address = delivery_answer(row['state'],text)
@@ -78,7 +79,7 @@ Use ask_choice for all menu option questions; it creates an authoritative contex
     elif direct:
         state = copy.deepcopy(row['state'])
         await agent.report('update_item')
-        result = adapter.act(state, 'update_item', direct, utterance=contextual[1] if contextual else text)
+        result = adapter.act(state, 'update_item', direct, utterance=contextual[1] if contextual else bread[1] if bread else text)
         view = engine.view(state)
         spoken = changes(engine.menu, row['state'], state) or 'تمام.'
         state, reply = agent.finish(state, text, spoken, [{'tool': 'update_item', 'args': direct, 'result': result, 'source': 'unambiguous_short_choice'}])
@@ -96,7 +97,8 @@ Use ask_choice for all menu option questions; it creates an authoritative contex
         asked = any(e['tool'] == 'ask_choice' and not e['result'].get('error') for e in reply['events'])
         changed = state['revision'] != row['state']['revision']
         failed = [e for e in reply['events'] if e['result'].get('error')]
-        acknowledgment = changes(engine.menu, row['state'], state)
+        acknowledgment = changes(engine.menu, row['state'], state,
+            unresolved={(q['line_id'], q['group']) for q in adapter.choice_questions if q['reason'] == 'unavailable'})
         if asked and state.get('pending_choice'):
             reply['reply'] = state['pending_choice']['question']
         if not asked:

@@ -296,6 +296,9 @@ class StagedEngine:
     def act(self, state, action, args, **kwargs):
         validate_args(action, args)
         rejected = []
+        if self.check_choices and action in ('set_service', 'set_location', 'set_delivery_details'):
+            from .choices import check_service
+            check_service(state, action, args, kwargs.get('utterance', ''))
         if self.check_choices and action in ('add_item', 'update_item', 'replace_item'):
             from .choices import checked_options, check_item_variant
             previous = next((x for x in state['basket'] if x['line_id'] == args.get('line_id')), None)

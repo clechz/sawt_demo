@@ -35,6 +35,7 @@ def requests_cancel(text):
 
 JOURNEY_RULES = '''
 Conversation experience:
+- Delivery and pickup have NO default. Set the service only when the caller explicitly chooses it; naming a dish, its options or asking about a branch does not select delivery. Otherwise save the dish and ask the missing service question. Never fabricate address details to bypass this rule.
 - Ask only for fields missing from CURRENT STATE. Save partial delivery details with set_delivery_details, even a single city, neighborhood, street or building. Never invent a building number. Use set_location only for a complete address. Do not ask again for saved details.
 - When the caller finishes a complete order, call checkout directly instead of asking again whether they want anything else. Checkout still requires full readback and a separate explicit confirmation.
 - Acknowledge only the actual accepted change, briefly: خليت الكمية اثنين، شلت الكرك. Avoid generic حفظت اختيارك or تم التعديل, repeated greetings, and repeating the whole basket outside a requested recap or checkout.

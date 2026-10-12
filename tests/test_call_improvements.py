@@ -82,7 +82,7 @@ def test_unconfirmed_registration_claim_is_replaced_with_missing_fields(setup):
 def test_free_confirmation_invitation_requires_exact_readback(setup,invitation):
     engine,state=setup
     add(engine,state,'breakfast_01','شكشوكة عادي صاج',{'portion':['regular'],'bread':['saj']})
-    engine.act(state,'set_service',{'service':'pickup'})
+    engine.act(state,'set_service',{'service':'pickup'},utterance='استلام')
     engine.act(state,'set_branch',{'branch_id':'ruh_narjis'})
     _,reply=Agent(engine,None).finish(state,'خلاص',invitation,[])
     assert state['quote'] and not state['quote']['presented']

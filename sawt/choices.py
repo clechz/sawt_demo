@@ -29,6 +29,33 @@ def service_answer(state, text):
     return next((key for key, words in labels.items() if value in {normalize(w) for w in words}), None)
 
 
+def check_service(state, action, args, utterance):
+    """A valid fulfillment ID is not evidence that the caller selected it.
+
+    This is a mutation guard, not an intent router. Ambiguous language asks
+    for a choice rather than silently defaulting to delivery or pickup.
+    """
+    service = args['service'] if action == 'set_service' else 'delivery'
+    if state['service'] == service:
+        return
+    text = normalize(utterance)
+    text = re.sub(r'\bلو سمحت\b', '', text).strip()
+    uncertain = (any(mark in utterance for mark in ('?', '؟', '"', '«', '»', '“', '”'))
+        or re.search(r'\b(?:هل|اذا|لو|يمكن|قلت|قال|اكتب|ملاحظه|عندكم|توصلون|if|whether|said)\b', text))
+    labels = {
+        'pickup': r'(?:استلام|بستلم(?:ه|ها)?|باستلم(?:ه|ها)?|استلم(?:ه|ها)?|pickup|pick\s+up)',
+        'delivery': r'(?:توصيل|دليفري|وصل(?:ه|ها)|توصل(?:ه|ها)|delivery|deliver)',
+    }
+    evidence = []
+    for key, pattern in labels.items():
+        for match in re.finditer(r'(?<!\w)(?:و|ال)?' + pattern + r'(?!\w)', text):
+            prefix = text[:match.start()].strip()
+            if not re.search(r'(?:^|\s)(?:لا|مو|بدون|غير|ما|not|no|without)(?:\s+(?:ابي|ابغي|نبي|لازم|اريد))?$', prefix):
+                evidence.append(key)
+    if uncertain or set(evidence) != {service}:
+        raise RuleError('نوع الخدمة ما تحدد بوضوح. لا تختار توصيل أو استلام من نفسك؛ اسأل: تبيه توصيل ولا استلام؟')
+
+
 def caption_draft_answer(menu, state, text):
     """Low-risk closed-set draft answer from the live recognizer.
 
@@ -118,6 +145,42 @@ def short_choice(menu, state, text):
     return {'line_id': line['line_id'], 'options': {gid: [oid]}}
 
 
+def bread_correction(menu, state, text):
+    """One explicit bread correction on one dish; mixed requests use the planner."""
+    if (len(state['basket']) != 1 or state['order_id'] or state['handoff']
+            or any(mark in text for mark in ('?', '؟', '"', '«', '»', '“', '”'))):
+        return None
+    line = state['basket'][0]
+    group = menu.get(line['item_id'])['groups'].get('bread')
+    if not group:
+        return None
+    catalog = bread_options(menu)
+    labels = {}
+    for oid, option in catalog.items():
+        for label in [option['name'], option.get('name_en', '')] + ALIASES.get(('bread', oid), []):
+            if label:
+                labels[normalize(label)] = oid
+    pattern = '|'.join(re.escape(label) for label in sorted(labels, key=len, reverse=True))
+    match = re.fullmatch(r'(?:لا\s+)?(?:خل|خلي|خله|خليه|خليها|اقصد|ابي|ابغي)\s+'
+        r'(?:(?:الخبز|خبز)\s+)?(?P<new>' + pattern + r')'
+        r'(?:\s+(?:مو|بدل)\s+(?:ال)?(?P<old>' + pattern + r'))?', normalize(text))
+    if not match:
+        return None
+    if match['old'] and labels[match['old']] not in line['options'].get('bread', []):
+        return None
+    oid = labels[match['new']]
+    return ({'line_id': line['line_id'], 'options': {'bread': [oid] if oid in group['options'] else []}}, match['new'])
+
+
+def bread_options(menu):
+    catalog = {}
+    for item in menu.items.values():
+        catalog.update(item['groups'].get('bread', {}).get('options', {}))
+    catalog['pita'] = {'name': 'بيتا', 'name_en': 'pita'}
+    catalog['white'] = {'name': 'خبز أبيض', 'name_en': 'white bread'}
+    return catalog
+
+
 def check_item_variant(menu, item, utterance):
     """The fixture has no plain standalone tamees; don't silently add a flavor."""
     from .domain import RuleError
@@ -156,6 +219,8 @@ def matches(text, group_id, options, *, include_negated=False):
             for match in re.finditer(pattern, text):
                 prefix = text[:match.start()].rstrip()
                 negated = re.search(r'(?:^|\s)(?:بدون|مو|غير|لا|no|not|without)$', prefix)
+                if group_id == 'bread':
+                    negated = negated or re.search(r'(?:^|\s)بدل(?:\s+من)?$', prefix)
                 if include_negated or not negated:
                     found.append((match.start(), match.end(), oid))
     return [m for m in found if not any(a <= m[0] and b >= m[1] and b-a > m[1]-m[0] for a,b,_ in found)]
@@ -209,11 +274,7 @@ def checked_options(menu, item, args, utterance, previous=None):
     previous = previous or {}
     rejected = []
     # Include unavailable breads in recognition so brown can never become brioche.
-    bread_catalog = {}
-    for candidate in menu.items.values():
-        bread_catalog.update(candidate['groups'].get('bread', {}).get('options', {}))
-    bread_catalog['pita'] = {'name': 'بيتا', 'name_en': 'pita'}
-    bread_catalog['white'] = {'name': 'خبز أبيض', 'name_en': 'white bread'}
+    bread_catalog = bread_options(menu)
     for gid, group in item['groups'].items():
         catalog = bread_catalog if gid == 'bread' else group['options']
         evidence_text = utterance

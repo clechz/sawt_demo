@@ -7,7 +7,7 @@ GROUPS = {'portion': 'الحجم', 'size': 'الحجم', 'bread': 'الخبز',
 NUMBERS = {1: 'واحد', 2: 'اثنين', 3: 'ثلاثة', 4: 'أربعة', 5: 'خمسة'}
 
 
-def changes(menu, before, after):
+def changes(menu, before, after, *, unresolved=()):
     old = {x['line_id']: x for x in before['basket']}
     new = {x['line_id']: x for x in after['basket']}
     parts = []
@@ -27,6 +27,8 @@ def changes(menu, before, after):
         if prior['quantity'] != line['quantity']:
             parts.append(prefix + 'خليت الكمية ' + str(NUMBERS.get(line['quantity'], line['quantity'])))
         for gid, group in item['groups'].items():
+            if (key, gid) in unresolved:
+                continue  # The unavailable-option question explains this change.
             selected = line['options'].get(gid, [])
             if selected != prior['options'].get(gid, []):
                 label = GROUPS.get(gid, group['name'])
