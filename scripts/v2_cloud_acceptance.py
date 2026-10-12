@@ -79,7 +79,7 @@ async def main():
                 return {**saved,'events':list(audit_events)}
             async def turn(name):
                 prior=await state();floor=max((e['sequence'] for e in prior['events']),default=0)
-                assert any(e['kind']=='voice.connected' and e['payload'].get('release')==os.getenv('SAWT_EXPECT_WORKER_RELEASE','conversation-v16') for e in prior['events']), 'Cloud worker has not rolled over to the expected release yet'
+                assert any(e['kind']=='voice.connected' and e['payload'].get('release')==os.getenv('SAWT_EXPECT_WORKER_RELEASE','conversation-v17') for e in prior['events']), 'Cloud worker has not rolled over to the expected release yet'
                 for i in range(0,len(audio[name]),4800):await queue.put(audio[name][i:i+4800].ljust(4800,b'\0'))
                 while not queue.empty():await asyncio.sleep(.1)
                 await asyncio.sleep(.25);started=time.monotonic()

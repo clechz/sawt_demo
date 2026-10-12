@@ -1,0 +1,8 @@
+{
+  "text": "نأكد الطلب؟",
+  "voice": "marin",
+  "model": "gpt-4o-mini-tts",
+  "format": "signed 16-bit little-endian, mono, 24000 Hz",
+  "synthetic": true,
+  "independent_transcription": "نأكد الطلب."
+}

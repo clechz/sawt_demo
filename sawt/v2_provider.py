@@ -2,6 +2,7 @@
 import asyncio
 import os
 import re
+from pathlib import Path
 import httpx
 from .provider import OpenAIProvider, ProviderError, config
 
@@ -92,12 +93,12 @@ class V2Provider(OpenAIProvider):
         except (KeyError, ValueError, IndexError, TypeError) as exc:
             raise ProviderError('استجابة النموذج غير صالحة. حاول مرة ثانية.') from exc
 
-    async def stream_speech(self, text):
+    async def speech_chunks(self, text, response_format='mp3'):
         cfg = config()
         try:
             async with self.client().stream('POST', 'https://api.openai.com/v1/audio/speech', headers=self.headers(),
                 json={'model': cfg['tts'], 'voice': voice_name(), 'input': spoken_amounts(text),
-                      'instructions': STYLE, 'response_format': 'mp3'}) as response:
+                      'instructions': STYLE, 'response_format': response_format}) as response:
                 if response.status_code >= 400:
                     await response.aread()
                 self.check(response)
@@ -106,6 +107,26 @@ class V2Provider(OpenAIProvider):
                         yield chunk
         except httpx.HTTPError as exc:
             raise ProviderError('تعذر تشغيل الملخص. حاول مرة ثانية.') from exc
+
+    async def stream_speech(self, text):
+        question='نأكد الطلب؟'
+        if not text.rstrip().endswith(question):
+            async for chunk in self.speech_chunks(text):yield chunk
+            return
+        # A full summary occasionally lost its final question in generated TTS.
+        # Render its body progressively, then the separately verified reusable
+        # question, through ONE encoder (not concatenated MP3 containers).
+        from .speech_stream import SpeechEncoder
+        encoder=SpeechEncoder()
+        body=text.rstrip()[:-len(question)].rstrip()
+        async for chunk in self.speech_chunks(body,'pcm'):
+            for packet in encoder.feed(chunk):yield packet
+        if voice_name()=='marin':
+            pcm=(Path(__file__).resolve().parents[1]/'data/voice/confirmation-marin.pcm').read_bytes()
+        else:
+            pcm=b''.join([chunk async for chunk in self.speech_chunks(question,'pcm')])
+        for packet in encoder.feed(pcm):yield packet
+        for packet in encoder.finish():yield packet
 
     async def speak(self, text):
         return b''.join([chunk async for chunk in self.stream_speech(text)])
