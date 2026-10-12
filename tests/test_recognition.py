@@ -226,8 +226,29 @@ def test_missing_reply_fallback_never_replays_answered_or_stale_turn(monkeypatch
 
 
 def test_reply_fallback_rechecks_after_speech_generation(monkeypatch):
-    voice=SimpleNamespace(provider=SimpleNamespace(speak=AsyncMock(return_value=b'not decoded if stale')),session=Mock())
+    closed=[]
+    async def chunks(*args):
+        try:
+            yield b'\0'*960
+            raise AssertionError('Stale synthesis must not be consumed')
+        finally:closed.append(True)
+    voice=SimpleNamespace(provider=SimpleNamespace(speech_chunks=chunks),session=Mock())
     guard=AsyncMock(return_value=False)
     asyncio.run(voice_worker.RestaurantVoice.play_message(voice,'old answer',can_play=guard))
     guard.assert_awaited_once()
     voice.session.say.assert_not_called()
+    assert closed==[True]
+
+
+def test_streaming_reply_rechecks_new_input_after_interrupting_old_audio():
+    closed=[]
+    async def chunks(*args):
+        try:yield b'\0'*960
+        finally:closed.append(True)
+    session=Mock();session.interrupt=AsyncMock()
+    voice=SimpleNamespace(provider=SimpleNamespace(speech_chunks=chunks),session=session)
+    guard=AsyncMock(side_effect=[True,False])
+    asyncio.run(voice_worker.RestaurantVoice.play_message(voice,'superseded reply',can_play=guard))
+    session.interrupt.assert_awaited_once_with(force=True)
+    session.say.assert_not_called()
+    assert closed==[True]

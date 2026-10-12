@@ -98,6 +98,7 @@ async def main():
                     # Preserve the failed turn too; otherwise the report hides
                     # the exact received speech that caused rejection.
                     report['turns'].append(result)
+                    assert result['latency_passed'],'Received-speech turn exceeded its six-second stall threshold'
                     if index==0:assert 'دجاج' in heard and 'لحم' in heard,'Audible dish clarification missing'
                     if index in (2,3):assert not ('توصيل' in heard and 'استلام' in heard),'Audible service question repeated after pickup'
                     if result['speech_source']=='received_livekit_audio':

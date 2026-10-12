@@ -47,3 +47,34 @@ async def test_checkout_separates_body_and_includes_verified_confirmation_asset(
 def test_incomplete_pcm_cannot_silently_finish_a_playback_receipt():
     encoder=SpeechEncoder();encoder.feed(b'\0')
     with pytest.raises(ValueError):encoder.finish()
+
+
+async def test_recovery_starts_playing_before_synthesis_finishes():
+    from sawt.speech_stream import pcm_frames
+    read=[]
+    async def rest():
+        read.append(True)
+        yield b'\2\0'*100
+    frames=pcm_frames(b'\1\0'*480,rest())
+    assert await anext(frames)==b'\1\0'*480
+    assert not read  # First audio exists before the remaining network read.
+    assert await anext(frames)==b'\2\0'*100
+    with pytest.raises(StopAsyncIteration):await anext(frames)
+
+
+async def test_recovery_preserves_pcm_split_inside_samples():
+    from sawt.speech_stream import pcm_frames
+    original=tone(300,.25)
+    async def rest():
+        for pos in range(13,len(original),733):yield original[pos:pos+733]
+    frames=[x async for x in pcm_frames(original[:13],rest())]
+    assert b''.join(frames)==original
+    assert all(len(x)%2==0 and len(x)<=960 for x in frames)
+
+
+async def test_recovery_rejects_truncated_last_sample():
+    from sawt.speech_stream import pcm_frames
+    async def rest():
+        yield b'\0'
+    with pytest.raises(ValueError):
+        [x async for x in pcm_frames(b'\0'*960,rest())]

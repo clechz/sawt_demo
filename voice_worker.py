@@ -9,9 +9,7 @@ import json
 import time
 import uuid
 import logging
-import io
 import base64
-import av
 from livekit import rtc
 from types import SimpleNamespace
 from dotenv import load_dotenv
@@ -153,7 +151,7 @@ class RestaurantVoice(Agent):
         if self.provider_failed or self.ending:
             return
         self.duplex_session.append_commentary(say('greeting'))
-        await asyncio.to_thread(tx.event, self.sid, 'voice.connected', {'transport': 'livekit', 'model': 'gpt-live-1', 'recognition_policy':'contextual-draft-v7', 'release':'conversation-v21'})
+        await asyncio.to_thread(tx.event, self.sid, 'voice.connected', {'transport': 'livekit', 'model': 'gpt-live-1', 'recognition_policy':'contextual-draft-v7', 'release':'conversation-v22'})
         await self.send('ready')
 
     def on_client_event(self, event):
@@ -363,28 +361,29 @@ class RestaurantVoice(Agent):
         await self.play_message(text)
 
     async def play_message(self, text, *, can_play=None):
-        encoded = await self.provider.speak(text)
-        if can_play and not await can_play():
-            return
-        # Explicit audio avoids asking the duplex model to invent a final turn.
-        async def frames():
-            with av.open(io.BytesIO(encoded)) as container:
-                resampler = av.AudioResampler(format='s16',layout='mono',rate=24000)
-                for frame in container.decode(audio=0):
-                    for pcm in resampler.resample(frame):
-                        data=bytes(pcm.planes[0])[:pcm.samples*2]
-                        self.recorder.append('generated-assistant',base64.b64encode(data).decode())
-                        yield rtc.AudioFrame(data,24000,1,pcm.samples)
-                for pcm in resampler.resample(None):
-                    data=bytes(pcm.planes[0])[:pcm.samples*2]
+        # Prime only the first PCM chunk, not a complete MP3. A short recovery
+        # used to wait for full synthesis before producing even its first word.
+        stream=self.provider.speech_chunks(text,'pcm')
+        speech=None
+        try:
+            first=await anext(stream,b'')
+            if not first:raise ProviderError('Empty recovery speech')
+            if can_play and not await can_play():return
+            async def frames():
+                from sawt.speech_stream import pcm_frames
+                async for data in pcm_frames(first,stream):
                     self.recorder.append('generated-assistant',base64.b64encode(data).decode())
-                    yield rtc.AudioFrame(data,24000,1,pcm.samples)
-        await self.session.interrupt(force=True)
-        if can_play and not await can_play():
-            return
-        set_output_enabled(self, True)
-        speech = self.session.say(text,audio=frames())
-        await speech.wait_for_playout()
+                    yield rtc.AudioFrame(data,24000,1,len(data)//2)
+            await self.session.interrupt(force=True)
+            if can_play and not await can_play():return
+            set_output_enabled(self, True)
+            speech = self.session.say(text,audio=frames())
+            await speech.wait_for_playout()
+        finally:
+            if speech is not None and not speech.done():
+                speech.interrupt(force=True)
+                await asyncio.wait_for(speech.wait_for_playout(),2)
+            await stream.aclose()
 
     async def ensure_reply(self, text, started, end, epoch):
         """Recover missing duplex speech without replaying stale/answered turns."""
