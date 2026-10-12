@@ -77,7 +77,10 @@ class AudioWindow:
 def check_recognition(caption, verified):
     """Do not silently drop a question, a negation or a differing quantity."""
     a,b=normalize(caption),normalize(verified)
-    question=r'^(?:بكم|كم|وش سعر|ايش سعر|how much|what is the price)\b'
+    from .conversation import requests_cancel
+    if b and requests_cancel(caption) != requests_cancel(verified):
+        raise AudioWindowError('Cancellation intent disagreement')
+    question=r'^(?:بكم|بيكم|كم|وش سعر|ايش سعر|how much|what is the price)\b'
     if re.search(question,a) and b and not re.search(question,b):
         raise AudioWindowError('Question intent disagreement')
     negatives=r'\b(?:لا|مو|بدون|not|no|without|dont)\b'
@@ -92,3 +95,25 @@ def check_recognition(caption, verified):
     qa,qb=quantities(a),quantities(b)
     if qa and b and qa!=qb:
         raise AudioWindowError('Quantity disagreement')
+
+
+def reconcile_spacing(caption, verified):
+    """Restore spaces only when both recognizers returned identical letters.
+
+    Never join/split digits or replace words based on a guessed intent.
+    """
+    a,b=normalize(caption),normalize(verified)
+    if not any(c.isdigit() for c in a+b) and a.replace(' ','')==b.replace(' ',''):
+        return caption
+    return verified
+
+
+def reconcile_transcripts(caption, verified):
+    verified = reconcile_spacing(caption, verified)
+    a, b = normalize(caption), normalize(verified)
+    # Conservatively retain a price question when the second recognizer drops
+    # ONLY its opening word. This cannot turn the question into an order.
+    question = re.fullmatch(r'(?:بكم|بيكم)\s+(.+)', a)
+    if question and question.group(1) == b:
+        return caption
+    return verified

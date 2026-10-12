@@ -79,8 +79,9 @@ def answer(menu, state, text):
         if '?' in text or '؟' in text:
             return None
         # Strip only conversational padding, not negations or ordering commands.
-        normalized = re.sub(r'^(?:(?:ايه|ايوه|نعم|طيب|اه)\s+)+', '', normalized)
+        normalized = re.sub(r'^(?:(?:ايه|ايوه|نعم|طيب|اه|ماشي)\s+)+', '', normalized)
         normalized = re.sub(r'\s+(?:(?:ايه|ايوه|نعم|خلاص|كمل|قلتلك|يابوي)\s*)+$', '', normalized)
+        normalized = re.sub(r'^(?:خل|خلي|خله|خليه|خليها)\s+', '', normalized)
         if normalized == 'بدون' and 'none' in group['options']:
             chosen = 'none'
         else:

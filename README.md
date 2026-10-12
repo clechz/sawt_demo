@@ -13,6 +13,7 @@ A simple call screen over a stateful ordering system. Speak naturally, give deta
 | Which open models would you evaluate, and why? | [EVALUATION.md](EVALUATION.md) |
 | How would operations safely change behavior? | [PRODUCT.md](PRODUCT.md) |
 | What should I show in the video? | [DEMO.md](DEMO.md) |
+| How do I automate complete cloud calls? | [VOICE-TESTS.md](VOICE-TESTS.md) |
 | What was tested, and what remains uncertain? | [TESTING.md](TESTING.md), [submission checks](SUBMISSION-CHECK.txt) |
 | What does the assistant say? | [37 reusable phrases and request map](CALL-EXPERIENCE.txt) |
 

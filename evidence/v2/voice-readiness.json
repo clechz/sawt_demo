@@ -1,0 +1,397 @@
+{
+  "date": "2026-10-12",
+  "submission_ready": false,
+  "browser": "none",
+  "synthetic_audio_only": true,
+  "python": {
+    "latest_full_suite_passed": 466,
+    "skipped": 1,
+    "skipped_reason": "Real Postgres integration is opt-in",
+    "separate_postgres_contract_passed": 20
+  },
+  "javascript_passed": 17,
+  "planner_replay": {
+    "scenarios_passed": 4,
+    "turns": 30,
+    "audio": false,
+    "latest_after_fixes": "Four scenarios / 30 turns passed again after the menu-search change; two additional pizza/information scenarios also passed (nine turns)."
+  },
+  "baseline": [
+    {
+      "name": "pizza_options",
+      "passed": false,
+      "error": "Wrong basket count",
+      "completed_turns": 4,
+      "turn_timings": [
+        {
+          "state_seconds": 4.14,
+          "first_audio_seconds": 4.84,
+          "latency_passed": true,
+          "clarification_used": false
+        },
+        {
+          "state_seconds": 1.25,
+          "first_audio_seconds": 1.75,
+          "latency_passed": true,
+          "clarification_used": false
+        },
+        {
+          "state_seconds": 2.11,
+          "first_audio_seconds": 2.22,
+          "latency_passed": true,
+          "clarification_used": false
+        },
+        {
+          "state_seconds": 2.83,
+          "first_audio_seconds": 3.56,
+          "latency_passed": true,
+          "clarification_used": false
+        }
+      ]
+    },
+    {
+      "name": "quantity_negation_code_switch",
+      "passed": true,
+      "error": null,
+      "completed_turns": 5,
+      "turn_timings": [
+        {
+          "state_seconds": 4.28,
+          "first_audio_seconds": null,
+          "latency_passed": true,
+          "clarification_used": false
+        },
+        {
+          "state_seconds": 3.31,
+          "first_audio_seconds": null,
+          "latency_passed": true,
+          "clarification_used": false
+        },
+        {
+          "state_seconds": 4.25,
+          "first_audio_seconds": null,
+          "latency_passed": true,
+          "clarification_used": false
+        },
+        {
+          "state_seconds": 2.61,
+          "first_audio_seconds": null,
+          "latency_passed": true,
+          "clarification_used": false
+        },
+        {
+          "state_seconds": 3.12,
+          "first_audio_seconds": null,
+          "latency_passed": true,
+          "clarification_used": false
+        }
+      ]
+    },
+    {
+      "name": "information_and_staff",
+      "passed": false,
+      "error": "Turn failed recognition/backend; see call archive",
+      "completed_turns": 0,
+      "turn_timings": []
+    },
+    {
+      "name": "delivery_and_unavailable",
+      "passed": false,
+      "error": "Wrong basket count",
+      "completed_turns": 0,
+      "turn_timings": []
+    },
+    {
+      "name": "controls_and_noise",
+      "passed": false,
+      "error": "No audible response within latency budget",
+      "completed_turns": 0,
+      "turn_timings": []
+    },
+    {
+      "name": "unsupported_and_price_trap",
+      "passed": false,
+      "error": "Turn failed recognition/backend; see call archive",
+      "completed_turns": 1,
+      "turn_timings": [
+        {
+          "state_seconds": 5.22,
+          "first_audio_seconds": 6.06,
+          "latency_passed": true,
+          "clarification_used": false
+        }
+      ]
+    }
+  ],
+  "reruns": [
+    {
+      "local_run_name": "cloud-journeys-20261012-053455",
+      "passed": true,
+      "latency_passed": true,
+      "cases": [
+        {
+          "name": "controls_and_noise",
+          "passed": true,
+          "error": null,
+          "completed_turns": 6,
+          "turn_timings": [
+            {
+              "state_seconds": 2.41,
+              "first_audio_seconds": 3.19,
+              "latency_passed": true,
+              "clarification_used": false
+            },
+            {
+              "state_seconds": 0.92,
+              "first_audio_seconds": null,
+              "latency_passed": true,
+              "clarification_used": false
+            },
+            {
+              "state_seconds": 4.51,
+              "first_audio_seconds": null,
+              "latency_passed": true,
+              "clarification_used": false
+            },
+            {
+              "state_seconds": 4.97,
+              "first_audio_seconds": 5.86,
+              "latency_passed": true,
+              "clarification_used": false
+            },
+            {
+              "state_seconds": 2.5,
+              "first_audio_seconds": 3.42,
+              "latency_passed": true,
+              "clarification_used": false
+            },
+            {
+              "state_seconds": 7.61,
+              "first_audio_seconds": 4.81,
+              "latency_passed": true,
+              "clarification_used": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "local_run_name": "cloud-journeys-20261012-054144",
+      "passed": false,
+      "latency_passed": false,
+      "cases": [
+        {
+          "name": "delivery_and_unavailable",
+          "passed": false,
+          "error": "breakfast_01.bread: expected ['tamees'], got None",
+          "completed_turns": 1,
+          "turn_timings": [
+            {
+              "state_seconds": 13.47,
+              "first_audio_seconds": 14.25,
+              "latency_passed": false,
+              "clarification_used": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "local_run_name": "cloud-journeys-20261012-054418",
+      "passed": false,
+      "latency_passed": true,
+      "cases": [
+        {
+          "name": "information_and_staff",
+          "passed": false,
+          "error": "Recognition required clarification without a scripted recovery",
+          "completed_turns": 0,
+          "turn_timings": []
+        }
+      ]
+    },
+    {
+      "local_run_name": "cloud-journeys-20261012-054633",
+      "passed": false,
+      "latency_passed": true,
+      "cases": [
+        {
+          "name": "pizza_options",
+          "passed": false,
+          "error": "pizza_flatbread_07.crust: expected ['stuffed'], got []",
+          "completed_turns": 3,
+          "turn_timings": [
+            {
+              "state_seconds": 4.76,
+              "first_audio_seconds": 5.76,
+              "latency_passed": true,
+              "clarification_used": false
+            },
+            {
+              "state_seconds": 1.17,
+              "first_audio_seconds": 1.72,
+              "latency_passed": true,
+              "clarification_used": false
+            },
+            {
+              "state_seconds": 1.8,
+              "first_audio_seconds": 1.95,
+              "latency_passed": true,
+              "clarification_used": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "local_run_name": "cloud-journeys-20261012-054943",
+      "passed": true,
+      "latency_passed": true,
+      "cases": [
+        {
+          "name": "delivery_and_unavailable",
+          "passed": true,
+          "error": null,
+          "completed_turns": 4,
+          "turn_timings": [
+            {
+              "state_seconds": 3.3,
+              "first_audio_seconds": 4.47,
+              "latency_passed": true,
+              "clarification_used": false
+            },
+            {
+              "state_seconds": 5.26,
+              "first_audio_seconds": 5.94,
+              "latency_passed": true,
+              "clarification_used": false
+            },
+            {
+              "state_seconds": 3.86,
+              "first_audio_seconds": 4.67,
+              "latency_passed": true,
+              "clarification_used": false
+            },
+            {
+              "state_seconds": 3.58,
+              "first_audio_seconds": null,
+              "latency_passed": true,
+              "clarification_used": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "local_run_name": "cloud-journeys-20261012-055221",
+      "passed": false,
+      "latency_passed": true,
+      "cases": [
+        {
+          "name": "unsupported_and_price_trap",
+          "passed": false,
+          "error": "No audible response within latency budget",
+          "completed_turns": 2,
+          "turn_timings": [
+            {
+              "state_seconds": 4.23,
+              "first_audio_seconds": 5.06,
+              "latency_passed": true,
+              "clarification_used": false
+            },
+            {
+              "state_seconds": 4.19,
+              "first_audio_seconds": 5.25,
+              "latency_passed": true,
+              "clarification_used": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "local_run_name": "cloud-journeys-20261012-055619",
+      "passed": false,
+      "latency_passed": true,
+      "cases": [
+        {
+          "name": "unsupported_and_price_trap",
+          "passed": false,
+          "error": "No audible response within latency budget",
+          "completed_turns": 2,
+          "turn_timings": [
+            {
+              "state_seconds": 4.25,
+              "first_audio_seconds": 5.14,
+              "latency_passed": true,
+              "clarification_used": false
+            },
+            {
+              "state_seconds": 4.06,
+              "first_audio_seconds": 4.86,
+              "latency_passed": true,
+              "clarification_used": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "local_run_name": "cloud-journeys-20261012-060003",
+      "passed": true,
+      "latency_passed": true,
+      "cases": [
+        {
+          "name": "unsupported_and_price_trap",
+          "passed": true,
+          "error": null,
+          "completed_turns": 4,
+          "turn_timings": [
+            {
+              "state_seconds": 5.22,
+              "first_audio_seconds": 6.12,
+              "latency_passed": true,
+              "clarification_used": false
+            },
+            {
+              "state_seconds": 5.0,
+              "first_audio_seconds": 5.62,
+              "latency_passed": true,
+              "clarification_used": false
+            },
+            {
+              "state_seconds": 3.12,
+              "first_audio_seconds": 3.0,
+              "latency_passed": true,
+              "clarification_used": false
+            },
+            {
+              "state_seconds": 1.34,
+              "first_audio_seconds": 1.34,
+              "latency_passed": true,
+              "clarification_used": false
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "outstanding": [
+    "Complete reruns after latest fixes; do not combine different builds into a reliability score.",
+    "New edit-after-readback cloud checkout harness must pass.",
+    "Conversational latency remains variable; passing eight-second stall ceiling is not a naturalness benchmark.",
+    "Controlled interruption/reconnect and held-out human accent coverage remain incomplete."
+  ],
+  "fixes": [
+    "Keep LiveKit audio sink attached while muting samples; avoid generated-but-inaudible responses.",
+    "Guarded fallback checks forwarded audio, new speech and call epoch before playing.",
+    "Preserve identical price-question wording when only its opening word is dropped.",
+    "Save and retain natural short pizza choices without planner loops.",
+    "Disallow silent Adani substitution; partial search results no longer force another add-item round.",
+    "Preserve negation word boundaries when recognizers agree on all letters."
+  ],
+  "checkout_rerun": {
+    "passed": false,
+    "reason": "Test fixture sent position 999, outside the API 600-second bound; correction and first readback passed. Fixture corrected to actual duration; full rerun pending."
+  }
+}

@@ -156,3 +156,47 @@ def test_all_catalog_items_required_choices_prices_and_branch_availability():
             if group['min']:
                 incomplete=copy.deepcopy(line);incomplete['options'][gid]=[]
                 assert group['name'] in menu.validate_line(incomplete)['missing']
+
+
+@pytest.mark.parametrize('size',['خلي كبير','خله كبير','خليها كبير'])
+@pytest.mark.parametrize('crust',['محشو بجبن','بحشو بجبن','ماشي محشوب جبن','خليها عجين الجبن'])
+def test_pizza_call_choices_save_once_without_planner(size,crust):
+    engine=Engine(Menu(Path(__file__).resolve().parents[1]/'data/restaurant-menu-complex.csv'))
+    staged=StagedEngine(engine,check_choices=True);state=new_state()
+    item=next(x for x in engine.menu.items.values() if x['name']=='بيتزا شاورما')
+    staged.act(state,'add_item',{'item_id':item['id'],'quantity':1,'options':{},'notes':''},utterance='بيتزا شاورما')
+    line=state['basket'][0];ask(engine.menu,state,line['line_id'],'size')
+    args,evidence=answer(engine.menu,state,size);staged.act(state,'update_item',args,utterance=evidence)
+    assert line['options']['size']==['large']
+    ask(engine.menu,state,line['line_id'],'crust')
+    args,evidence=answer(engine.menu,state,crust);staged.act(state,'update_item',args,utterance=evidence)
+    assert line['options']['crust']==['stuffed']
+    assert line['options']['size']==['large']
+    assert not state['order_id']
+
+@pytest.mark.parametrize('text',['لا خلي كبير','خلي كبير ولا صغير','خلي كبير وشيل الثانية','خليها بدون جبن','محشو بجبن؟'])
+def test_pizza_compound_or_negated_choice_still_requires_interpretation(text):
+    engine=Engine(Menu(Path(__file__).resolve().parents[1]/'data/restaurant-menu-complex.csv'))
+    state=new_state();item=next(x for x in engine.menu.items.values() if x['name']=='بيتزا شاورما')
+    engine.act(state,'add_item',{'item_id':item['id'],'quantity':1,'options':{},'notes':''})
+    ask(engine.menu,state,state['basket'][0]['line_id'],'size')
+    assert answer(engine.menu,state,text) is None
+
+
+def test_actual_pizza_turns_advance_without_any_planner_request(monkeypatch,tmp_path):
+    from sawt import v2_runtime as runtime
+    engine=runtime.engine;state=new_state()
+    item=next(x for x in engine.menu.items.values() if x['name']=='بيتزا شاورما')
+    engine.act(state,'add_item',{'item_id':item['id'],'quantity':1,'options':{},'notes':''})
+    ask(engine.menu,state,state['basket'][0]['line_id'],'size')
+    tx=Transactions(tmp_path/'pizza.db',engine);sid,_=tx.create()
+    tx.commit_bundle(sid,'seed',0,0,state,[],response={});monkeypatch.setattr(runtime,'tx',tx)
+    async def forbidden(*args):raise AssertionError('No planner round trip for explicit choice')
+    monkeypatch.setattr(runtime.provider,'chat',forbidden)
+    size=asyncio.run(runtime.delegate(sid,'خلي كبير','size',0))
+    assert size['state']['basket'][0]['options']['size']==['large']
+    assert tx.load(sid)['state']['pending_choice']['group_id']=='crust'
+    crust=asyncio.run(runtime.delegate(sid,'محشو بجبن','crust',0))
+    assert crust['state']['basket'][0]['options']['crust']==['stuffed']
+    assert 'العجينة كلاسيكية' not in crust['reply']
+    assert len(tx.load(sid)['state']['basket'])==1

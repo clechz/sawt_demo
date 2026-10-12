@@ -8,6 +8,7 @@ import re
 from .domain import normalize
 
 ALIASES = {
+    ('crust', 'stuffed'): ['بحشو بجبن', 'حشو بجبن', 'حشوة جبن', 'محشو بجبن', 'محشوب جبن', 'محشو جبن', 'محشوة بالجبن', 'عجينة الجبن', 'عجين الجبن'],
     ('flavor', 'cheese'): ['جبن', 'جبنة'],
     ('flavor', 'honey'): ['عسل'],
     ('bread', 'brown'): ['خبز بر', 'خبز البر', 'بر', 'اسمر', 'أسمر', 'اسمري', 'أسْمري'],
@@ -28,9 +29,11 @@ ALIASES = {
 
 def short_choice(menu, state, text):
     """Only a whole option answer with a single unambiguous target is automatic."""
-    if state['order_id'] or state['handoff']:
+    if state['order_id'] or state['handoff'] or '?' in text or '؟' in text:
         return None
     normalized = normalize(text)
+    normalized = re.sub(r'^(?:(?:ايه|ايوه|نعم|طيب|اه|ماشي)\s+)+', '', normalized)
+    normalized = re.sub(r'^(?:خل|خلي|خله|خليه|خليها)\s+', '', normalized)
     # ASR often repeats emphasis: "حجم عادي عادي". No negations/alternatives.
     normalized = re.sub(r'^(?:حجم|الحجم)\s+', '', normalized)
     words = normalized.split()
@@ -59,6 +62,11 @@ def short_choice(menu, state, text):
 def check_item_variant(menu, item, utterance):
     """The fixture has no plain standalone tamees; don't silently add a flavor."""
     from .domain import RuleError
+    if item['category_id']=='beverages' and re.search(r'(?<!\w)(?:ال)?عدني(?!\w)',normalize(utterance)):
+        label=normalize(item['name'])
+        explicit=label in normalize(utterance) or (item['id']=='beverages_09' and re.search(r'(?<!\w)كرك(?!\w)',normalize(utterance)))
+        if not explicit:
+            raise RuleError('الشاي العدني مو موجود في المنيو. لا تستبدله بشاي أحمر أو كرك من نفسك؛ اسأل العميل وش يفضّل.')
     if item['id'] in ('sandwiches_07','sandwiches_08'):
         proteins={'chicken':{'name':'دجاج','name_en':'chicken'},'beef':{'name':'لحم','name_en':'beef'}}
         requested={oid for _,_,oid in matches(utterance,'protein',proteins)}

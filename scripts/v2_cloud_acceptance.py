@@ -64,8 +64,15 @@ async def main():
             async with asyncio.timeout(60):
                 while not any(e.get('type')=='ready' for e in events):await asyncio.sleep(.2)
             await asyncio.sleep(7)
+            audit_events=[];cursor=0
             async def state():
-                response=await client.get('/api/calls/'+call['id'],headers=auth);response.raise_for_status();return response.json()
+                nonlocal cursor
+                while True:
+                    response=await client.get('/api/calls/'+call['id'],headers=auth,params={'after':cursor});response.raise_for_status();saved=response.json()
+                    batch=saved['events'];audit_events.extend(batch)
+                    if batch:cursor=batch[-1]['sequence']
+                    if len(batch)<500:break
+                return {**saved,'events':list(audit_events)}
             async def turn(name):
                 prior=await state();floor=max((e['sequence'] for e in prior['events']),default=0)
                 assert any(e['kind']=='voice.connected' and e['payload'].get('recognition_policy')=='saudi-confirm-v4' for e in prior['events']), 'Cloud worker has not rolled over to the tested recognition policy yet'
@@ -85,27 +92,35 @@ async def main():
                 turns.append({'name':name,'seconds_after_input':elapsed,'state':saved['state']})
                 print('Completed cloud turn: '+name,flush=True)
                 return saved['state']
+            async def present_readback():
+                response=await client.post('/api/calls/'+call['id']+'/readback',headers=auth);response.raise_for_status();receipt=response.json()
+                response=await client.get(receipt['url']);response.raise_for_status()
+                path=ROOT/'runtime/cloud-readback.mp3';path.write_bytes(response.content)
+                duration=len(decode(path))/48000
+                checks['readback_real_audio']=duration>2;assert checks['readback_real_audio']
+                endpoint='/api/calls/'+call['id']+'/playback'
+                body={'receipt_id':receipt['receipt_id'],'phase':'started'}
+                (await client.post(endpoint,headers=auth,json=body)).raise_for_status()
+                early=await client.post(endpoint,headers=auth,json={**body,'phase':'completed','position':duration})
+                checks['premature_playback_rejected']=early.status_code==409;assert checks['premature_playback_rejected']
+                await asyncio.sleep(duration+.2)
+                (await client.post(endpoint,headers=auth,json={**body,'phase':'completed','position':duration})).raise_for_status()
+                return {**receipt, 'decoded_duration':duration}
             s=await turn('order')
             checks['two_items_exact_total']=len(s['basket'])==1 and s['basket'][0]['quantity']==2 and s['total']==6000 and s['branch_id']=='ruh_narjis'
             assert checks['two_items_exact_total']
             s=await turn('yes')
             checks['unheard_yes_not_confirmed']=not s['order_id'];assert checks['unheard_yes_not_confirmed']
+            old_receipt=await present_readback()
+            checks['initial_readback_presented']=(await state())['state']['quote']['presented']
             s=await turn('correct')
             checks['correction_no_duplicate']=len(s['basket'])==1 and s['basket'][0]['quantity']==1 and s['total']==3000 and not s['order_id']
             assert checks['correction_no_duplicate']
+            stale=await client.post('/api/calls/'+call['id']+'/playback',headers=auth,json={'receipt_id':old_receipt['receipt_id'],'phase':'completed','position':old_receipt['decoded_duration']})
+            checks['edit_invalidates_old_playback']=stale.status_code==409
+            assert checks['edit_invalidates_old_playback']
             if not s['quote']:s=await turn('summary')
-            response=await client.post('/api/calls/'+call['id']+'/readback',headers=auth);response.raise_for_status();receipt=response.json()
-            response=await client.get(receipt['url']);response.raise_for_status()
-            path=ROOT/'runtime/cloud-readback.mp3';path.write_bytes(response.content)
-            duration=len(decode(path))/48000
-            checks['readback_real_audio']=duration>2;assert checks['readback_real_audio']
-            endpoint='/api/calls/'+call['id']+'/playback'
-            body={'receipt_id':receipt['receipt_id'],'phase':'started'}
-            (await client.post(endpoint,headers=auth,json=body)).raise_for_status()
-            early=await client.post(endpoint,headers=auth,json={**body,'phase':'completed','position':duration})
-            checks['premature_playback_rejected']=early.status_code==409;assert checks['premature_playback_rejected']
-            await asyncio.sleep(duration+.2)
-            (await client.post(endpoint,headers=auth,json={**body,'phase':'completed','position':duration})).raise_for_status()
+            await present_readback()
             s=await turn('yes');order=s['order_id'];checks['confirmed_after_readback']=bool(order);assert order
             s=await turn('yes');checks['repeat_yes_same_order']=s['order_id']==order;assert checks['repeat_yes_same_order']
             checks['cloud_worker_audio_received']=frames>0
@@ -127,4 +142,7 @@ async def main():
     print(json.dumps({'passed':True,'call_id':call['id'],'checks':checks},indent=2))
 
 
-if __name__=='__main__':asyncio.run(main())
+if __name__=='__main__':
+ import gc
+ try:asyncio.run(main())
+ finally:gc.collect()

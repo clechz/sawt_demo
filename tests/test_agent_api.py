@@ -167,3 +167,17 @@ def test_failed_turn_clears_prior_confirmation(client,monkeypatch,engine):
 @pytest.mark.parametrize('malformed',[None,[],{'tool_calls':[{}]},{'tool_calls':'bad'}])
 async def test_malformed_provider_envelope(engine,malformed):
     with pytest.raises(ProviderError):await Agent(engine,Scripted(malformed)).turn(new_state(),'هلا')
+
+
+async def test_unavailable_request_does_not_force_an_extra_add_item_round(engine):
+    provider=Scripted(call('search_menu',{'query':'شاي عدني'}),{'content':'الشاي العدني مو موجود، عندنا شاي أحمر وكرك. وش تفضّل؟'})
+    state,result=await Agent(engine,provider).turn(new_state(),'أبي ثلاثة شاي عدني')
+    assert not state['basket']
+    assert len(provider.messages)==2
+    assert 'مو موجود' in result['reply']
+
+
+def test_search_distinguishes_partial_from_full_matches(engine):
+    assert engine.menu.search('شاي عدني')['partial_matches_only']
+    assert not engine.menu.search('شاي كرك')['partial_matches_only']
+    assert not engine.menu.search('شكشوكة')['partial_matches_only']

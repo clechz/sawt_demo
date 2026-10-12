@@ -27,3 +27,5 @@ evidence/v2/*
 .env*.local
 
 !evidence/v2/cloud-deployment.json
+
+!evidence/v2/voice-readiness.json

@@ -83,8 +83,8 @@ class V2Provider(OpenAIProvider):
         response = await self.request('audio/transcriptions', data={
             'model': os.getenv('RECOGNITION_MODEL', 'gpt-transcribe'),
             'languages[]': ['ar', 'en'], 'response_format': 'json',
-            'prompt': 'مكالمة عميل لطلب طعام من مطعم سعودي.',
-            'keywords[]': ['شاورما','تميس','معصوب','قلابة','كرك','شكشوكة','النرجس','الملقا','العليا','الروضة'],
+            'prompt': 'مكالمة عميل لمطعم سعودي: يسأل عن الأسعار، يختار الحجم والعجينة، يعدل أو يلغي الطلب. انقل كلامه كما سمعته دون تخمين أصناف أو طلبات.',
+            'keywords[]': ['الطلب','إلغاء الطلب','شاي عدني','محشوة جبن','شاورما','تميس','معصوب','قلابة','كرك','شكشوكة','النرجس','الملقا','العليا','الروضة'],
         }, files={'file': ('caller-turn.wav',wav,'audio/wav')})
         try:
             text = response.json()['text']

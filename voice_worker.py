@@ -26,6 +26,16 @@ from sawt.voice_routing import route_transcript
 from sawt.recognition import AudioWindow, AudioWindowError, check_recognition
 from sawt.provider import ProviderError
 from sawt.conversation import say, farewell
+from sawt.audio_gate import SpeechGate
+
+
+def set_output_enabled(voice, enabled):
+    gate = getattr(voice, "audio_gate", None)
+    if gate is not None:
+        gate.set_enabled(enabled)
+    else:
+        voice.session.output.set_audio_enabled(enabled)
+
 
 load_dotenv(ROOT / '.env')
 server = AgentServer(num_idle_processes=1)
@@ -61,6 +71,7 @@ class RestaurantVoice(Agent):
         self.provider = V2Provider()
         self.pending = None
         self.last_input = 0.0
+        self.last_output_audio = 0.0
         self.input_invalidated = False
         self.latest = ''
         self.fragments = []
@@ -97,6 +108,8 @@ class RestaurantVoice(Agent):
         await self.room.local_participant.publish_data(json.dumps({'type': kind, **data}).encode(), reliable=True, topic='sawt')
 
     async def on_enter(self):
+        self.audio_gate = SpeechGate(self.session.output.audio, lambda at: setattr(self, 'last_output_audio', at))
+        self.session.output.audio = self.audio_gate
         self.duplex_session.on('delegation_created', self.on_delegation)
         self.duplex_session.on('openai_server_event_received', self.on_provider_event)
         self.duplex_session.on('openai_client_event_queued', self.on_client_event)
@@ -158,7 +171,7 @@ class RestaurantVoice(Agent):
         # unresolved. The microphone and the model's listening remain enabled.
         if route != 'social' and not self.output_held:
             self.output_held = True
-            self.session.output.set_audio_enabled(False)
+            set_output_enabled(self, False)
         if event.is_final:
             tx.event(self.sid, 'transcript.user', {'text': event.transcript, 'item_id': event.item_id})
             if route != 'social':
@@ -171,13 +184,15 @@ class RestaurantVoice(Agent):
                 self.consumed = len(self.fragments)
                 self.waiting = False
                 self.output_held = False
-                self.session.output.set_audio_enabled(True)
+                set_output_enabled(self, True)
 
     async def verify_transcript(self, start, end, text, epoch):
         await self.send('processing', stage='recognizing', epoch=epoch)
         started = time.perf_counter()
         wav, window = self.input_audio.wav(self.fragment_spans[start:end])
         verified = await asyncio.wait_for(self.provider.recognize(wav), timeout=8)
+        from sawt.recognition import reconcile_transcripts
+        verified = reconcile_transcripts(text, verified)
         row = tx.load(self.sid)
         if row['closed'] or row['epoch'] != epoch or end != len(self.fragments):
             raise Conflict('Recognition superseded')
@@ -193,16 +208,16 @@ class RestaurantVoice(Agent):
         self.consumed = end
         epoch = tx.interrupt(self.sid)
         self.reading = self.checkout_context = self.waiting = self.output_held = False
-        self.session.output.set_audio_enabled(True)
-        self.duplex_session.append_commentary(say('unclear'))
+        set_output_enabled(self, True)
+        await self.play_message(say('unclear'))
         await self.send('updated', epoch=epoch)
 
     async def recover_audio(self, end):
         self.consumed = end
         self.waiting = self.output_held = False
-        self.session.output.set_audio_enabled(True)
+        set_output_enabled(self, True)
         self.audit('call.audio_check', {'source':'verified_caller_request'})
-        self.duplex_session.append_commentary(say('audio_check'))
+        await self.play_message(say('audio_check'))
         await self.send('updated', epoch=tx.load(self.sid)['epoch'])
 
     async def wait_requested(self, end=None):
@@ -219,7 +234,7 @@ class RestaurantVoice(Agent):
         self.reading = False
         self.checkout_context = False
         self.output_held = True
-        self.session.output.set_audio_enabled(False)
+        set_output_enabled(self, False)
         epoch = tx.interrupt(self.sid)
         self.audit('call.wait_requested', {'source': 'explicit_caller_control'})
         self.duplex_session.append_instructions('العميل طلب الانتظار. انتظر بصمت، ولا تكرر سؤالاً. استأنف عندما يتكلم معك من جديد.')
@@ -253,7 +268,13 @@ class RestaurantVoice(Agent):
                     await self.room.disconnect()
 
     async def play_closing(self, text):
+        self.duplex_session.append_instructions('التطبيق ينهي المكالمة الآن. لا تتكلم ولا تفوض أي طلب جديد.')
+        await self.play_message(text)
+
+    async def play_message(self, text, *, can_play=None):
         encoded = await self.provider.speak(text)
+        if can_play and not await can_play():
+            return
         # Explicit audio avoids asking the duplex model to invent a final turn.
         async def frames():
             with av.open(io.BytesIO(encoded)) as container:
@@ -267,11 +288,25 @@ class RestaurantVoice(Agent):
                     data=bytes(pcm.planes[0])[:pcm.samples*2]
                     self.recorder.append('generated-assistant',base64.b64encode(data).decode())
                     yield rtc.AudioFrame(data,24000,1,pcm.samples)
-        self.duplex_session.append_instructions('التطبيق ينهي المكالمة الآن. لا تتكلم ولا تفوض أي طلب جديد.')
         await self.session.interrupt(force=True)
-        self.session.output.set_audio_enabled(True)
+        if can_play and not await can_play():
+            return
+        set_output_enabled(self, True)
         speech = self.session.say(text,audio=frames())
         await speech.wait_for_playout()
+
+    async def ensure_reply(self, text, started, end, epoch):
+        """Recover missing duplex speech without replaying stale/answered turns."""
+        async def needed():
+            if (self.ending or self.waiting or self.reading or self.output_held
+                    or len(self.fragments) != end or self.last_output_audio > started):
+                return False
+            row = await asyncio.to_thread(tx.load, self.sid)
+            return not row['closed'] and row['epoch'] == epoch
+        await asyncio.sleep(1.5)
+        if await needed():
+            self.audit('voice.reply_fallback', {'reason': 'no_audible_duplex_reply'})
+            await self.play_message(text, can_play=needed)
 
     def on_delegation(self, delegation):
         if getattr(self,'ending',False):return
@@ -302,7 +337,7 @@ class RestaurantVoice(Agent):
                 self.duplex_session.append_thinking('The current request has already been processed. Use the latest verified result.', delegation_id=delegation_id)
                 if not self.reading and not self.checkout_context:
                     self.output_held = False
-                    self.session.output.set_audio_enabled(True)
+                    set_output_enabled(self, True)
                 return
             self.processed = identity
             row = tx.load(self.sid)
@@ -319,7 +354,7 @@ class RestaurantVoice(Agent):
                 if not row['state']['quote']:
                     self.reading = self.checkout_context = False
                 self.output_held = self.reading or self.checkout_context or self.waiting
-                self.session.output.set_audio_enabled(not self.output_held)
+                set_output_enabled(self, not self.output_held)
                 self.duplex_session.append_thinking('No intelligible new caller speech was found. Wait silently; do not infer a request.')
                 await self.send('waiting' if self.waiting else 'updated', epoch=row['epoch'])
                 return
@@ -337,7 +372,7 @@ class RestaurantVoice(Agent):
             if route == 'social':
                 self.consumed = end
                 self.waiting = self.output_held = False
-                self.session.output.set_audio_enabled(True)
+                set_output_enabled(self, True)
                 await self.send('updated', epoch=row['epoch'])
                 return
             self.waiting = False
@@ -356,7 +391,7 @@ class RestaurantVoice(Agent):
             if quote and not quote['presented']:
                 self.reading = True
                 self.checkout_context = True
-                self.session.output.set_audio_enabled(False)
+                set_output_enabled(self, False)
                 self.output_held = True
                 self.duplex_session.append_instructions('التطبيق يشغل الملخص الدقيق الآن. لا تتكلم حتى يعطيك نتيجة طلب العميل التالية.')
                 await self.send('readback', token=quote['token'], revision=quote['revision'])
@@ -364,14 +399,17 @@ class RestaurantVoice(Agent):
                 self.reading = False
                 self.checkout_context = False
                 self.output_held = False
-                self.session.output.set_audio_enabled(True)
+                set_output_enabled(self, True)
                 # Injection limit is 500 tokens; a byte bound also works without
                 # assuming English tokenization for Arabic text.
                 speech = result['reply'].encode('utf-8')[:480].decode('utf-8', errors='ignore')
+                output_started = time.monotonic()
                 self.duplex_session.append_commentary(speech, delegation_id=delegation_id)
                 verified = 'CONFIRMED order ' + result['state']['order_id'] if result['state']['order_id'] else 'DRAFT ONLY. No order has been placed. Do not say registered, confirmed, or ready for pickup.'
                 self.duplex_session.append_thinking(verified, delegation_id=delegation_id)
-                await self.send('updated', epoch=tx.load(self.sid)['epoch'])
+                output_epoch = tx.load(self.sid)['epoch']
+                self.spawn(self.ensure_reply(result['reply'], output_started, end, output_epoch))
+                await self.send('updated', epoch=output_epoch)
         except (asyncio.CancelledError, Conflict):
             self.processed = ''
             tx.event(self.sid, 'delegation.superseded', {'delegation_id': delegation_id})
@@ -379,7 +417,7 @@ class RestaurantVoice(Agent):
         except Exception as exc:
             self.processed = ''
             self.audit('delegation.failed', {'delegation_id': delegation_id, 'error_type': type(exc).__name__})
-            self.session.output.set_audio_enabled(True)
+            set_output_enabled(self, True)
             self.output_held = False
             self.duplex_session.append_commentary(say('backend_error'), delegation_id=delegation_id)
             await self.send('error', message='تعذر إكمال الخطوة. حاول مرة ثانية أو اطلب موظف.')

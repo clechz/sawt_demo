@@ -69,3 +69,26 @@ def test_no_cheese_does_not_authorize_cheese_extra(setup):
     engine,state=setup
     shawarma(engine,state,'وجبة صاج حار بدون جبن',{'meal':['meal'],'bread':['saj'],'spice_level':['hot'],'extras':['cheese']})
     assert state['basket'][0]['options']['extras']==[]
+
+
+def test_adani_cannot_silently_become_another_tea(setup):
+    staged,state=setup
+    for item in staged.menu.items.values():
+        if item['category_id']=='beverages':
+            with pytest.raises(RuleError,match='العدني'):
+                staged.act(state,'add_item',{'item_id':item['id'],'quantity':3,'options':{},'notes':''},utterance='أبي ثلاثة شاي عدني')
+    assert not state['basket']
+    staged.act(state,'add_item',{'item_id':'beverages_09','quantity':3,'options':{},'notes':''},utterance='ماشي كرك بدال العدني')
+    assert state['basket'][0]['item_id']=='beverages_09'
+
+
+def test_repeated_saved_crust_is_recognized_after_question_moves_on(setup):
+    from sawt.choices import short_choice
+    staged,state=setup
+    staged.act(state,'add_item',{'item_id':'pizza_flatbread_07','quantity':1,'options':{'size':['large'],'crust':['stuffed']},'notes':''},utterance='بيتزا شاورما كبير محشو بجبن')
+    args=short_choice(staged.menu,state,'ماشي محشوب جبن')
+    assert args['options']=={'crust':['stuffed']}
+    staged.act(state,'update_item',args,utterance='ماشي محشوب جبن')
+    assert state['basket'][0]['options']['crust']==['stuffed']
+    for text in ['ماشي محشوب جبن؟','لا محشوب جبن','ماشي محشوب جبن وشيل الثانية']:
+        assert short_choice(staged.menu,state,text) is None

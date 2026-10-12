@@ -147,7 +147,9 @@ class Agent:
                 inspected_menu = any(e['tool'] in ('search_menu', 'get_item') for e in events)
                 saved_change = state['basket'] != original['basket']
                 pending_answer = bool(original.get('pending_choice') and inspected_menu)
-                if (requested_food or pending_answer) and inspected_menu and not saved_change and not reminded_to_save and step < 8:
+                unresolved_search = any(e['tool']=='search_menu' and
+                    (e['result'].get('partial_matches_only') or e['result'].get('total_matches')==0) for e in events)
+                if (requested_food or pending_answer) and inspected_menu and not unresolved_search and not saved_change and not reminded_to_save and step < 8:
                     reminded_to_save = True
                     messages.append({'role': 'system', 'content': 'Your proposed response did not save the caller request. For a clear order command such as عطني كرك, you MUST call add_item NOW with the menu item ID, the quantity from the current conversation, options={} for unspecified choices, and notes="". Missing size/ice/sugar is NOT a reason to wait. For an option answer use update_item NOW for every clear field. Ask clarification only after saving. Only an information-only query or genuinely ambiguous dish may remain unsaved. Latest caller request: ' + text})
                     continue

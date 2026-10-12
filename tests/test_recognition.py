@@ -136,3 +136,56 @@ def test_saudi_wahda_is_same_quantity_as_wahida_but_not_two():
     check_recognition('خل الشكشوكة وحدة بدل اثنين', 'خل الشكشوكة واحدة بدل اثنين')
     with pytest.raises(AudioWindowError):
         check_recognition('خل الشكشوكة وحدة', 'خل الشكشوكة اثنين')
+
+
+def test_price_spelling_variant_keeps_question_intent():
+    check_recognition('بكم سندويش الشاورما','بيكم سندويش الشاورما')
+
+def test_cancel_disagreement_requires_clarification_not_an_unrelated_option_question():
+    with pytest.raises(AudioWindowError,match='Cancellation'):
+        check_recognition('ألغي الطلب كله','الغي القلب كله')
+
+
+def test_spacing_reconciliation_preserves_negation_without_changing_words_or_digits():
+    from sawt.recognition import reconcile_spacing
+    caption='خل الخبز بر مو صاج'
+    fixed=reconcile_spacing(caption,'خل الخبز برموصاج.')
+    assert fixed==caption
+    check_recognition(caption,fixed)
+    assert reconcile_spacing('الغي الطلب','الغي القلب')=='الغي القلب'
+    assert reconcile_spacing('1 2','12')=='12'
+
+def test_audio_check_uses_explicit_playback_not_passive_model_commentary(monkeypatch):
+    monkeypatch.setattr(voice_worker.tx,'load',Mock(return_value={'epoch':1}))
+    voice=SimpleNamespace(sid='s',consumed=0,waiting=True,output_held=True,session=Mock(),audit=Mock(),
+        duplex_session=Mock(),play_message=AsyncMock(),send=AsyncMock())
+    asyncio.run(voice_worker.RestaurantVoice.recover_audio(voice,1))
+    voice.play_message.assert_awaited_once_with('معك، تسمعني الحين؟')
+    voice.duplex_session.append_commentary.assert_not_called()
+
+
+def test_dropped_price_prefix_preserves_information_intent_only_for_identical_dish():
+    from sawt.recognition import reconcile_transcripts
+    assert reconcile_transcripts('بكم سندويش الشاورما','سندويش الشاورما.')=='بكم سندويش الشاورما'
+    assert reconcile_transcripts('بكم سندويش الشاورما','سندويش دجاج')=='سندويش دجاج'
+    assert reconcile_transcripts('أبي اثنين شاورما','شاورما')=='شاورما'
+    assert reconcile_transcripts('لا تضيف شاورما','ضيف شاورما')=='ضيف شاورما'
+
+
+@pytest.mark.parametrize('reason',['audible','new_speech','closed','epoch','waiting','reading','held','ending','missing'])
+def test_missing_reply_fallback_never_replays_answered_or_stale_turn(monkeypatch,reason):
+    monkeypatch.setattr(voice_worker.asyncio,'sleep',AsyncMock())
+    monkeypatch.setattr(voice_worker.tx,'load',Mock(return_value={'closed':reason=='closed','epoch':2 if reason=='epoch' else 1}))
+    voice=SimpleNamespace(sid='s',ending=reason=='ending',waiting=reason=='waiting',reading=reason=='reading',output_held=reason=='held',
+        fragments=['a','b'] if reason=='new_speech' else ['a'],last_output_audio=11 if reason=='audible' else 0,
+        audit=Mock(),play_message=AsyncMock())
+    asyncio.run(voice_worker.RestaurantVoice.ensure_reply(voice,'verified answer',10,1,1))
+    assert voice.play_message.await_count==(1 if reason=='missing' else 0)
+
+
+def test_reply_fallback_rechecks_after_speech_generation(monkeypatch):
+    voice=SimpleNamespace(provider=SimpleNamespace(speak=AsyncMock(return_value=b'not decoded if stale')),session=Mock())
+    guard=AsyncMock(return_value=False)
+    asyncio.run(voice_worker.RestaurantVoice.play_message(voice,'old answer',can_play=guard))
+    guard.assert_awaited_once()
+    voice.session.say.assert_not_called()

@@ -26,3 +26,5 @@ earlier passing synthetic runs; DESIGN.md explains the subsequent changes.
 - `cloud-deployment.json`: 427 Python checks, 20 real-Postgres contract checks,
   synthetic cloud voice checkout and independent private-storage verification.
   Local servers were stopped; no Chrome used. Playback receipt is simulated.
+
+- `voice-readiness.json`: expanded full cloud-call baseline, failed reruns and fixes. Read its outstanding gates; it does not claim submission readiness.

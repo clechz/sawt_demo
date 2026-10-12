@@ -64,7 +64,9 @@ class Menu:
             if not words or score:
                 ranked.append((score, item))
         ranked.sort(key=lambda x: (-x[0], x[1]['id']))
-        return {'total_matches': len(ranked), 'items': [dict(copy.deepcopy(i), available_here=branch in i['available'] if branch else None) for _, i in ranked[offset:offset + min(limit, 5)]]}
+        return {'total_matches': len(ranked),
+                'partial_matches_only': bool(words) and not any(score == len(words) for score, _ in ranked),
+                'items': [dict(copy.deepcopy(i), available_here=branch in i['available'] if branch else None) for _, i in ranked[offset:offset + min(limit, 5)]]}
 
     def categories(self):
         categories = {}
