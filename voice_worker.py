@@ -116,7 +116,7 @@ class RestaurantVoice(Agent):
         self.session.on('user_input_transcribed', self.on_transcript)
         self.spawn(self.watch_lifetime())
         self.duplex_session.append_commentary(say('greeting'))
-        tx.event(self.sid, 'voice.connected', {'transport': 'livekit', 'model': 'gpt-live-1', 'recognition_policy':'saudi-confirm-v4', 'release':'submission-v6'})
+        tx.event(self.sid, 'voice.connected', {'transport': 'livekit', 'model': 'gpt-live-1', 'recognition_policy':'saudi-confirm-v4', 'release':'submission-v8'})
         await self.send('ready')
 
     def on_client_event(self, event):

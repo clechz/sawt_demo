@@ -107,6 +107,13 @@ def reconcile_spacing(caption, verified):
     """
     a,b=normalize(caption),normalize(verified)
     if not any(c.isdigit() for c in a+b) and a.replace(' ','')==b.replace(' ',''):
+        from .voice_routing import route_transcript
+        from .conversation import requests_cancel
+        # Prefer an intact verified control over a caption that split a word
+        # (e.g. إن تظر). Otherwise preserve caption boundaries, including
+        # negations; both recognizers must agree on every letter.
+        if route_transcript(verified) in ('wait','end','recover') or requests_cancel(verified):
+            return verified
         return caption
     return verified
 

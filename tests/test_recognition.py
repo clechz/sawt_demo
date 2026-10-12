@@ -176,6 +176,15 @@ def test_spacing_reconciliation_preserves_negation_without_changing_words_or_dig
     assert reconcile_spacing('الغي الطلب','الغي القلب')=='الغي القلب'
     assert reconcile_spacing('1 2','12')=='12'
 
+
+def test_caption_spacing_cannot_break_an_intact_verified_wait_command():
+    from sawt.recognition import reconcile_spacing
+    assert reconcile_spacing('إن تظر شويّ لو سمحت','انتظر شوي لو سمحت')=='انتظر شوي لو سمحت'
+    assert route_transcript('إن تظر شويّ لو سمحت')=='wait'
+    assert route_transcript('لا انتظر شوي لو سمحت')=='backend'
+    assert route_transcript('اكتب بالملاحظات إن تظر شوي لو سمحت')=='backend'
+    assert route_transcript('إن تظر شوي وأبي شاورما')=='backend'
+
 def test_audio_check_uses_explicit_playback_not_passive_model_commentary(monkeypatch):
     monkeypatch.setattr(voice_worker.tx,'load',Mock(return_value={'epoch':1}))
     voice=SimpleNamespace(sid='s',consumed=0,waiting=True,output_held=True,session=Mock(),audit=Mock(),

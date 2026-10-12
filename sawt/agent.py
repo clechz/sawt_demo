@@ -137,7 +137,8 @@ class Agent:
                     reminded_service = True
                     messages.append({'role':'system','content':'The caller explicitly requests a service change. You have not called set_service. Save it with tools, then save any stated branch/address with the appropriate tool; never claim a change from text alone. Do not invent missing fields.'})
                     continue
-                if state['service']=='delivery' and not state['location'] and not reminded_address and step<8 and not any(e['tool'] in ('set_location','set_delivery_details') for e in events):
+                asks_address = ('?' in reply or '؟' in reply) and bool(re.search(r'(?<!\w)(?:ال)?(?:مدينه|حي|شارع|مبني|عنوان)(?!\w)', normalize(reply)))
+                if asks_address and state['service']=='delivery' and not state['location'] and not reminded_address and step<8 and not any(e['tool'] in ('set_location','set_delivery_details') for e in events):
                     reminded_address=True
                     messages.append({'role':'system','content':'Before replying, check whether the latest caller message supplies ANY delivery address field. If yes, you MUST save it NOW using set_delivery_details, even only city, neighborhood, street, or building. Do not merely remember it in chat or ask the next field without saving. Supply only stated fields. If this is an unrelated question or contains no address detail, answer normally without changing address. Latest message: '+text})
                     continue

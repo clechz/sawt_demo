@@ -122,3 +122,12 @@ def test_guarded_choice_rejection_cannot_create_quote_in_same_batch():
     assert not state['quote'] and not state['order_id']
     assert any(e['result'].get('choice_guard') for e in reply['events'])
     assert next(e for e in reply['events'] if e['tool']=='checkout')['result'].get('error')
+
+
+def test_unavailable_dish_answer_does_not_trigger_unrelated_address_round_trip():
+    engine=Engine(Menu(Path(__file__).resolve().parents[1]/'data/restaurant-menu-complex.csv'))
+    state=new_state();engine.act(state,'set_service',{'service':'delivery'})
+    provider=SimpleNamespace(supports_tool_batches=True,chat=AsyncMock(return_value={'content':'الشاي العدني مو متوفر. عندنا كرك، وش تفضّل؟'}))
+    updated,result=asyncio.run(Agent(engine,provider).turn(state,'ومعها ثلاثة شاي عدني'))
+    assert provider.chat.await_count==1 and 'العدني' in result['reply']
+    assert not updated['location'] and not result['events']
