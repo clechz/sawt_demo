@@ -196,9 +196,9 @@ async def test_recognition_disagreement_rechecks_audio_but_never_guesses_quantit
 
 
 @pytest.mark.parametrize('text,spoken',[
-    ('المجموع 18.00 ريال. نأكد الطلب؟','المجموع 18 ريال. نأكد الطلب؟'),
-    ('المجموع 18.50 ريال.','المجموع 18 ريال و50 هللة.'),
-    ('0.05 ريال و12.01 ريال','0 ريال و5 هللة و12 ريال و1 هللة'),
+    ('المجموع 18.00 ريال. نأكد الطلب؟','المجموع ثمانية عشر ريال. نأكد الطلب؟'),
+    ('المجموع 18.50 ريال.','المجموع ثمانية عشر ريال وخمسين هللة.'),
+    ('0.05 ريال و12.01 ريال','خمس هللات واثنا عشر ريال وهللة'),
     ('الطلب 0018 وشارع 12.00','الطلب 0018 وشارع 12.00')])
 def test_speech_amount_normalization_preserves_value_and_confirmation(text,spoken):
     from sawt.v2_provider import spoken_amounts

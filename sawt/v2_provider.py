@@ -29,10 +29,14 @@ def voice_name():
 
 
 def spoken_amounts(text):
-    """Keep exact monetary value, avoiding spoken decimal zeroes in Arabic."""
+    """Spell exact monetary values so TTS cannot read 18 as separate digits."""
+    from .spoken_numbers import integer_words
     def replace(match):
         whole, fraction = int(match[1]), int(match[2])
-        return f'{whole} ريال' + (f' و{fraction} هللة' if fraction else '')
+        if not fraction:return integer_words(whole)+' ريال'
+        fractional={1:'هللة',2:'هللتين',3:'ثلاث هللات',4:'أربع هللات',5:'خمس هللات',
+                    6:'ست هللات',7:'سبع هللات',8:'ثمان هللات',9:'تسع هللات',10:'عشر هللات'}.get(fraction,integer_words(fraction)+' هللة')
+        return (integer_words(whole)+' ريال و' if whole else '')+fractional
     return re.sub(r'(?<![\d.])(\d+)\.(\d{2}) ريال', replace, text)
 
 
