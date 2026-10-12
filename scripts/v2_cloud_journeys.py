@@ -81,7 +81,9 @@ def validate(state,expect):
 
 
 class ClarificationRequired(Exception):
- def __init__(self,before,after):self.before=before;self.after=after
+ def __init__(self,before,after):
+  super().__init__('Recognition required clarification')
+  self.before=before;self.after=after
 
 
 class VoiceCall:

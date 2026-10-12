@@ -29,7 +29,8 @@ def requests_cancel(text):
     text = re.sub(r'\s+(?:لو سمحت|الله يعافيك)$', '', text)
     return text in {normalize(x) for x in [
         'الغ الطلب', 'ألغي الطلب', 'الغ طلبي', 'ألغي طلبي', 'الغ الطلب كله', 'ألغي الطلب كله',
-        'امسح الطلب', 'امسح السلة', 'كنسل الطلب', 'كنسل طلبي', 'كانسل الطلب', 'كانسل طلبي', 'cancel my order', 'clear my basket']}
+        'امسح الطلب', 'امسح السلة', 'كنسل الطلب', 'كنسل طلبي', 'كانسل الطلب', 'كانسل طلبي',
+        'cancel الطلب', 'cancel طلبي', 'cancel الطلب كله', 'cancel my order', 'clear my basket']}
 
 
 JOURNEY_RULES = '''

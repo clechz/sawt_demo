@@ -62,6 +62,7 @@ class Connection:
 class Database:
     def __init__(self, url):
         self.pool = ConnectionPool(url, min_size=0, max_size=5, timeout=15, open=True,
+                                   check=ConnectionPool.check_connection,
                                    kwargs={'row_factory': dict_row, 'connect_timeout': 10})
 
     @contextmanager

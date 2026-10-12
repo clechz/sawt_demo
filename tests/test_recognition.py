@@ -169,6 +169,16 @@ def test_cancel_disagreement_requires_clarification_not_an_unrelated_option_ques
         check_recognition('ألغي الطلب كله','الغي القلب كله')
 
 
+@pytest.mark.parametrize('verified',['Cancel طلبي.','cancel الطلب','cancel الطلب كله'])
+def test_code_switched_cancel_keeps_whole_draft_cancellation_intent(verified):
+    from sawt.conversation import requests_cancel
+    assert requests_cancel(verified)
+    check_recognition('كنسل طلبي',verified)
+    assert not requests_cancel('لا '+verified)
+    assert not requests_cancel('إذا تأخر '+verified)
+    assert not requests_cancel('اكتب بالملاحظات '+verified)
+
+
 def test_spacing_reconciliation_preserves_negation_without_changing_words_or_digits():
     from sawt.recognition import reconcile_spacing
     caption='خل الخبز بر مو صاج'

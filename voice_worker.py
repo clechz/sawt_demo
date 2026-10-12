@@ -153,7 +153,7 @@ class RestaurantVoice(Agent):
         if self.provider_failed or self.ending:
             return
         self.duplex_session.append_commentary(say('greeting'))
-        await asyncio.to_thread(tx.event, self.sid, 'voice.connected', {'transport': 'livekit', 'model': 'gpt-live-1', 'recognition_policy':'contextual-draft-v7', 'release':'conversation-v20'})
+        await asyncio.to_thread(tx.event, self.sid, 'voice.connected', {'transport': 'livekit', 'model': 'gpt-live-1', 'recognition_policy':'contextual-draft-v7', 'release':'conversation-v21'})
         await self.send('ready')
 
     def on_client_event(self, event):
