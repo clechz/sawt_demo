@@ -11,6 +11,17 @@ WAIT = re.compile(r'(?:(?:يا حبيبي|ياخي|يا اخي|يا اخوي|ي�
 RECOVER = re.compile(r'(?:(?:يا حبيبي|ياخي|يا اخي|يا اخوي|يا رجال|ترا|تري|تراك|انت)\s+)*(?:ما قاعد تتكلم|مو قاعد تتكلم|ما اسمعك|ماني سامعك|صوتك ما يطلع|وين صوتك|الو)(?:\s+(?:هلا|خلاص|لو سمحت))*')
 
 
+def continues_wait(text):
+    """A recognizer may finalize the polite tail after an accepted pause.
+
+    Only complete suffixes stay silent, and only while already waiting. A
+    mixed request such as 'لو سمحت أبي شاورما' must resume normal verification.
+    """
+    return normalize(text) in {normalize(x) for x in [
+        'شوي', 'شوي لو', 'شوي لو سمحت', 'لو', 'لو سمحت', 'سمحت',
+        'الله يعافيك', 'يعافيك']}
+
+
 def caption_audio_check(text):
     """Closed-set 'can you hear me' only; no order or call-lifecycle effect."""
     if any(mark in text for mark in ('"','«','»','“','”')):

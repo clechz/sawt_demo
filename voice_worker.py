@@ -20,7 +20,7 @@ from sawt import cloud_storage
 from sawt.v2_provider import V2Provider, voice_name, ProviderQuotaError, exhausted_quota, CALLS_UNAVAILABLE
 from sawt.transactions import Conflict
 from sawt.recording import CallRecorder, AuditWriter, prune
-from sawt.voice_routing import route_transcript
+from sawt.voice_routing import route_transcript, continues_wait
 from sawt.recognition import AudioWindow, AudioWindowError, check_recognition, check_transcript_clarity
 from sawt.provider import ProviderError
 from sawt.conversation import say, farewell
@@ -151,7 +151,7 @@ class RestaurantVoice(Agent):
         if self.provider_failed or self.ending:
             return
         self.duplex_session.append_commentary(say('greeting'))
-        await asyncio.to_thread(tx.event, self.sid, 'voice.connected', {'transport': 'livekit', 'model': 'gpt-live-1', 'recognition_policy':'contextual-draft-v9', 'release':'conversation-v26'})
+        await asyncio.to_thread(tx.event, self.sid, 'voice.connected', {'transport': 'livekit', 'model': 'gpt-live-1', 'recognition_policy':'contextual-draft-v9', 'release':'conversation-v27'})
         await self.send('ready')
 
     def on_client_event(self, event):
@@ -464,7 +464,7 @@ class RestaurantVoice(Agent):
             identity = str(self.current_item) + ':' + text
             if not text or identity == self.processed:
                 self.duplex_session.append_thinking('The current request has already been processed. Use the latest verified result.', delegation_id=delegation_id)
-                if not self.reading and not self.checkout_context:
+                if not self.reading and not self.checkout_context and not self.waiting:
                     self.output_held = False
                     set_output_enabled(self, True)
                 return
@@ -493,6 +493,13 @@ class RestaurantVoice(Agent):
                 await self.send('waiting' if self.waiting else 'updated', epoch=row['epoch'])
                 return
             route = route_transcript(text, checkout=self.checkout_context)
+            if getattr(self, 'waiting', False) and continues_wait(text):
+                self.consumed = end
+                self.output_held = True
+                set_output_enabled(self, False)
+                self.audit('call.wait_continued', {'source':'verified_polite_suffix'})
+                await self.send('waiting', epoch=row['epoch'])
+                return
             if route == 'end':
                 self.consumed = end
                 await self.end_requested()

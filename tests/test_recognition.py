@@ -185,6 +185,31 @@ def test_noise_cannot_release_explicit_wait_or_leave_canceled_readback_muted(mon
         voice.send.assert_awaited_with('waiting' if waiting else 'updated',epoch=1)
 
 
+@pytest.mark.parametrize('text',['لو سمحت.','شوي، لو سمحت.','شوي لو','سمحت','الله يعافيك','شوي'])
+def test_verified_tail_of_pause_stays_silent_without_new_restaurant_request(monkeypatch,text):
+    monkeypatch.setattr(voice_worker.tx,'load',Mock(return_value={'epoch':1,'state':{'quote':None}}))
+    backend=AsyncMock();monkeypatch.setattr(voice_worker,'delegate',backend)
+    voice=work_voice(text);voice.waiting=True
+    asyncio.run(voice_worker.RestaurantVoice.work(voice,None))
+    assert voice.waiting and voice.output_held and voice.consumed==1
+    voice.session.output.set_audio_enabled.assert_called_with(False)
+    voice.send.assert_awaited_once_with('waiting',epoch=1)
+    backend.assert_not_awaited();voice.recover_audio.assert_not_awaited()
+
+
+@pytest.mark.parametrize('text',['لو سمحت أبي شاورما','شوي فلفل','خلاص نكمل','تسمعني','لا تنتظر','لو سمحت بكم الشاورما'])
+def test_real_request_is_not_a_pause_suffix(text):
+    from sawt.voice_routing import continues_wait
+    assert not continues_wait(text)
+
+
+def test_replayed_consumed_caption_cannot_unmute_pause(monkeypatch):
+    voice=work_voice('');voice.waiting=True;voice.consumed=1
+    asyncio.run(voice_worker.RestaurantVoice.work(voice,None))
+    voice.session.output.set_audio_enabled.assert_not_called()
+    assert voice.waiting and voice.output_held
+
+
 def test_new_speech_during_verification_invalidates_its_result(monkeypatch):
     monkeypatch.setattr(voice_worker.tx,'load',Mock(return_value={'epoch':2,'closed':False}))
     voice=SimpleNamespace(sid='s',fragments=['نعم','لا'],fragment_spans=[{},{}],input_audio=Mock(),send=AsyncMock(),audit=Mock(),provider=SimpleNamespace(recognize=AsyncMock(return_value='نعم')))
