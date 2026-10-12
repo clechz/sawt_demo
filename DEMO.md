@@ -1,5 +1,7 @@
 # Exact recording script — target 9 minutes
 
+**Recording gate:** do not record the final submission until the current candidate passes its cloud speech/latency suite. Provider billing is currently blocking that verification.
+
 Record your microphone **and system audio**. Use fictional details. Have the running app, README, DESIGN, EVALUATION and PRODUCT tabs ready. Do not show credentials or private recordings. Keep the live interaction at normal speed; wait for actual responses. This is a guide, not a claim that a video has already been recorded.
 
 ## 0:00–0:25 — introduction
@@ -44,7 +46,7 @@ Say:
 
 Show DESIGN.md and its diagram. Say:
 
-> فصلت المحادثة عن صلاحية تغيير الطلب. LiveKit ينقل الصوت، وGPT-Live يدير توقيت المحادثة. طلبات المطعم تمر على تخطيط بأدوات، لكن كود Python هو اللي يتحقق من الخيارات والأسعار والتوفر.
+> فصلت المحادثة عن صلاحية تغيير الطلب. LiveKit ينقل الصوت، وGPT-Live يدير توقيت المحادثة. طلبات المطعم تمر على تخطيط بأدوات، لكن كود Python هو اللي يتحقق من الخيارات والأسعار والتوفر. في النسخة الجديدة جواب الطلب ينطق من النص المعتمد مباشرة، عشان نموذج الصوت ما يغيّر السؤال أو يخترع خيار.
 >
 > ما بنيت شبكة وكلاء ولا مصنف نوايا إضافي. عندنا مسؤوليتان للنماذج: الصوت، وفهم الطلب واختيار الأدوات. حالة الطلب في النسخة المستضافة محفوظة في Neon Postgres، ومحليًا نستخدم SQLite. الحالة هي المرجع؛ سجل المحادثة يساعد على الفهم فقط.
 >

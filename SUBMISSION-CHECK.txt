@@ -1,65 +1,44 @@
 SAWT — CURRENT SUBMISSION STATUS
-2026-10-12 | conversation-v14 | No Chrome testing
+2026-10-12 | hosted V30; candidate V31 | No Chrome testing
 
-STATUS: NOT YET CLEARED FOR SUBMISSION
-OpenAI returned HTTP 429 / credit_balance_exhausted for the configured key.
-Restore API credit before testing or recording. App call limits are already
-120 starts per rolling hour and four concurrent calls; provider billing is
-separate. A successful website login does not prove voice availability.
+STATUS: BLOCKED — NOT READY TO RECORD THE FINAL SUBMISSION
+OpenAI credit was restored, then exhausted again during expanded testing.
+Paid tests stopped. The app's 120 starts/hour limit is separate from billing.
+Demo: https://sawt-demo.vercel.app (Vercel + LiveKit Cloud + Neon + private Blob)
+Hosting remains independent of the development PC, but voice needs API credit.
 
-Current checks
-- 553 Python tests passed; the optional Postgres module skipped in this run.
-- 22 real Postgres contract checks passed separately before the final voice
-  and provider changes; isolated schemas, not customer order writes.
-- 17 JavaScript checks passed, including local microphone/assistant orb
-  activity, autoplay handling, stale status and playback receipt protection.
-- Frontend TypeScript check and production build passed.
-- Private website redirect, login and authenticated API health passed.
-- Latest paid planner run was interrupted by exhausted credit. Completed
-  scenarios do not count as a complete run.
+Latest source candidate: f6bbdd09b0553512d2fa570209777d042d886d86
+V31 is pushed, not deployed or live-verified.
+- 741 Python tests passed, one opt-in Postgres skip.
+- 23 separate real-Postgres contract tests passed on unchanged storage code.
+- See candidate.ci in evidence/v2/submission-final.json for exact CI status.
+- Four real-provider planner scenarios / 30 turns passed on V30's unchanged
+  business planner; these are not V31 voice measurements.
 
-Latest voice evidence
-- conversation-v12 received-speech review completed six pickup/correction
-  turns and decoded real checkout speech, with timed simulated receipts.
-- The expanded v12 run passed only three of six journeys. Pizza did not save
-  its draft, quantity recognition disagreed, and staff-offer decline produced
-  no audible reply. Failures remain in evidence/v2/submission-final.json.
-- Older checkout, interruption and storage runs passed on older releases;
-  they do not certify the final voice changes.
+Actual hosted V30 outcome
+- Six original received-speech assertions passed, but reviewing its transcript
+  exposed “عادي ولا أسمر؟” after saj was saved. Semantic review FAILED.
+- First three journey state cases passed. One state update took 13.81 seconds.
+- Billing then blocked later journeys and interruptions. Checkout/storage
+  were not completed. This is not a passing full cloud suite.
 
-Changes awaiting final real-media verification
-- Contextual pickup/option answers, bounded catalog retrieval, dish identity
-  clarification, and finish_draft reduce repeat questions/model round trips.
-- Database I/O no longer blocks the live audio event loop; durable epochs,
-  revisions and confirmation checks remain.
-- Critical recognition disagreements get one bounded independent acoustic
-  recovery attempt, then clarification if still unresolved.
-- RMS-based audible detection avoids treating clicks as successful replies.
-- Live, checkout and recovery share a voice; spoken totals omit decimal zeroes.
-- Exhausted provider credit closes the call with a visible availability error.
+V31 changes awaiting live verification
+- Speak exact validated restaurant replies rather than model paraphrases.
+- Permit explicit audio only; reject stale or parallel speculative speech.
+- Remove the commentary acknowledgment and 1.5-second fallback waits.
+- Stop paid suites immediately on live billing failure.
+- Assert spoken fulfillment wording after saved bread, not only basket state.
+The code change is not proof of good latency or natural Saudi pronunciation.
 
-Resume verification with funded credentials
-  python scripts/v2_release_replay.py --output runtime/funded-planner.json
-  python scripts/v2_cloud_suite.py --release conversation-v14
+After funding
+1. Deploy V31 and verify the registered worker/version, then run:
+   python scripts/v2_cloud_suite.py --release conversation-v31
+2. Resolve every failed current-release gate. Do not reuse old passing runs.
+3. Make a real microphone call, record DEMO.md below ten minutes, and verify
+   private repository/video access for reviewers.
 
-The second command runs sequential received-speech review, all six journeys,
-three interruption offsets, checkout and independent private storage checks.
-It stops on the first failed gate and records logs in runtime/cloud-suite/.
-No Chrome, browser automation or human archive upload is involved.
-
-Before submitting
-1. Pass the final funded suite and address any failures it reveals.
-2. Make a human Saudi microphone call: assess actual useful response time,
-   naturalness, corrections and interruption. Synthetic pass counts cannot
-   establish a premium or perfect human experience.
-3. Record the under-ten-minute demonstration using DEMO.md.
-4. Verify Sawt reviewers can access the private repository and video.
-
-Hosting: https://sawt-demo.vercel.app
-Vercel UI/API, LiveKit Cloud worker, Neon Postgres and private Vercel Blob.
-No dependency on this PC for hosted calls. The old local archive stays on PC.
-Mock orders, fixed delivery zones and staff tickets remain simulations; real
-POS, payment, courier, staff integration and production load tests are absent.
-
-Detailed architecture: DESIGN.md. Reusable language: CALL-EXPERIENCE.txt.
-Current evidence: evidence/v2/submission-final.json and submission-final-tests.xml.
+README.md: exact setup. DESIGN.md: architecture and context decisions.
+VOICE-TESTS.md: reproduce calls. DEMO.md: exact timed recording script.
+Synthetic tests do not certify production, load, perfect recognition or accent.
+Orders, staff tickets and delivery zones are mocked. Old human archives remain
+on the PC and are excluded from the repository and this evidence.

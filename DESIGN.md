@@ -21,7 +21,8 @@ flowchart LR
   P --> D[Validated domain tools]
   D --> T[(Postgres cloud / SQLite local)]
   T --> R[Actual change / next missing question]
-  R --> M
+  R --> S[Exact business speech / V31 candidate]
+  S --> C
   T --> Q[Exact checkout speech]
   Q --> B[Browser playback receipt]
   B --> A[Explicit acceptance of unchanged quote]
@@ -31,7 +32,8 @@ flowchart LR
 | Component | Responsibility |
 |---|---|
 | Browser / LiveKit | Microphone capture, transport, playback and interruption signals |
-| GPT-Live | Conversational timing and spoken delivery; delegates restaurant work |
+| GPT-Live | Listening and conversational timing; social speech; delegates restaurant work |
+| Exact TTS / V31 candidate | Speak the validated business response without another semantic rewrite |
 | Independent transcription | Verify the bounded captured PCM before business/control actions |
 | GPT-4.1 planner | Interpret language, retrieve menu candidates and choose validated tools |
 | Domain engine | Valid options, availability, required fields, integer prices and exact readback |
@@ -63,7 +65,30 @@ Checkout emits an exact server-generated summary tied to the current revision: e
 
 Playback acknowledgment is not proof that a human actually heard the speakers. Backend tests that simulate receipts are labelled as such. Generated provider audio, including muted output, is also not a receipt.
 
+## Current speech candidate: V31
+
+V30's real received audio asked “عادي ولا أسمر؟” even though the backend had
+saved saj and asked delivery or pickup. GPT-Live commentary is something to say
+in its own words; acknowledgment never guaranteed semantic fidelity. V31 sends
+the validated restaurant response through exact streamed TTS instead. GPT-Live
+continues listening and social turn-taking, but cannot audibly rewrite a
+business question. This candidate is not deployed or live-verified yet.
+
+The speech gate keeps its output destination attached. A task-local permit
+allows only the explicit audio iterator through while business output is held;
+the SDK's resampling runs in that same task. New input revokes the permit, and
+the generation checks the current epoch before starting. Older cleanup cannot
+cancel newer speech. Checkout retains its separate receipt requirements.
+
+Removing the commentary acknowledgment and delayed fallback eliminates those
+two waits. Recognition, planning and TTS still take time. Live latency and
+interruption measurements are pending funding. The release evidence preserves
+the prior 13.81-second outlier rather than calling this change a proven fix.
+
 ## Recognition and latency tradeoffs
+
+The measurements and incremental changes below describe the development
+history. The current candidate supersedes the commentary/fallback reply path.
 
 Human testing exposed a complaint misheard as a request to stay quiet. Bounded audio verification, quantity/negation/question disagreement checks and distinct wait/recover/end routes address that failure without letting captions directly authorize an order.
 
@@ -124,13 +149,15 @@ Cloud database operations are moved off the media event loop. Caption epoch
 invalidations remain ordered even while database calls await their thread.
 Scheduler lag and missing-reply decisions are audited. Audible output detection
 uses frame RMS, because one PCM peak can be a click rather than spoken audio.
-The final cloud retest remains pending after API credit exhaustion; these changes
-are not a claim of certified conversational latency. Billing failure closes the
+Measured results and remaining gates are recorded in `evidence/v2/submission-final.json`;
+these changes are not a claim of certified conversational latency. Billing failure closes the
 call visibly instead of asking the caller to repeat into an unavailable service.
 
 V2 uses `SAWT_VOICE=marin` for live speech, checkout and recovery. A speech-only
-monetary renderer converts `18.00 ريال` to `18 ريال` and `18.50 ريال` to
-`18 ريال و50 هللة`, preserving exact value and the final confirmation question.
+monetary renderer converts `18.00 ريال` to `ثمانية عشر ريال` and `18.50 ريال` to
+`ثمانية عشر ريال وخمسين هللة`, preserving exact value and the final confirmation question.
+Spelling out money avoids the digit-by-digit or garbled reading observed in the
+funded speech test; receipt and stored amounts remain numeric and unchanged.
 Stored prices and receipt/revision validation are unchanged. Synthetic received
 speech is independently transcribed for review; natural Saudi delivery still
 needs a human listening check.
@@ -138,3 +165,100 @@ needs a human listening check.
 Business-turn validation mutes samples through `SpeechGate`, while keeping LiveKit's audio destination attached. Disabling the SDK destination mid-conversation was unsafe for liveness: a speech task could snapshot no destination and remain inaudible after output was re-enabled. The gate forwards timing and playback events, clears queued speech when muted, and restores audible frames on the same destination. A guarded fallback can speak the verified reply if no audible frames reach that sink; it rechecks new input and the call epoch after synthesis so stale audio is discarded.
 
 The cloud test caller publishes real synthetic PCM and observes returned PCM and durable state separately. Missing audio, wrong basket state and latency failures remain separate failures. See [VOICE-TESTS.md](VOICE-TESTS.md) and the baseline/reruns in `evidence/v2/voice-readiness.json`. Neither a passing unit count nor an eight-second stall threshold is a claim of natural conversational latency.
+
+Call readiness also has a boundary: a joined LiveKit room does not establish that the microphone stream and GPT-Live session are both connected. The worker waits for those two signals before sending `ready`; a bounded startup timeout ends an unavailable call with an error. Recognition retries recheck the input epoch and fragment count before publishing a clarification, so a superseded partial sentence cannot interrupt the completed request with an obsolete “please repeat.”
+
+For business replies, the worker correlates the commentary event with its provider acknowledgment before reopening audio, with a bounded one-second wait and a fresh epoch check. That acknowledgment means context was injected, not that the caller heard the answer; checkout still needs the separate playback receipt. The Postgres pool validates idle connections before lending them to a transaction, avoiding reuse of a closed socket after host/database idling. Recovery happens before the operation begins, without automatically replaying an uncertain order commit.
+
+These boundaries follow the documented distinction between [context acknowledgment and completed speech](https://developers.openai.com/api/reference/resources/live/fork-websocket), and the pool's [connection-quality check on checkout](https://www.psycopg.org/psycopg3/docs/advanced/pool.html#connection-quality). They add bounded work; the measured first-audio latency in the release evidence remains the authority for caller responsiveness.
+
+Recovery and goodbye speech stream 24 kHz PCM into 20 ms frames. Playback can begin before synthesis completes; it no longer downloads and decodes a complete MP3 first. A guard is checked after the first network chunk and again after interrupting older audio, so a stale fallback cannot start merely because its request finished late. Odd network splits are reassembled into complete PCM samples, and cancellation closes the speech stream. This removes a buffering delay; it does not eliminate recognition, planner, provider or network latency.
+
+A later synthetic audit found a correctness hole that the original basket assertions missed: the planner chose delivery for a dish-only request. V23 requires explicit customer evidence at the staged fulfillment boundary, including address tools that implicitly switch service. Delivery and pickup have no default. Negated, conditional, quoted or ambiguous choices stay unresolved; already selected delivery allows subsequent address answers without making the customer repeat the service. This deliberately favors clarification over an unsupported choice, and does not claim complete semantic understanding from lexical rules. Cloud assertions now check that service stays unset on dish-only orders.
+
+The same run took 10.25 seconds to answer an unavailable bread correction because it used two planner passes. A bounded single-dish bread correction now validates directly against the menu, invalidates the rejected old choice, and explains the available alternatives. Mixed requests and ambiguous targets still use the planner. Brown bread cannot silently become brioche, and the acknowledgment no longer says the sandwich's required bread was simply removed. This is another small deterministic shortcut around a general planner, not a separate intent-classifier service. Its current end-to-end measurements are reported in the release evidence.
+
+Agreement between recognizers is not proof that words make sense. In V23, both produced `الذي الطلب كله` for a synthetic cancellation. V24 detects that narrow malformed whole-order fragment and requests a repeat without canceling or checking out. It does not guess the intended verb. A later explicit cancellation can then clear the draft. The fused form `برمو صاج` also resolves through the bounded bread-correction grammar without changing its letters or substituting another bread.
+
+A short staff-decline reply was marked audible at the worker but not detected at the caller. The root cause was not conclusively isolated. The output gate now requires roughly 80 ms of signal, resetting between replies, before suppressing missing-speech recovery. This mitigates residual frames/brief clicks but is still an outgoing signal test, not a playback receipt. Failed cloud callers now save compact received-audio diagnostics; a passing rerun is reported as limited evidence rather than proof the intermittent failure cannot recur.
+
+The full V24 run then passed functional checks but exposed a 9.69-second audio-check response. Its secondary-verification stage consumed 7048 ms. V25 treats a complete “تسمعني؟” phrase as a nontransactional audio check and answers it directly after validating the captured audio window and current epoch. This cannot edit a basket, confirm, cancel, pause or close a call. Mixed phrases and the easily confused “ما قاعد أتكلم / ما قاعد تتكلم” still require independent recognition. The optimization removes an unnecessary network dependency for this narrow question; general business turns still pay for recognition and validation.
+
+The funded cloud tests exposed several additional failure modes. Audio resumes
+at a short silence when a speculative phrase is still playing, so its last
+syllables do not leak ahead of the verified answer. Recognition recovery checks
+critical meaning against both prior transcripts: a second opinion cannot erase
+a detected cancellation and silently continue ordering. In that case the caller
+gets a clarification, with the draft unchanged.
+
+Whole city/neighborhood answers matching the current delivery question and
+configured locations save directly. No model request is needed for that narrow
+case; unknown locations, free text, mixed requests and corrections retain the
+planner path. An explicit final “and read the order” clause triggers the exact
+readback after successful edits, while failed edits block it. A rejected early
+confirmation can still lead to a fresh unheard readback, never an order. An
+unrelated successful addition cannot suppress another dish's identity question.
+
+The received-speech test also found TTS omitting the final confirmation question
+despite correct input text. The default Marin checkout now streams the summary
+body as PCM and appends a separately generated, independently transcribed
+`نأكد الطلب؟` asset. One MP3 encoder spans both segments, so this is a continuous
+audio file rather than concatenated MP3 headers. Receipt duration covers both.
+The spoken asset and generation metadata are in `data/voice/`; other configured
+voices synthesize that question separately. This protects the final question;
+it does not certify every pronunciation or every dynamically spoken item.
+
+Five short recovery/goodbye phrases now have verified PCM assets for the default
+Marin voice and exact speech model. The cache key includes exact text, voice and
+model, and the loader checks the asset hash. Changed phrases or other voices
+fall back to live synthesis; dynamic order summaries are never replaced by a
+cached generic answer. Each asset was independently transcribed; generations
+that omitted words were rejected. This removes a speech-network dependency for
+fixed lines, without claiming a human Saudi accent rating. Playback diagnostics
+separate first chunk, interruption completion and final playout to make later
+stalls attributable instead of guessing from a single timeout.
+
+Continuous captions are not reliable sentence boundaries. One real synthetic
+trace split “انتظر شوي لو سمحت” after the accepted pause and verified the tail
+as “لو سمحت”. The planner then treated it as a new request. While already paused,
+V27 consumes only exact polite tails silently; “لو سمحت أبي شاورما” still resumes
+normal verification. Replayed consumed captions also cannot reopen muted output.
+This small state-dependent rule fixes an observed boundary problem without
+adding a separate classifier or delaying every turn to guess sentence endings.
+
+A V27 readback received its first packet, then its provider stream failed before
+completion. The receipt correctly remained invalid, but the client mislabeled
+every 409 response as an order edit and hid retry. V28 distinguishes incomplete
+playback from a changed order. It keeps the draft, offers a fresh readback, and
+still refuses confirmation on incomplete or stale receipts. A ten-second client
+watchdog handles preparation/buffering stalls; playing audio clears it, and an
+obsolete timer cannot cancel a newer playback. Speech HTTP idle waits are
+bounded to eight seconds without shortening planner/transcription requests.
+These are failure-recovery bounds, not desired response-time targets. Private
+audit events record exception/cause types, elapsed time and byte count, without
+provider response bodies or credentials.
+
+
+The next cloud run reproduced that provider stall outside Vercel: a tiny PCM
+fragment arrived, followed by an idle timeout. Streaming now holds about 250 ms
+of initial PCM within a three-second startup deadline. If startup fails, it
+discards those unplayed bytes and retries once. After any audio is yielded,
+failure cannot replay or splice a second answer; partial checkout remains
+unconfirmable. Billing failures never retry. This favors a small startup buffer
+over exposing a click followed by silence, without hiding failed streams.
+
+We also reduced the speech instructions to reading the supplied Arabic exactly
+in a clear Saudi accent at a natural pace. Across one checkout fixture with
+three interleaved samples per style, compact instructions began audio in
+0.66–0.95 seconds versus 0.88–5.30 seconds previously. Both retained the tested
+items, amount and confirmation question in independent ASR. This is a small
+development comparison, not proof of causality, human pronunciation or overall
+call latency. GPT-Live and Marin remained unchanged.
+
+A complete, unambiguous English single-drink request can supplement a modifier
+the planner omitted, using only the current catalog's options. Unknown words,
+mixed drinks, negation and conditions reject that shortcut. A vague Saudi
+“سكر وسط” instead produces “تقصد نصف سكر؟” bound to the basket line and revision;
+only the answer sets half sugar. Size and ice edits already saved remain saved.
+That yes cannot authorize an order. Staff-offer wording is similarly tied to a
+pending proposal: speaking an offer cannot silently create a staff ticket.

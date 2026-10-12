@@ -51,6 +51,12 @@ lk agent deploy
 lk agent status
 ```
 
+A completed upload is not proof that calls reach the new worker. Wait for its
+registered-worker log, then run the cloud suite with the expected release. The
+runner rejects older workers still serving during rollout. For Vercel, wait for
+Ready and verify the canonical production alias serves the changed assets; a
+Queued build is not a deployment success.
+
 For initial deployment use `lk cloud auth`, then `lk agent create --region
 us-east --secrets-file <ignored-file>`. Keep the worker and database near the API
 (currently US East). Never commit or paste a secret file into a deployment log.

@@ -2,13 +2,16 @@
 
 Run from the repository root with `requirements-cloud.txt` installed. These commands use paid provider APIs and the password-protected cloud demo; no Chrome is used.
 
-The sequential cloud command is `python scripts/v2_cloud_suite.py --release conversation-v14`.
+The full sequential cloud command is `python scripts/v2_cloud_suite.py --release conversation-v31`.
 It checks planner access, then runs received-speech review, six order/information
 journeys, three interruption offsets, checkout and private-storage checks.
 It stops at the first failure and preserves logs in a timestamped ignored
 `runtime/cloud-suite/` directory. Restore API credit first if preflight reports
 `credit_balance_exhausted`; it does not retry billing failures. The expected
 release is checked so results from an old worker cannot certify a new deploy.
+Use `--continue-on-failure` for a complete inventory of independent failures;
+the overall status remains failed. Storage verification is skipped if checkout
+failed, so an older successful order cannot be reused as current evidence.
 
 ```sh
 python -m pytest -q
@@ -23,6 +26,45 @@ python scripts/v2_conversation_review.py
 ```
 
 Set `SAWT_DEMO_PASSWORD` in the process environment, or use the ignored local `runtime/private-demo.json`. Cloud journeys save timestamped JSON under `runtime/`. Never commit those raw files: they contain call identifiers, state and transient quote tokens. Caller fixtures are synthetic and cached by a hash of their wording. Historical human recordings are not uploaded by this runner.
+
+The next test target is `conversation-v31`, after funding and deployment. The hosted worker remains V30. `submission-final.json` records
+its actual completion status, deployed source commits and previous failures.
+V24 passed state/media checks but one audio-check reply took 9.69 seconds.
+V25 removed redundant transcription for that bounded nontransactional phrase;
+three repeated audio checks took 1.51–1.66 seconds, but one goodbye stalled.
+V26 added five independently transcribed fixed control/goodbye PCM assets. Its
+repeated run exposed a split pause: “لو سمحت” arrived after “انتظر شوي” and
+incorrectly resumed conversation. V27 holds those exact polite suffixes silent
+only while already waiting. Mixed/new requests still resume normal processing.
+V27 passed all 28 journey turns, three interruption timings, checkout and
+private storage, but a readback provider stream failed in the separate speech
+review. V28 bounds speech idle time and gives incomplete playback a retry
+message, without allowing a partial or stale readback to confirm an order.
+V28 still failed upstream streaming; the same stall reproduced outside Vercel.
+V29 buffers initial PCM and retries once only before any audio has escaped,
+uses compact speech instructions, preserves explicit single-drink modifiers
+and records reversed-wording staff offers. Its planner replay exposed ambiguous
+medium sugar; V30 stores one scoped proposal instead of repeating all choices.
+The direct speech comparison uses one fixture and is reported separately from
+the full hosted call suite; it does not certify native accent or broad latency.
+
+
+Each full run checks the exact deployed worker. During a rolling deployment,
+old workers can still answer; a release mismatch fails the test and stops the
+suite even with `--continue-on-failure`. Billing failure also stops the suite.
+Other failed checks remain failures while independent stages can continue.
+An unchanged old checkout file is never copied as evidence for a new run.
+
+To repeat the controls and staff cases against the actual current worker:
+
+```powershell
+$env:SAWT_EXPECT_WORKER_RELEASE = 'conversation-v31'
+python scripts/v2_cloud_journeys.py --only controls_and_noise information_and_staff --repeat 3
+```
+
+On Bash, prefix the Python command with `SAWT_EXPECT_WORKER_RELEASE=conversation-v31`.
+Consult `submission-final.json` for the current run's actual result and timing;
+earlier passing results never substitute for a failing current release.
 
 ## What a full-call test checks
 
@@ -65,8 +107,21 @@ The controlled barge-in sweep below adds measured interruption offsets. Packet l
 
 ## Why the extra call tests matter
 
-A tool trace can be correct while the caller hears nothing. Each real-media journey therefore checks order state separately from received assistant audio. The cloud worker now has a guarded missing-reply fallback: after 1.5 seconds without audible output sent to the LiveKit sink, synthesize the verified backend reply; recheck the call epoch, new input, waiting/checkout state and intervening audio before playback. This recovers missing speech, not slow planning. A fallback event is recorded for diagnosis.
+A correct tool trace is insufficient. In V30, saved saj was followed by a
+spoken brown-bread question. The received-speech test now requires the actual
+delivery/pickup question at that point. The original runner passed but the
+manual review of its transcription failed; the report records both.
 
-Menu search also labels partial-only matches. The planner's draft-saving reminder no longer forces an extra add-item round for an unavailable request. Repeated complete option answers use the same narrow deterministic path even after the next question begins. Neither change supplies unstated choices or authorizes confirmation.
+The V31 candidate speaks the validated backend text directly, instead of asking
+the live model to paraphrase a commentary injection. A task-local playback
+permit lets explicit PCM through while model-generated business audio stays
+muted. New input revokes the permit; an older playback cannot clear a newer
+permit. Tests exercise the installed SDK's resampling path, stale epochs,
+parallel model audio, interrupted output and missing speech. Hosted audio and
+latency are still pending because provider credit exhausted again.
 
-The generated-but-inaudible reply regression was traced to disabling the SDK output while a realtime speech task began. That task snapshots its audio destination, so re-enabling output later can leave the same task without a destination. `SpeechGate` keeps the destination attached and sends zeroed samples during validation/wait/readback instead. It preserves frame timing and flush/playout events, clears queued speech when muted, and reports audible samples only after forwarding to the sink. A unit test exercises mute/resume on the same destination; real cloud reception remains the acceptance check.
+Earlier versions used an acknowledgment and a 1.5-second missing-reply fallback.
+V31 removes both waits and the obsolete fallback path. It still pays recognition,
+planning and initial TTS latency. This is a design change to test, not a claim
+that the hosted delay is already solved. The independent received-speech and
+interruption suites must pass before the candidate is ready for a demo.

@@ -6,14 +6,26 @@ journeys, explicit clarification attempts, interruption offsets, checkout and
 independent storage verification. `voice-readiness.json` retains the earlier
 failed runs; a later successful rerun does not erase them.
 
-**Current gate: incomplete.** The latest offline run passed 553 Python and 17
-JavaScript checks; frontend typecheck/build passed. The configured OpenAI key
-then returned HTTP 429, `credit_balance_exhausted`, interrupting the paid planner
-run. The final `conversation-v14` cloud voice suite has not passed yet. Restore
-API credit and run `python scripts/v2_cloud_suite.py --release conversation-v14`.
-The previous expanded `conversation-v12` cloud run passed three of six journeys;
-pizza draft persistence, a quantity-recognition disagreement, and a missing
-spoken reply failed. These failures remain visible in the current report.
+**Current gate: blocked; V31 is an undeployed candidate.** API credit was
+restored, then exhausted again during the V30 cloud suite. Paid tests stopped.
+See the candidate's exact offline count and CI commit in the release report.
+Four real-provider planner scenarios passed on V30 (30 turns); V31 does not
+change that planner, but its new speech path has not been exercised live.
+The 23 separate Postgres contract checks cover unchanged database code.
+
+V30's received-speech runner passed its original six assertions, but reviewing
+the actual transcription exposed “عادي ولا أسمر؟” after saj was already saved.
+That is a failed semantic review, not a clean release. The assertion now rejects
+this mismatch. One other turn took 13.81 seconds to observe state; billing then
+blocked the remaining journeys, interruptions and checkout. V31 routes exact
+business text through streamed speech and revokes its audio permission on new
+input. Its hosted latency and interruptions remain unverified.
+
+After funding and deploying V31, use
+`python scripts/v2_cloud_suite.py --release conversation-v31`. The runner stops
+immediately when live voice reports exhausted credit, including when planner
+preflight had succeeded. Previous failures remain in the evidence; an old
+passing call cannot certify a new release.
 
 The current architecture uses continuous LiveKit/GPT-Live audio and Neon
 Postgres in the cloud. The push-to-talk pipeline and local-only limitations

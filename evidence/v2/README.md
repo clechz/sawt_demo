@@ -6,8 +6,14 @@ private call histories, credentials and local databases are excluded.
 Start with `submission-final.json` for the latest automated release status and
 `submission-final-tests.xml` for the Python run. The report records worker
 releases, failed attempts, explicit clarification and audio-timing limits.
-The current gate is **incomplete**: OpenAI credit is exhausted and the final
-cloud retest is pending. The filename does not mean the submission is approved.
+`postgres-reconnect-tests.xml` contains the 23 isolated real-Postgres contract
+checks, including replacement of a connection closed while idle in the pool.
+API credit was restored, then exhausted again during V30. The report records
+the blocked partial run and the separate, undeployed V31 candidate. Its XML
+is the latest candidate's offline run, not evidence that V31 passed cloud calls.
+The V30 speech runner originally passed but transcript review found a wrong
+spoken question; the report explicitly overrides that incomplete semantic gate.
+The filename does not mean the submission is approved.
 `planner-roundtrip-final.json` is the paired same-model latency measurement;
 it measures planner execution, not end-to-end speech latency.
 

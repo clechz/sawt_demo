@@ -17,6 +17,14 @@ A simple call screen over a stateful ordering system. Speak naturally, give deta
 | What was tested, and what remains uncertain? | [TESTING.md](TESTING.md), [submission checks](SUBMISSION-CHECK.txt) |
 | What does the assistant say? | [37 reusable phrases and request map](CALL-EXPERIENCE.txt) |
 
+## Current validation status
+
+The cloud is on V30. V31 is the next candidate, pushed with offline checks but
+not deployed or live-verified: OpenAI credit exhausted during the V30 suite.
+That run also exposed a wrong spoken question despite correct saved state.
+V31 speaks validated business replies directly and strengthens the audio test.
+See [current evidence](evidence/v2/submission-final.json) before recording.
+
 ## Hosted demo
 
 The hosted demo is at **https://sawt-demo.vercel.app** and uses a separately shared
@@ -56,6 +64,8 @@ LIVEKIT_URL=wss://your-project.livekit.cloud
 LIVEKIT_API_KEY=your-project-api-key
 LIVEKIT_API_SECRET=your-project-api-secret
 ```
+
+The V31 candidate keeps GPT-Live for listening/timing and social replies, and uses streamed TTS for the exact validated restaurant reply. Both use Marin by default.
 
 Keep the model defaults in `.env.example` unless your account requires an explicitly validated alternative. `SAWT_VOICE=marin` controls the V2 live voice, exact readback and recovery voice together. `TTS_VOICE` is the legacy V1 setting. Changing `LLM_MODEL` changes the tool planner, not the GPT-Live voice model.
 
@@ -109,7 +119,8 @@ flowchart LR
   Planner --> Rules[Menu and order rules]
   Rules --> DB[(Neon Postgres / local SQLite)]
   DB --> Reply[Actual saved change / next missing question]
-  Reply --> Voice
+  Reply --> Speech[Exact business reply speech]
+  Speech --> LK
   DB --> Readback[Exact checkout speech]
   Readback --> UI
   UI --> Receipt[Completed current playback receipt]
@@ -138,7 +149,7 @@ Paid provider checks (no Chrome automation):
 python scripts/v2_interaction_eval.py
 python scripts/v2_release_replay.py
 # Full deployed voice suite, sequential calls, stops at first failed gate:
-python scripts/v2_cloud_suite.py --release conversation-v14
+python scripts/v2_cloud_suite.py --release conversation-v31
 # Requires the API and voice worker running on localhost:8766:
 python scripts/v2_recognition_replay.py --edges
 ```
