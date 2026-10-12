@@ -93,7 +93,6 @@ class RestaurantVoice(Agent):
         self.ending = False
         self.provider_ready = asyncio.Event()
         self.input_ready = asyncio.Event()
-        self.commentary_receipts = {}
         self.recorder = CallRecorder(RUNTIME / 'recordings', sid)
         self.audit_writer = AuditWriter(tx, sid)
 
@@ -151,7 +150,7 @@ class RestaurantVoice(Agent):
         if self.provider_failed or self.ending:
             return
         self.duplex_session.append_commentary(say('greeting'))
-        await asyncio.to_thread(tx.event, self.sid, 'voice.connected', {'transport': 'livekit', 'model': 'gpt-live-1', 'recognition_policy':'contextual-draft-v9', 'release':'conversation-v30'})
+        await asyncio.to_thread(tx.event, self.sid, 'voice.connected', {'transport': 'livekit', 'model': 'gpt-live-1', 'recognition_policy':'contextual-draft-v9', 'release':'conversation-v31'})
         await self.send('ready')
 
     def on_client_event(self, event):
@@ -166,10 +165,6 @@ class RestaurantVoice(Agent):
             return
         if kind == 'session.started':
             self.provider_ready.set()
-        if kind == 'session.commentary.appended':
-            receipt = self.commentary_receipts.get(event.get('client_event_id'))
-            if receipt is not None and not receipt.done():
-                receipt.set_result(None)
         if kind == 'session.output_audio.delta':
             self.recorder.append('generated-assistant', event.get('delta', ''))
         if kind == 'session.input_transcript.delta':
@@ -215,7 +210,7 @@ class RestaurantVoice(Agent):
         await asyncio.to_thread(tx.interrupt, self.sid, close=True)
         try:
             if self.room.isconnected():
-                await self.send('error', fatal=True, message=message or say('voice_error'))
+                await self.send('error', fatal=True, code='credit_balance_exhausted' if message==CALLS_UNAVAILABLE else 'voice_unavailable', message=message or say('voice_error'))
         finally:
             await self.media_session.aclose()
             await self.room.disconnect()
@@ -227,6 +222,7 @@ class RestaurantVoice(Agent):
         # Suppress speculative order speech while the caller's business turn is
         # unresolved. The microphone and the model's listening remain enabled.
         if route != 'social' and not self.output_held:
+            if getattr(self,'audio_gate',None):self.audio_gate.allow_model(False)
             self.output_held = True
             set_output_enabled(self, False)
         if event.is_final:
@@ -241,6 +237,7 @@ class RestaurantVoice(Agent):
                 self.consumed = len(self.fragments)
                 self.waiting = False
                 self.output_held = False
+                if getattr(self,'audio_gate',None):self.audio_gate.allow_model(True)
                 set_output_enabled(self, True)
 
     async def verify_transcript(self, start, end, text, epoch):
@@ -371,6 +368,8 @@ class RestaurantVoice(Agent):
         # used to wait for full synthesis before producing even its first word.
         stream=self.provider.speech_chunks(text,'pcm')
         speech=None
+        gate=getattr(self,'audio_gate',None)
+        permit=None
         started=time.monotonic()
         self.audit('voice.explicit_playback',{'stage':'requested'})
         try:
@@ -381,58 +380,38 @@ class RestaurantVoice(Agent):
             async def frames():
                 from sawt.speech_stream import pcm_frames
                 async for data in pcm_frames(first,stream):
+                    if gate:
+                        if gate.playback_permit is not permit:return
+                        gate.bind_playback(permit)
                     self.recorder.append('generated-assistant',base64.b64encode(data).decode())
                     yield rtc.AudioFrame(data,24000,1,len(data)//2)
             await self.session.interrupt(force=True)
             self.audit('voice.explicit_playback',{'stage':'interrupted','duration_ms':round((time.monotonic()-started)*1000)})
             if can_play and not await can_play():return
+            if gate:
+                gate.allow_model(False)
+                permit=gate.begin_playback()
             set_output_enabled(self, True)
             speech = self.session.say(text,audio=frames())
             await speech.wait_for_playout()
             self.audit('voice.explicit_playback',{'stage':'completed','duration_ms':round((time.monotonic()-started)*1000)})
         finally:
+            if gate and permit is not None:gate.end_playback(permit)
             if speech is not None and not speech.done():
                 speech.interrupt(force=True)
                 await asyncio.wait_for(speech.wait_for_playout(),2)
             await stream.aclose()
 
-    async def ensure_reply(self, text, started, end, epoch):
-        """Recover missing duplex speech without replaying stale/answered turns."""
-        async def needed():
-            if (self.ending or self.waiting or self.reading or self.output_held
-                    or len(self.fragments) != end or self.last_output_audio > started):
-                return False
-            row = await asyncio.to_thread(tx.load, self.sid)
-            return not row['closed'] and row['epoch'] == epoch
-        await asyncio.sleep(1.5)
-        if await needed():
-            self.audit('voice.reply_fallback', {'reason': 'no_audible_duplex_reply'})
-            await self.play_message(text, can_play=needed)
-        else:
-            self.audit('voice.reply_observed', {'audible':self.last_output_audio > started,
-                'new_speech':len(self.fragments)!=end,'held':self.output_held,
-                'waiting':self.waiting,'reading':self.reading,'ending':self.ending})
-
-    async def inject_verified_reply(self, speech, delegation_id):
-        # Queueing context does not mean the model has received it. Reopening
-        # output before its receipt can expose "let me check" from the old turn.
-        # This receipt is only an injection boundary, never a playback receipt.
-        event_id='sawt-reply-'+uuid.uuid4().hex
-        receipt=asyncio.get_running_loop().create_future()
-        self.commentary_receipts[event_id]=receipt
-        started=time.monotonic()
-        try:
-            self.duplex_session.send_event({'type':'session.commentary.append',
-                'event_id':event_id,'delegation_id':delegation_id,'content':speech})
-            try:
-                await asyncio.wait_for(receipt,1)
-                accepted=True
-            except TimeoutError:
-                accepted=False
-            self.audit('voice.reply_injected',{'acknowledged':accepted,
-                'wait_ms':round((time.monotonic()-started)*1000)})
-        finally:
-            self.commentary_receipts.pop(event_id,None)
+    async def speak_verified_reply(self, text, end, epoch):
+        async def current():
+            if self.ending or self.waiting or self.reading or len(self.fragments)!=end:return False
+            row=await asyncio.to_thread(tx.load,self.sid)
+            return not row['closed'] and row['epoch']==epoch
+        if not await current():return
+        if getattr(self,'audio_gate',None):self.audio_gate.allow_model(False)
+        self.output_held=False
+        self.audit('voice.verified_speech',{'source':'exact_backend_text'})
+        await self.play_message(text,can_play=current)
 
     def on_delegation(self, delegation):
         if getattr(self,'ending',False):return
@@ -513,6 +492,7 @@ class RestaurantVoice(Agent):
             if route == 'social':
                 self.consumed = end
                 self.waiting = self.output_held = False
+                if getattr(self,'audio_gate',None):self.audio_gate.allow_model(True)
                 set_output_enabled(self, True)
                 await self.send('updated', epoch=row['epoch'])
                 return
@@ -548,17 +528,15 @@ class RestaurantVoice(Agent):
                 reply_row = await asyncio.to_thread(tx.load, self.sid)
                 if reply_row['closed'] or end != len(self.fragments):
                     raise Conflict('New caller speech before reply injection')
-                self.duplex_session.append_thinking(verified, delegation_id=delegation_id)
-                await self.inject_verified_reply(speech, delegation_id)
+                if getattr(self,'audio_gate',None):self.audio_gate.allow_model(False)
+                self.duplex_session.append_thinking(verified+' The application will speak this exact result; do not repeat it: '+speech, delegation_id=delegation_id)
                 current = await asyncio.to_thread(tx.load, self.sid)
                 output_epoch = current['epoch']
                 if current['closed'] or end != len(self.fragments) or output_epoch != reply_row['epoch']:
                     raise Conflict('New caller speech before audible reply')
                 self.output_held = False
-                output_started = time.monotonic()
-                set_output_enabled(self, True, at_boundary=True)
-                self.spawn(self.ensure_reply(result['reply'], output_started, end, output_epoch))
                 await self.send('updated', epoch=output_epoch)
+                await self.speak_verified_reply(result['reply'],end,output_epoch)
         except ProviderQuotaError:
             self.provider_failed = True
             self.audit('voice.provider_unavailable', {'reason':'credit_balance_exhausted'})

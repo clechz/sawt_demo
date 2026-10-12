@@ -22,6 +22,11 @@ TURNS=[
     step('لا خلها اثنين.',items={'sandwiches_07':{'quantity':2}}),
 ]
 
+
+def check_fulfillment_speech(heard):
+    assert 'توصيل' in heard and any(word in heard for word in ('تستلم','استلام','تستلمه')),'Saved bread must lead to fulfillment question, not a new bread question'
+    assert 'أسمر' not in heard and 'اسمر' not in heard,'Voice invented unavailable bread after saving saj'
+
 class ReviewedCall(VoiceCall):
     def __init__(self,client):
         super().__init__(client);self.frames=[]
@@ -100,6 +105,7 @@ async def main():
                     report['turns'].append(result)
                     assert result['latency_passed'],'Received-speech turn exceeded its six-second stall threshold'
                     if index==0:assert 'دجاج' in heard and 'لحم' in heard,'Audible dish clarification missing'
+                    if index==1:check_fulfillment_speech(heard)
                     if index in (2,3):assert not ('توصيل' in heard and 'استلام' in heard),'Audible service question repeated after pickup'
                     if result['speech_source']=='received_livekit_audio':
                         assert not any(x in heard for x in ['وعليكم السلام','خلني أراجع','دقيقة أتأكد']),'Unrelated greeting or repetitive filler'

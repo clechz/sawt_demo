@@ -24,11 +24,12 @@ def test_cloud_runner_stops_on_failure_and_records_incomplete_gates(monkeypatch,
         assert call.kwargs['env']['SAWT_EXPECT_WORKER_RELEASE']=='expected-release'
 
 
-def test_release_mismatch_stops_even_when_independent_failures_can_continue(monkeypatch,tmp_path):
+@pytest.mark.parametrize('error',['Unexpected worker release','credit_balance_exhausted'])
+def test_release_or_billing_failure_stops_even_when_independent_failures_can_continue(monkeypatch,tmp_path,error):
     monkeypatch.setattr(suite,'ROOT',tmp_path)
     monkeypatch.setattr(sys,'argv',['suite','--release','expected','--continue-on-failure'])
     monkeypatch.setattr(suite,'preflight',AsyncMock())
-    run=Mock(return_value=SimpleNamespace(returncode=1,stdout='',stderr='AssertionError: Unexpected worker release'))
+    run=Mock(return_value=SimpleNamespace(returncode=1,stdout='',stderr=error))
     monkeypatch.setattr(suite.subprocess,'run',run)
     assert suite.main()==1
     run.assert_called_once()

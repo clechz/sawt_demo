@@ -279,17 +279,6 @@ def test_dropped_price_prefix_preserves_information_intent_only_for_identical_di
     assert reconcile_transcripts('لا تضيف شاورما','ضيف شاورما')=='ضيف شاورما'
 
 
-@pytest.mark.parametrize('reason',['audible','new_speech','closed','epoch','waiting','reading','held','ending','missing'])
-def test_missing_reply_fallback_never_replays_answered_or_stale_turn(monkeypatch,reason):
-    monkeypatch.setattr(voice_worker.asyncio,'sleep',AsyncMock())
-    monkeypatch.setattr(voice_worker.tx,'load',Mock(return_value={'closed':reason=='closed','epoch':2 if reason=='epoch' else 1}))
-    voice=SimpleNamespace(sid='s',ending=reason=='ending',waiting=reason=='waiting',reading=reason=='reading',output_held=reason=='held',
-        fragments=['a','b'] if reason=='new_speech' else ['a'],last_output_audio=11 if reason=='audible' else 0,
-        audit=Mock(),play_message=AsyncMock())
-    asyncio.run(voice_worker.RestaurantVoice.ensure_reply(voice,'verified answer',10,1,1))
-    assert voice.play_message.await_count==(1 if reason=='missing' else 0)
-
-
 def test_reply_fallback_rechecks_after_speech_generation(monkeypatch):
     closed=[]
     async def chunks(*args):
@@ -303,6 +292,19 @@ def test_reply_fallback_rechecks_after_speech_generation(monkeypatch):
     guard.assert_awaited_once()
     voice.session.say.assert_not_called()
     assert closed==[True]
+
+
+@pytest.mark.parametrize('reason',['current','new_speech','epoch','closed','waiting','reading','ending'])
+async def test_exact_business_speech_requires_current_uninterrupted_turn(monkeypatch,reason):
+    monkeypatch.setattr(voice_worker.tx,'load',Mock(return_value={'closed':reason=='closed','epoch':2 if reason=='epoch' else 1}))
+    voice=SimpleNamespace(sid='s',ending=reason=='ending',waiting=reason=='waiting',reading=reason=='reading',
+        fragments=['a','b'] if reason=='new_speech' else ['a'],output_held=True,audio_gate=Mock(),audit=Mock(),play_message=AsyncMock())
+    await voice_worker.RestaurantVoice.speak_verified_reply(voice,'تبيه توصيل ولا تستلمه؟',1,1)
+    assert voice.play_message.await_count==(1 if reason=='current' else 0)
+    if reason=='current':
+        voice.audio_gate.allow_model.assert_called_once_with(False)
+        assert voice.play_message.call_args.args[0]=='تبيه توصيل ولا تستلمه؟'
+        assert await voice.play_message.call_args.kwargs['can_play']()
 
 
 def test_streaming_reply_rechecks_new_input_after_interrupting_old_audio():

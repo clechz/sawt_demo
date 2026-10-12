@@ -15,7 +15,7 @@ from livekit import rtc
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
 from scripts.v2_recognition_replay import decode
 from sawt.v2_provider import V2Provider
-from scripts.cloud_test_capacity import create_call
+from scripts.cloud_test_capacity import create_call, assert_provider_available
 
 ROOT=Path(__file__).resolve().parents[1]
 BASE='https://sawt-demo.vercel.app'
@@ -66,16 +66,20 @@ async def main():
             await room.local_participant.publish_track(track,rtc.TrackPublishOptions(source=rtc.TrackSource.SOURCE_MICROPHONE))
             pump_task=asyncio.create_task(pump())
             async with asyncio.timeout(60):
-                while not any(e.get('type')=='ready' for e in events):await asyncio.sleep(.2)
+                while not any(e.get('type')=='ready' for e in events):
+                    assert_provider_available(events)
+                    await asyncio.sleep(.2)
             await asyncio.sleep(7)
             cursor=0
             async def state():
                 nonlocal cursor
+                assert_provider_available(events)
                 while True:
                     response=await client.get('/api/calls/'+call['id'],headers=auth,params={'after':cursor});response.raise_for_status();saved=response.json()
                     batch=saved['events'];audit_events.extend(batch)
                     if batch:cursor=batch[-1]['sequence']
                     if len(batch)<500:break
+                assert_provider_available(audit_events)
                 return {**saved,'events':list(audit_events)}
             async def turn(name):
                 prior=await state();floor=max((e['sequence'] for e in prior['events']),default=0)

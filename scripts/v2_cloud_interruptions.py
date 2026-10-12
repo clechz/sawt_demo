@@ -86,6 +86,8 @@ async def main():
                 if call.call:
                     try:row['failed_state']=await call.state()
                     except Exception:pass
+                from sawt.v2_provider import ProviderQuotaError
+                if isinstance(exc,ProviderQuotaError):raise
             finally:
                 await call.close()
                 args.output.write_text(json.dumps(report,ensure_ascii=False,indent=2),encoding='utf8')

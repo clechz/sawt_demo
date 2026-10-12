@@ -4,6 +4,24 @@ from unittest.mock import AsyncMock
 from scripts import cloud_test_capacity as capacity
 
 
+@pytest.mark.parametrize('event',[
+    {'type':'error','fatal':True,'code':'credit_balance_exhausted'},
+    {'type':'error','fatal':True,'message':capacity.CALLS_UNAVAILABLE},
+    {'kind':'voice.provider_unavailable','payload':{'reason':'credit_balance_exhausted'}}])
+def test_billing_failure_stops_before_another_synthetic_call(event):
+    with pytest.raises(capacity.ProviderQuotaError,match='credit_balance_exhausted'):
+        capacity.assert_provider_available([{'type':'ready'},event])
+
+
+def test_fatal_provider_error_does_not_wait_for_a_voice_timeout():
+    with pytest.raises(RuntimeError,match='provider failed'):
+        capacity.assert_provider_available([{'type':'error','fatal':True}])
+
+
+def test_normal_completion_and_recoverable_errors_do_not_look_like_billing():
+    capacity.assert_provider_available([{'kind':'call.closed'}, {'type':'error','fatal':False}, {'type':'ready'}])
+
+
 def response(status,body):
     return httpx.Response(status,json=body,request=httpx.Request('POST','https://example.test/api/calls'))
 

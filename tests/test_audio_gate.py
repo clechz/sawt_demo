@@ -1,7 +1,54 @@
 import array
+import asyncio
 from livekit import rtc
 from livekit.agents.voice.io import AudioOutput, AudioOutputCapabilities
 from sawt.audio_gate import SpeechGate
+
+
+async def test_explicit_speech_permission_cannot_unmute_parallel_model_audio():
+    sink=Sink();gate=SpeechGate(sink,lambda at:None);gate.allow_model(False)
+    permit=gate.begin_playback()
+    frame=rtc.AudioFrame(array.array('h',[1000]*240).tobytes(),24000,1,240)
+    async def direct():
+        gate.bind_playback(permit)
+        await gate.capture_frame(frame)
+    await asyncio.create_task(direct())
+    await gate.capture_frame(frame)
+    assert any(sink.frames[0]) and not any(sink.frames[1])
+
+
+async def test_new_input_revokes_explicit_speech_even_after_output_reenabled():
+    sink=Sink();gate=SpeechGate(sink,lambda at:None);gate.allow_model(False)
+    permit=gate.begin_playback()
+    frame=rtc.AudioFrame(array.array('h',[1000]*240).tobytes(),24000,1,240)
+    gate.bind_playback(permit)
+    gate.set_enabled(False);gate.set_enabled(True)
+    await gate.capture_frame(frame)
+    assert not any(sink.frames[-1])
+
+
+async def test_old_playback_cleanup_cannot_cancel_new_authorized_speech():
+    sink=Sink();gate=SpeechGate(sink,lambda at:None);gate.allow_model(False)
+    old=gate.begin_playback();current=gate.begin_playback();gate.end_playback(old)
+    gate.bind_playback(current)
+    frame=rtc.AudioFrame(array.array('h',[1000]*240).tobytes(),24000,1,240)
+    await gate.capture_frame(frame)
+    assert any(sink.frames[-1])
+    gate.end_playback(current)
+    await gate.capture_frame(frame)
+    assert not any(sink.frames[-1])
+
+
+async def test_source_permission_survives_sdk_resampling():
+    from livekit.agents.voice.generation import perform_audio_forwarding
+    sink=Sink();sink._sample_rate=48000
+    gate=SpeechGate(sink,lambda at:None);gate.allow_model(False);permit=gate.begin_playback()
+    async def frames():
+        gate.bind_playback(permit)
+        yield rtc.AudioFrame(array.array('h',[1000]*2400).tobytes(),24000,1,2400)
+    task,_=perform_audio_forwarding(audio_output=gate,tts_output=frames(),reconcile_playout_pause=lambda:None)
+    await task
+    assert sink.frames and any(any(data) for data in sink.frames)
 
 class Sink(AudioOutput):
     def __init__(self):

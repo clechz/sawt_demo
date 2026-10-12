@@ -8,8 +8,8 @@ from pathlib import Path
 import httpx
 from livekit import rtc
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
-from sawt.v2_provider import V2Provider
-from scripts.cloud_test_capacity import create_call
+from sawt.v2_provider import V2Provider, ProviderQuotaError
+from scripts.cloud_test_capacity import create_call, assert_provider_available
 from scripts.v2_recognition_replay import decode
 ROOT=Path(__file__).resolve().parents[1]
 
@@ -115,14 +115,19 @@ class VoiceCall:
   self.pub=await self.room.local_participant.publish_track(self.track,rtc.TrackPublishOptions(source=rtc.TrackSource.SOURCE_MICROPHONE))
   self.pump_task=asyncio.create_task(self.pump())
   async with asyncio.timeout(60):
-   while not any(e.get('type')=='ready' for e in self.events):await asyncio.sleep(.2)
+   while not any(e.get('type')=='ready' for e in self.events):
+    assert_provider_available(self.events)
+    await asyncio.sleep(.2)
   await asyncio.sleep(6)
+  assert_provider_available(self.events)
  async def state(self):
+  assert_provider_available(self.events)
   while True:
    r=await self.client.get('/api/calls/'+self.call['id'],headers=self.auth,params={'after':self.cursor});r.raise_for_status();saved=r.json()
    events=saved['events'];self.audit_events.extend(events)
    if events:self.cursor=events[-1]['sequence']
    if len(events)<500:break
+  assert_provider_available(self.audit_events)
   return {**saved,'events':list(self.audit_events)}
  async def turn(self,pcm,spec,max_latency):
   before=await self.state();floor=max((e['sequence'] for e in before['events']),default=0)
@@ -226,6 +231,7 @@ async def main():
       try:record['failed_state']=await call.state()
       except Exception:pass
      print(json.dumps({'case':name,'passed':False,'error':record['error']}),flush=True)
+     if isinstance(exc,ProviderQuotaError):raise
     finally:
      await call.close()
      report['passed']=all(c['passed'] for c in report['cases'])
