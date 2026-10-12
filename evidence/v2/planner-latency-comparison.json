@@ -1,0 +1,314 @@
+{
+  "scope": "Planner only; same model, paired sequential development runs; no audio timing",
+  "runs": [
+    {
+      "batched": false,
+      "repeat": 0,
+      "ms": 5734,
+      "requests": [
+        {
+          "ms": 979,
+          "tools": [
+            "set_service"
+          ]
+        },
+        {
+          "ms": 488,
+          "tools": [
+            "list_branches"
+          ]
+        },
+        {
+          "ms": 536,
+          "tools": [
+            "set_branch"
+          ]
+        },
+        {
+          "ms": 535,
+          "tools": [
+            "search_menu"
+          ]
+        },
+        {
+          "ms": 603,
+          "tools": [
+            "add_item"
+          ]
+        },
+        {
+          "ms": 658,
+          "tools": [
+            "search_menu"
+          ]
+        },
+        {
+          "ms": 1043,
+          "tools": [
+            "add_item"
+          ]
+        },
+        {
+          "ms": 799,
+          "tools": [
+            "ask_choice"
+          ]
+        }
+      ],
+      "checks": {
+        "items": true,
+        "quantities": true,
+        "pickup_branch": true,
+        "no_order": true,
+        "sugar_proposal": true
+      },
+      "reply": "ضفت 3 من معصوب ملكي. ضفت 1 من شاي كرك. الاستلام من فرع النرجس بالرياض. بالنسبة لـشاي كرك، تقصد نصف سكر؟",
+      "passed": true
+    },
+    {
+      "batched": true,
+      "repeat": 0,
+      "ms": 4042,
+      "requests": [
+        {
+          "ms": 2100,
+          "tools": [
+            "list_branches",
+            "search_menu",
+            "search_menu"
+          ]
+        },
+        {
+          "ms": 1227,
+          "tools": [
+            "set_service",
+            "set_branch",
+            "add_item",
+            "add_item"
+          ]
+        },
+        {
+          "ms": 656,
+          "tools": [
+            "ask_choice"
+          ]
+        }
+      ],
+      "checks": {
+        "items": true,
+        "quantities": true,
+        "pickup_branch": true,
+        "no_order": true,
+        "sugar_proposal": true
+      },
+      "reply": "ضفت 3 من معصوب ملكي. ضفت 1 من شاي كرك. الاستلام من فرع النرجس بالرياض. بالنسبة لـشاي كرك، تقصد نصف سكر؟",
+      "passed": true
+    },
+    {
+      "batched": true,
+      "repeat": 1,
+      "ms": 2960,
+      "requests": [
+        {
+          "ms": 831,
+          "tools": [
+            "list_branches",
+            "search_menu",
+            "search_menu"
+          ]
+        },
+        {
+          "ms": 1509,
+          "tools": [
+            "set_service",
+            "set_branch",
+            "add_item",
+            "add_item"
+          ]
+        },
+        {
+          "ms": 567,
+          "tools": [
+            "ask_choice"
+          ]
+        }
+      ],
+      "checks": {
+        "items": true,
+        "quantities": true,
+        "pickup_branch": true,
+        "no_order": true,
+        "sugar_proposal": true
+      },
+      "reply": "ضفت 3 من معصوب ملكي. ضفت 1 من شاي كرك. الاستلام من فرع النرجس بالرياض. بالنسبة لـشاي كرك، تقصد نصف سكر؟",
+      "passed": true
+    },
+    {
+      "batched": false,
+      "repeat": 1,
+      "ms": 5649,
+      "requests": [
+        {
+          "ms": 548,
+          "tools": [
+            "set_service"
+          ]
+        },
+        {
+          "ms": 553,
+          "tools": [
+            "list_branches"
+          ]
+        },
+        {
+          "ms": 1017,
+          "tools": [
+            "set_branch"
+          ]
+        },
+        {
+          "ms": 534,
+          "tools": [
+            "search_menu"
+          ]
+        },
+        {
+          "ms": 790,
+          "tools": [
+            "add_item"
+          ]
+        },
+        {
+          "ms": 632,
+          "tools": [
+            "search_menu"
+          ]
+        },
+        {
+          "ms": 737,
+          "tools": [
+            "add_item"
+          ]
+        },
+        {
+          "ms": 674,
+          "tools": [
+            "ask_choice"
+          ]
+        }
+      ],
+      "checks": {
+        "items": true,
+        "quantities": true,
+        "pickup_branch": true,
+        "no_order": true,
+        "sugar_proposal": true
+      },
+      "reply": "ضفت 3 من معصوب ملكي. ضفت 1 من شاي كرك. الاستلام من فرع النرجس بالرياض. بالنسبة لـشاي كرك، تقصد نصف سكر؟",
+      "passed": true
+    },
+    {
+      "batched": false,
+      "repeat": 2,
+      "ms": 7094,
+      "requests": [
+        {
+          "ms": 722,
+          "tools": [
+            "set_service"
+          ]
+        },
+        {
+          "ms": 756,
+          "tools": [
+            "list_branches"
+          ]
+        },
+        {
+          "ms": 676,
+          "tools": [
+            "set_branch"
+          ]
+        },
+        {
+          "ms": 529,
+          "tools": [
+            "search_menu"
+          ]
+        },
+        {
+          "ms": 771,
+          "tools": [
+            "add_item"
+          ]
+        },
+        {
+          "ms": 1694,
+          "tools": [
+            "search_menu"
+          ]
+        },
+        {
+          "ms": 804,
+          "tools": [
+            "add_item"
+          ]
+        },
+        {
+          "ms": 799,
+          "tools": [
+            "ask_choice"
+          ]
+        }
+      ],
+      "checks": {
+        "items": true,
+        "quantities": true,
+        "pickup_branch": true,
+        "no_order": true,
+        "sugar_proposal": true
+      },
+      "reply": "ضفت 3 من معصوب ملكي. ضفت 1 من شاي كرك. الاستلام من فرع النرجس بالرياض. بالنسبة لـشاي كرك، تقصد نصف سكر؟",
+      "passed": true
+    },
+    {
+      "batched": true,
+      "repeat": 2,
+      "ms": 3013,
+      "requests": [
+        {
+          "ms": 1047,
+          "tools": [
+            "list_branches",
+            "search_menu",
+            "search_menu"
+          ]
+        },
+        {
+          "ms": 1096,
+          "tools": [
+            "set_service",
+            "set_branch",
+            "add_item",
+            "add_item"
+          ]
+        },
+        {
+          "ms": 608,
+          "tools": [
+            "ask_choice"
+          ]
+        }
+      ],
+      "checks": {
+        "items": true,
+        "quantities": true,
+        "pickup_branch": true,
+        "no_order": true,
+        "sugar_proposal": true
+      },
+      "reply": "ضفت 3 من معصوب ملكي. ضفت 1 من شاي كرك. الاستلام من فرع النرجس بالرياض. بالنسبة لـشاي كرك، تقصد نصف سكر؟",
+      "passed": true
+    }
+  ]
+}

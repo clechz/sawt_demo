@@ -68,6 +68,12 @@ High-frequency diagnostic writes now run through a bounded background queue and 
 
 Verification adds latency: settlement, transcription, tool calls and speech scheduling remain sequential for business turns. We do not claim the hosted-model feel of unrestricted social chat. Stage timings and end-to-end first useful audible response must both be measured. A future faster policy must pass the same order-invariant tests; removing confirmation or guessing through uncertainty is not an acceptable optimization.
 
+The V2 planner now returns independent lookups and known edits in batches (up to eight calls per response, ten tools total). Execution is still sequential against a staged copy, with validation and duplicate protection on each operation. Terminal tools must be alone; a mixed terminal batch executes nothing and requests repair. The same revision/epoch commit and heard-readback confirmation gates remain in place. GPT-Live and GPT-4.1 are unchanged.
+
+Three paired development runs of the same two-item Arabic request reduced planner requests from eight to three and median planner time from 5.734 to 3.013 seconds. A public HTTPS/LiveKit synthetic replay observed saved-state completion at 6.00 seconds after input, versus the prior 9.78 seconds. Received audible output after completion was detected at 6.88 seconds. This is a small development sample, not a latency SLO or human assessment; received RMS does not establish the semantic first useful word. Reproduce planner comparison with `python scripts/v2_latency_compare.py` (paid API calls).
+
+The final rerun after accuracy repairs observed completion at 5.78 seconds and post-completion audio at 6.47 seconds; all 422 offline tests passed. The host also had only 321 MB free RAM during this work; stale workspace test processes were stopped. These observations do not isolate host paging from provider/network variance. Accuracy replays exposed and repaired service-change-only responses, skipped food saves after fulfillment edits, repeated-summary quote gating, and empty full-address calls that should save partial fields.
+
 ## Failure behavior and production boundary
 
 No usable transcript means clarification. Failed speculative planner work does not commit. Failed TTS does not mark a quote heard. Cancellation clears only an unconfirmed draft and keeps the call open. Explicit hang-up has a bounded closing line; the End button disconnects directly. Missing ingredients, hours and live tracking cannot be inferred from dish names or free-text notes.

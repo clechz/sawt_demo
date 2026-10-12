@@ -1,7 +1,7 @@
 {
   "url": "https://wellington-harper-curves-jackson.trycloudflare.com",
   "kind": "real_https_and_livekit_synthetic_voice",
-  "call_id": "6220bfdacd7747c99a827fa170d0d16d",
+  "call_id": "d5e6a13dbc384c9b9ccfeb8b08c4b5fa",
   "checks": {
     "anonymous_blocked": true,
     "login": true,
@@ -14,14 +14,18 @@
     "two_expected_dishes": true,
     "no_unconfirmed_order": true,
     "received_voice_audio": true,
+    "response_audio_after_saved_order": true,
+    "quantities_correct": true,
     "closed": true
   },
-  "received_audio_frames": 3113,
-  "seconds_after_input": 10.74,
+  "received_audio_frames": 2696,
+  "seconds_after_input": 5.78,
+  "first_audio_after_completed_seconds": 6.47,
+  "timing_note": "Completion is HTTP-poll observed. Audio is received RMS after completion, not semantic verification or exact first response onset.",
   "basket": [
     {
       "item_id": "breakfast_06",
-      "line_id": "df495b97",
+      "line_id": "d2b2b2c9",
       "notes": "",
       "options": {
         "bread": [
@@ -44,7 +48,7 @@
     },
     {
       "item_id": "beverages_09",
-      "line_id": "14b48ddd",
+      "line_id": "1afee438",
       "notes": "",
       "options": {
         "ice": [

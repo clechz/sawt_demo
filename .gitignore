@@ -22,3 +22,4 @@ evidence/v2/*
 !evidence/v2/private-demo-smoke.json
 !evidence/v2/open-model-pins.json
 !evidence/v2/README.md
+!evidence/v2/planner-latency-comparison.json

@@ -11,7 +11,8 @@ STYLE = ('Speak clear, broadly Saudi Arabic with a light regional accent. Warm, 
 
 
 class V2Provider(OpenAIProvider):
-    def __init__(self):
+    def __init__(self, *, batch_tools=True):
+        self.supports_tool_batches = batch_tools
         self._client = None
         self._loop = None
 
@@ -49,6 +50,16 @@ class V2Provider(OpenAIProvider):
             return response
         except httpx.HTTPError as exc:
             raise ProviderError('تعذر الاتصال بالخدمة. حاول مرة ثانية أو اطلب موظفاً.') from exc
+
+    async def chat(self, messages, tools):
+        result = await self.request('chat/completions', json={
+            'model': config()['llm'], 'messages': messages, 'tools': tools,
+            'parallel_tool_calls': self.supports_tool_batches,
+            'temperature': .2, 'max_tokens': 1200 if self.supports_tool_batches else 800})
+        try:
+            return result.json()['choices'][0]['message']
+        except (KeyError, ValueError, IndexError, TypeError) as exc:
+            raise ProviderError('استجابة النموذج غير صالحة. حاول مرة ثانية.') from exc
 
     async def stream_speech(self, text):
         cfg = config()

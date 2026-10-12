@@ -72,7 +72,8 @@ def test_summary_preserves_delivery_details_and_omits_pickup_fee(setup):
 def test_same_item_prefix_is_not_repeated():
     assert combine('بالنسبة لـشاي كرك، خليته بدون ثلج.','بالنسبة لـشاي كرك، الحجم صغير ولا كبير؟')=='بالنسبة لـشاي كرك، خليته بدون ثلج. الحجم صغير ولا كبير؟'
 
-def test_finished_order_gets_readback_without_another_sales_question(setup,monkeypatch,tmp_path):
+@pytest.mark.parametrize('utterance',['خلاص','اقرأ لي ملخص الطلب من جديد.'])
+def test_finished_order_gets_readback_without_another_sales_question(setup,monkeypatch,tmp_path,utterance):
     import asyncio
     from types import SimpleNamespace
     from unittest.mock import AsyncMock
@@ -85,7 +86,7 @@ def test_finished_order_gets_readback_without_another_sales_question(setup,monke
     tx.commit_bundle(sid,'seed',0,0,state,[],response={})
     monkeypatch.setattr(runtime,'tx',tx)
     provider=SimpleNamespace(chat=AsyncMock(return_value={'content':'باقي شي تضيفه؟'}))
-    result=asyncio.run(runtime.delegate(sid,'خلاص','finished',0,voice_provider=provider))
+    result=asyncio.run(runtime.delegate(sid,utterance,'finished',0,voice_provider=provider))
     assert result['state']['quote'] and not result['state']['order_id']
     assert result['reply']==engine.summary(tx.load(sid)['state'])
     assert 'باقي شي' not in result['reply']

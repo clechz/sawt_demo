@@ -13,6 +13,10 @@ private call histories, credentials and local databases are excluded.
   queued diagnostics, burst invalidation and shorter settlement.
 - `private-demo-smoke.json`: HTTPS gateway and real-media synthetic smoke test;
   the temporary URL depends on the development host staying online.
+- `planner-latency-comparison.json`: three paired serial/batched planner runs
+  using identical synthetic wording and the same model. This measures backend
+  processing, not speech latency. The public smoke separately measures received
+  audible output after saved-state completion.
 - `open-model-pins.json`: research checkpoint references, not benchmark results.
 
 Passing these cases is not a held-out reliability score, native accent rating or

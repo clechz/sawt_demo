@@ -4,6 +4,8 @@ Reads credentials only from ignored runtime/private-demo.json. Requires the
 pre-generated runtime/release-order.mp3 fixture. Never outputs credentials.
 """
 import asyncio
+import array
+import math
 import json
 import sys
 import time
@@ -17,12 +19,16 @@ ROOT=Path(__file__).resolve().parents[1]
 async def main():
     config=json.loads((ROOT/'runtime/private-demo.json').read_text(encoding='utf8'))
     base=config['url']; checks={}; frames=0; events=[]; tasks=[]; call=None; source=None; publication=None
-    room=rtc.Room()
+    room=rtc.Room(); audible=[]
     async def listen(track):
         nonlocal frames
         stream=rtc.AudioStream(track)
         try:
-            async for _ in stream: frames+=1
+            async for packet in stream:
+                frames+=1
+                samples=array.array('h',packet.frame.data.tobytes())
+                rms=math.sqrt(sum(x*x for x in samples)/max(1,len(samples)))/32768
+                if rms>.01:audible.append(time.monotonic())
         finally:
             await stream.aclose()
     @room.on('track_subscribed')
@@ -65,13 +71,20 @@ async def main():
                     response.raise_for_status();saved=response.json()
                     if any(e['kind']=='delegation.completed' for e in saved['events']):break
                     await asyncio.sleep(.5)
+            completed=time.monotonic()
+            async with asyncio.timeout(20):
+                while not any(t>completed for t in audible):await asyncio.sleep(.05)
             state=saved['state']
             checks['heard_synthetic_caller']=any(e['kind']=='transcript.user' for e in saved['events'])
             checks['two_expected_dishes']={x['item_id'] for x in state['basket']}=={'breakfast_06','beverages_09'}
             checks['no_unconfirmed_order']=not state['order_id']
             checks['received_voice_audio']=frames>0
+            checks['response_audio_after_saved_order']=any(t>completed for t in audible)
+            checks['quantities_correct']={x['item_id']:x['quantity'] for x in state['basket']}=={'breakfast_06':3,'beverages_09':1}
             report={'url':base,'kind':'real_https_and_livekit_synthetic_voice','call_id':call['id'],
-                    'checks':checks,'received_audio_frames':frames,'seconds_after_input':round(time.monotonic()-started,2),
+                    'checks':checks,'received_audio_frames':frames,'seconds_after_input':round(completed-started,2),
+                    'first_audio_after_completed_seconds':round(next(t for t in audible if t>completed)-started,2),
+                    'timing_note':'Completion is HTTP-poll observed. Audio is received RMS after completion, not semantic verification or exact first response onset.',
                     'basket':state['basket'],'passed':all(checks.values())}
         finally:
             if call:

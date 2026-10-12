@@ -60,4 +60,5 @@ def finished_order(text):
     # Whole requests only; mixed/negated requests stay with the planner.
     return normalize(text) in {normalize(x) for x in (
         'هذا كل الطلب', 'هذا طلبي', 'بس كذا', 'خلاص', 'اقرأ الطلب',
-        'اقرأ الملخص', 'اقرأ ملخص الطلب', 'خلاص هذا الطلب', 'كذا خلصت')}
+        'اقرأ الملخص', 'اقرأ ملخص الطلب', 'اقرأ لي ملخص الطلب من جديد',
+        'خلاص هذا الطلب', 'كذا خلصت')}

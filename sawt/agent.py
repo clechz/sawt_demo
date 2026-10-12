@@ -115,6 +115,11 @@ class Agent:
         reminded_to_save = False
         reminded_choice = False
         reminded_address = False
+        reminded_service = False
+        tool_count = 0
+        batching = getattr(self.provider, 'supports_tool_batches', False)
+        if batching:
+            messages[0]['content'] += '\nLatency policy: return independent tool calls together in one response. They execute IN ORDER, not concurrently. Batch independent searches, then batch known valid edits. Do not repeat list_branches/get_item when their exact results are already in CURRENT STATE or this turn. Terminal tools (ask_choice, checkout, confirm, handoff, offer_handoff, cancel_draft) must be called ALONE, after edits. Never guess IDs or omit validation to reduce calls.'
         for step in range(10):
             message = await self.provider.chat(messages, TOOLS)
             if not isinstance(message, dict): raise ProviderError('استجابة النموذج غير صالحة.')
@@ -122,6 +127,11 @@ class Agent:
             if not calls:
                 reply = message.get('content')
                 if not isinstance(reply, str) or not reply.strip(): raise ProviderError('استجابة فارغة. حاول مرة ثانية.')
+                requested_service = re.search(r'(?:غيرها|رجعها|خليها|خله|حولها)\s+(?:توصيل|استلام)', normalize(text))
+                if requested_service and not reminded_service and not any(e['tool']=='set_service' for e in events):
+                    reminded_service = True
+                    messages.append({'role':'system','content':'The caller explicitly requests a service change. You have not called set_service. Save it with tools, then save any stated branch/address with the appropriate tool; never claim a change from text alone. Do not invent missing fields.'})
+                    continue
                 if state['service']=='delivery' and not state['location'] and not reminded_address and step<8 and not any(e['tool'] in ('set_location','set_delivery_details') for e in events):
                     reminded_address=True
                     messages.append({'role':'system','content':'Before replying, check whether the latest caller message supplies ANY delivery address field. If yes, you MUST save it NOW using set_delivery_details, even only city, neighborhood, street, or building. Do not merely remember it in chat or ask the next field without saving. Supply only stated fields. If this is an unrelated question or contains no address detail, answer normally without changing address. Latest message: '+text})
@@ -135,40 +145,58 @@ class Agent:
                         continue
                 requested_food = re.search(r'\b(?:ابي|ابغي|اريد|ضيف|اضف|ابغالي|عطني|اعطني|هات|حطلي)\b', normalize(text))
                 inspected_menu = any(e['tool'] in ('search_menu', 'get_item') for e in events)
-                saved_change = state['revision'] != original['revision']
+                saved_change = state['basket'] != original['basket']
                 pending_answer = bool(original.get('pending_choice') and inspected_menu)
                 if (requested_food or pending_answer) and inspected_menu and not saved_change and not reminded_to_save and step < 8:
                     reminded_to_save = True
                     messages.append({'role': 'system', 'content': 'Your proposed response did not save the caller request. For a clear order command such as عطني كرك, you MUST call add_item NOW with the menu item ID, the quantity from the current conversation, options={} for unspecified choices, and notes="". Missing size/ice/sugar is NOT a reason to wait. For an option answer use update_item NOW for every clear field. Ask clarification only after saving. Only an information-only query or genuinely ambiguous dish may remain unsaved. Latest caller request: ' + text})
                     continue
                 return self.finish(state, text, reply, events)
-            if not isinstance(calls, list) or len(calls) != 1 or not isinstance(calls[0], dict) or not isinstance(calls[0].get('id'), str): raise ProviderError('استجابة أدوات غير صالحة. حاول مرة ثانية.')
+            if (not isinstance(calls, list) or not 1 <= len(calls) <= (8 if batching else 1)
+                    or any(not isinstance(c,dict) or not isinstance(c.get('id'),str) or not isinstance(c.get('function'),dict) for c in calls)
+                    or len({c['id'] for c in calls}) != len(calls)):
+                raise ProviderError('استجابة أدوات غير صالحة. حاول مرة ثانية.')
+            tool_count += len(calls)
+            if tool_count > 10:
+                raise ProviderError('تجاوز الطلب عدد الخطوات المسموح. لم نعتمد التغييرات الجديدة.')
+            terminal = {'ask_choice','checkout','confirm','handoff','offer_handoff','cancel_draft'}
+            if len(calls)>1 and any(c['function'].get('name') in terminal for c in calls):
+                messages.append({'role':'assistant','content':message.get('content'),'tool_calls':calls})
+                for c in calls:
+                    messages.append({'role':'tool','tool_call_id':c['id'],'content':'No tools in this batch executed. Call terminal tools alone after saving all changes.'})
+                continue
             messages.append({'role': 'assistant', 'content': message.get('content'), 'tool_calls': calls})
-            call = calls[0]
-            args = {}
-            try:
-                name = call['function']['name']; args = json.loads(call['function']['arguments'])
-                validate_args(name, args)
-                key = name + json.dumps(args, sort_keys=True, ensure_ascii=False)
-                if key in seen and name in ['add_item', 'update_item', 'replace_item', 'remove_item', 'set_location', 'set_delivery_details', 'set_branch', 'set_service']:
-                    result = seen[key]
-                else:
-                    await self.report(name)
-                    result = self.engine.act(state, name, args, utterance=text, can_confirm=False)
-                    seen[key] = result
-            except (RuleError, KeyError, TypeError, ValueError) as exc:
-                result = {'error': str(exc) if isinstance(exc, RuleError) else 'صيغة الأداة غير صالحة. صحح المعطيات.'}
-                # Give the model authoritative repair data after a bad option ID.
-                # Selected options in the state are not the complete menu schema.
-                if isinstance(args, dict) and call.get('function', {}).get('name') in ['add_item', 'update_item', 'replace_item']:
-                    item_id = args.get('item_id') or next((x['item_id'] for x in state['basket'] if x['line_id'] == args.get('line_id')), None)
-                    if item_id in self.engine.menu.items:
-                        result['valid_item_definition'] = self.engine.menu.get(item_id)
-                        result['repair_instruction'] = 'Use the exact IDs below and retry the failed change. A bad ID does not mean the requested size is unavailable.'
-            events.append({'tool': call.get('function', {}).get('name', 'invalid'), 'args': args if 'args' in locals() else {}, 'result': copy.deepcopy(result)})
-            if result.get('terminal'):
-                return self.finish(state, text, result['reply'], events)
-            messages.append({'role': 'tool', 'tool_call_id': call['id'], 'content': json.dumps(result, ensure_ascii=False)})
+            for call in calls:
+                args = {}
+                name = 'invalid'
+                try:
+                    name = call['function']['name']; args = json.loads(call['function']['arguments'])
+                    validate_args(name, args)
+                    if name == 'set_location' and not args['address'].strip():
+                        # Preserve explicitly supplied partial fields without
+                        # pretending an empty full address replaced an old one.
+                        name = 'set_delivery_details'
+                        args = {k: args[k] for k in ('city','zone') if args[k].strip()}
+                    key = name + json.dumps(args, sort_keys=True, ensure_ascii=False)
+                    if key in seen and name in ['add_item', 'update_item', 'replace_item', 'remove_item', 'set_location', 'set_delivery_details', 'set_branch', 'set_service']:
+                        result = seen[key]
+                    else:
+                        await self.report(name)
+                        result = self.engine.act(state, name, args, utterance=text, can_confirm=False)
+                        seen[key] = result
+                except (RuleError, KeyError, TypeError, ValueError) as exc:
+                    result = {'error': str(exc) if isinstance(exc, RuleError) else 'صيغة الأداة غير صالحة. صحح المعطيات.'}
+                    # Give the model authoritative repair data after a bad option ID.
+                    # Selected options in the state are not the complete menu schema.
+                    if isinstance(args, dict) and call.get('function', {}).get('name') in ['add_item', 'update_item', 'replace_item']:
+                        item_id = args.get('item_id') or next((x['item_id'] for x in state['basket'] if x['line_id'] == args.get('line_id')), None)
+                        if item_id in self.engine.menu.items:
+                            result['valid_item_definition'] = self.engine.menu.get(item_id)
+                            result['repair_instruction'] = 'Use the exact IDs below and retry the failed change. A bad ID does not mean the requested size is unavailable.'
+                events.append({'tool': name, 'args': args, 'result': copy.deepcopy(result)})
+                if result.get('terminal'):
+                    return self.finish(state, text, result['reply'], events)
+                messages.append({'role': 'tool', 'tool_call_id': call['id'], 'content': json.dumps(result, ensure_ascii=False)})
         raise ProviderError('تعذر إكمال الطلب خلال المهلة. لم نعتمد التغييرات الجديدة. حاول مرة ثانية.')
 
     def finish(self, state, text, reply, events):
