@@ -92,6 +92,8 @@ class RestaurantVoice(Agent):
         self.last_heard_quote = None
         self.provider_failed = False
         self.ending = False
+        self.provider_ready = asyncio.Event()
+        self.input_ready = asyncio.Event()
         self.recorder = CallRecorder(RUNTIME / 'recordings', sid)
         self.audit_writer = AuditWriter(tx, sid)
 
@@ -131,12 +133,30 @@ class RestaurantVoice(Agent):
         self.session.on('user_input_transcribed', self.on_transcript)
         self.spawn(self.watch_lifetime())
         self.spawn(self.watch_event_loop())
+        if self.duplex_session.session_id:
+            self.provider_ready.set()
+        self.spawn(self.announce_ready())
+
+    async def announce_ready(self):
+        # A joined room is not yet a working microphone/provider connection.
+        # Do not invite the caller to speak while startup audio is still queued.
+        try:
+            async with asyncio.timeout(25):
+                await self.provider_ready.wait()
+                await self.input_ready.wait()
+        except TimeoutError:
+            self.audit('voice.startup_failed', {'reason':'media_not_ready'})
+            await self.close_failed_voice()
+            return
+        if self.provider_failed or self.ending:
+            return
         self.duplex_session.append_commentary(say('greeting'))
-        await asyncio.to_thread(tx.event, self.sid, 'voice.connected', {'transport': 'livekit', 'model': 'gpt-live-1', 'recognition_policy':'contextual-draft-v7', 'release':'conversation-v18'})
+        await asyncio.to_thread(tx.event, self.sid, 'voice.connected', {'transport': 'livekit', 'model': 'gpt-live-1', 'recognition_policy':'contextual-draft-v7', 'release':'conversation-v19'})
         await self.send('ready')
 
     def on_client_event(self, event):
         if event.get('type') == 'session.input_audio.append':
+            self.input_ready.set()
             self.input_audio.append(event.get('audio', ''))
             self.recorder.append('caller', event.get('audio', ''))
 
@@ -144,6 +164,8 @@ class RestaurantVoice(Agent):
         kind = event.get('type', '')
         if self.provider_failed or getattr(self,'ending',False):
             return
+        if kind == 'session.started':
+            self.provider_ready.set()
         if kind == 'session.output_audio.delta':
             self.recorder.append('generated-assistant', event.get('delta', ''))
         if kind == 'session.input_transcript.delta':
@@ -246,6 +268,9 @@ class RestaurantVoice(Agent):
             self.audit('transcript.disagreement', {'reason':str(disagreement)})
             recovered = await asyncio.wait_for(self.provider.recognize(wav,
                 context='سؤال الموظف السابق (ليس جزءاً من تسجيل العميل): '+last_question, recovery=True),timeout=3)
+            row = await asyncio.to_thread(tx.load, self.sid)
+            if row['closed'] or row['epoch'] != epoch or end != len(self.fragments):
+                raise Conflict('Recovery recognition superseded')
             recovered = reconcile_transcripts(text, recovered)
             check_recognition(text, recovered)
             # Recovery must not erase a cancellation, question, negation or
@@ -413,6 +438,9 @@ class RestaurantVoice(Agent):
             except ProviderQuotaError:
                 raise
             except (AudioWindowError, ProviderError, TimeoutError) as exc:
+                current = await asyncio.to_thread(tx.load, self.sid)
+                if current.get('closed') or current['epoch'] != row['epoch'] or end != len(self.fragments):
+                    raise Conflict('Recognition clarification superseded')
                 self.audit('transcript.unverified', {'error_type':type(exc).__name__,
                     'reason':str(exc) if isinstance(exc,AudioWindowError) else 'recognition_service_unavailable'})
                 await self.clarify_recognition(end, row['epoch'])

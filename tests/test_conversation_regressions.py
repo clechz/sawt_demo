@@ -218,6 +218,60 @@ async def test_recovery_cannot_discard_cancellation_found_by_second_transcriptio
         await voice_worker.RestaurantVoice.verify_transcript(voice,0,1,caption,1)
 
 
+async def test_more_caller_words_during_recovery_supersede_incomplete_disagreement(monkeypatch):
+    monkeypatch.setattr(voice_worker.tx,'load',lambda sid:{'closed':False,'epoch':1,'state':new_state()})
+    caption='أبي ثلاثة تميس بالعسل'
+    voice=SimpleNamespace(sid='s',send=AsyncMock(),audit=Mock(),fragments=[caption],
+        fragment_spans=[{'start_ms':0,'end_ms':1}],
+        input_audio=SimpleNamespace(wav=Mock(return_value=(b'exact-pcm',{}))))
+    async def recognize(wav,**kwargs):
+        if kwargs.get('recovery'):
+            voice.fragments.append(' استلام من فرع النرجس')
+        return 'أبي فلافل تميس بالعسل استلام'
+    voice.provider=SimpleNamespace(recognize=recognize)
+    with pytest.raises(voice_worker.Conflict):
+        await voice_worker.RestaurantVoice.verify_transcript(voice,0,1,caption,1)
+
+
+async def test_obsolete_recognition_error_does_not_publish_clarification(monkeypatch):
+    from tests.test_recognition import work_voice
+    monkeypatch.setattr(voice_worker.tx,'load',lambda sid:{'closed':False,'epoch':1})
+    voice=work_voice('')
+    async def recognize(*args):
+        voice.fragments.append(' وباقي طلبي')
+        raise AudioWindowError('Incomplete earlier fragment')
+    voice.verify_transcript=recognize
+    await voice_worker.RestaurantVoice.work(voice,None)
+    voice.clarify_recognition.assert_not_awaited()
+    assert all(c.args[0]!='transcript.unverified' for c in voice.audit.call_args_list)
+
+
+async def test_ready_waits_for_both_provider_and_microphone(monkeypatch):
+    monkeypatch.setattr(voice_worker.tx,'event',Mock())
+    voice=SimpleNamespace(sid='s',provider_ready=asyncio.Event(),input_ready=asyncio.Event(),
+        provider_failed=False,ending=False,send=AsyncMock(),duplex_session=Mock(),
+        close_failed_voice=AsyncMock(),audit=Mock())
+    task=asyncio.create_task(voice_worker.RestaurantVoice.announce_ready(voice))
+    await asyncio.sleep(0)
+    voice.provider_ready.set()
+    await asyncio.sleep(0)
+    assert not task.done()
+    voice.send.assert_not_awaited()
+    voice.duplex_session.append_commentary.assert_not_called()
+    voice.input_ready.set()
+    await asyncio.wait_for(task,1)
+    voice.send.assert_awaited_once_with('ready')
+
+
+async def test_failed_connection_never_announces_ready(monkeypatch):
+    voice=SimpleNamespace(provider_ready=asyncio.Event(),input_ready=asyncio.Event(),
+        provider_failed=True,ending=False,send=AsyncMock(),duplex_session=Mock())
+    voice.provider_ready.set();voice.input_ready.set()
+    await voice_worker.RestaurantVoice.announce_ready(voice)
+    voice.send.assert_not_awaited()
+    voice.duplex_session.append_commentary.assert_not_called()
+
+
 async def test_exhausted_credit_closes_call_instead_of_retrying_speech(monkeypatch):
     from tests.test_recognition import work_voice
     from sawt.v2_provider import ProviderQuotaError, CALLS_UNAVAILABLE
