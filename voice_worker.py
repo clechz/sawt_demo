@@ -29,10 +29,10 @@ from sawt.conversation import say, farewell
 from sawt.audio_gate import SpeechGate
 
 
-def set_output_enabled(voice, enabled):
+def set_output_enabled(voice, enabled, *, at_boundary=False):
     gate = getattr(voice, "audio_gate", None)
     if gate is not None:
-        gate.set_enabled(enabled)
+        gate.set_enabled(enabled, at_boundary=at_boundary)
     else:
         voice.session.output.set_audio_enabled(enabled)
 
@@ -132,7 +132,7 @@ class RestaurantVoice(Agent):
         self.spawn(self.watch_lifetime())
         self.spawn(self.watch_event_loop())
         self.duplex_session.append_commentary(say('greeting'))
-        await asyncio.to_thread(tx.event, self.sid, 'voice.connected', {'transport': 'livekit', 'model': 'gpt-live-1', 'recognition_policy':'contextual-draft-v6', 'release':'conversation-v14'})
+        await asyncio.to_thread(tx.event, self.sid, 'voice.connected', {'transport': 'livekit', 'model': 'gpt-live-1', 'recognition_policy':'contextual-draft-v6', 'release':'conversation-v15'})
         await self.send('ready')
 
     def on_client_event(self, event):
@@ -248,6 +248,11 @@ class RestaurantVoice(Agent):
                 context='سؤال الموظف السابق (ليس جزءاً من تسجيل العميل): '+last_question, recovery=True),timeout=3)
             recovered = reconcile_transcripts(text, recovered)
             check_recognition(text, recovered)
+            # Recovery must not erase a cancellation, question, negation or
+            # explicit conflicting quantity found by the second recognizer.
+            # A missing number there can still be recovered from the PCM;
+            # contradictory explicit meanings require a caller clarification.
+            check_recognition(verified, recovered)
             row = await asyncio.to_thread(tx.load, self.sid)
             if row['closed'] or row['epoch'] != epoch or end != len(self.fragments):
                 raise Conflict('Recovery recognition superseded')
@@ -465,7 +470,7 @@ class RestaurantVoice(Agent):
                 self.reading = False
                 self.checkout_context = False
                 self.output_held = False
-                set_output_enabled(self, True)
+                set_output_enabled(self, True, at_boundary=True)
                 # Injection limit is 500 tokens; a byte bound also works without
                 # assuming English tokenization for Arabic text.
                 speech = result['reply'].encode('utf-8')[:480].decode('utf-8', errors='ignore')

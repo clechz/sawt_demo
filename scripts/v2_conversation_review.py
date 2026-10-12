@@ -3,7 +3,7 @@
 Each turn waits for response silence. Saves actually received audio and a second
 transcription for inspection. This does not score a human accent or certify WER.
 """
-import argparse, asyncio, array, hashlib, io, json, math, os, sys, time, wave
+import argparse, asyncio, array, hashlib, io, json, math, os, re, sys, time, wave
 from pathlib import Path
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
 import httpx
@@ -94,10 +94,28 @@ async def main():
                     assert heard.strip(),'No intelligible received response'
                     result['received_speech']=heard
                     result['audio_path']=str(path.relative_to(ROOT))
+                    result['received_speech_passed']=False
+                    # Preserve the failed turn too; otherwise the report hides
+                    # the exact received speech that caused rejection.
+                    report['turns'].append(result)
                     if index==0:assert 'دجاج' in heard and 'لحم' in heard,'Audible dish clarification missing'
                     if index in (2,3):assert not ('توصيل' in heard and 'استلام' in heard),'Audible service question repeated after pickup'
-                    assert not any(x in heard for x in ['وعليكم السلام','خلني أراجع','دقيقة أتأكد']),'Unrelated greeting or repetitive filler'
-                    report['turns'].append(result)
+                    if result['speech_source']=='received_livekit_audio':
+                        assert not any(x in heard for x in ['وعليكم السلام','خلني أراجع','دقيقة أتأكد']),'Unrelated greeting or repetitive filler'
+                    else:
+                        # The authorized checkout starts with خلني أراجع معك.
+                        # Require its food, choices, branch and invitation too.
+                        from sawt.domain import normalize
+                        spoken=normalize(heard)
+                        for required in ['شاورما','دجاج','صاج','بدون حار','النرجس','المجموع']:
+                            assert normalize(required) in spoken,'Incomplete audible checkout: '+required
+                        assert any(x in spoken for x in ['ناكد الطلب','نوكد الطلب','نؤكد الطلب','تاكد الطلب','نكد الطلب']),'Audible confirmation question missing'
+                        quantity=result['state']['basket'][0]['quantity']
+                        quantity_pattern=r'\b(?:1|واحد)\b' if quantity==1 else r'\b(?:2|اثنين)\b'
+                        assert re.search(quantity_pattern,spoken),'Audible checkout quantity missing'
+                        total_patterns={1800:r'(?:18|ثمانيه\s*عشر|ثمن(?:ت)?ا?عش(?:ر)?|ثمانتاعشر)',3600:r'(?:36|سته\s*و\s*ثلاثين)'}
+                        assert re.search(r'المجموع\s+'+total_patterns[result['state']['total']]+r'\s*ريال',spoken),'Audible checkout total missing or wrong'
+                    result['received_speech_passed']=True
                     print(json.dumps({'turn':index+1,'state_s':result['seconds_to_state'],'audio_s':result['first_received_audio_seconds'],'heard':heard},ensure_ascii=False),flush=True)
                 saved=await call.state()
                 report['scheduler_lag_ms']=[e['payload']['max_lag_ms'] for e in saved['events'] if e['kind']=='voice.scheduler']

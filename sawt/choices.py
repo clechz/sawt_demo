@@ -11,9 +11,10 @@ from .domain import RuleError
 
 class SelectionClarification(RuleError):
     """A missing dish identity takes priority over checkout's missing fields."""
-    def __init__(self, message, question):
+    def __init__(self, message, question, candidates=()):
         super().__init__(message)
         self.question = question
+        self.candidates = tuple(candidates)
 
 
 def service_answer(state, text):
@@ -110,9 +111,9 @@ def check_item_variant(menu, item, utterance):
         requested={oid for _,_,oid in matches(utterance,'protein',proteins)}
         expected='chicken' if item['id']=='sandwiches_07' else 'beef'
         if expected not in requested:
-            raise SelectionClarification('الشاورما دجاج أو لحم. العميل لم يحدد هذا النوع؛ اسأل أي نوع يقصد ولا تختاره تلقائياً.', 'الشاورما دجاج ولا لحم؟')
+            raise SelectionClarification('الشاورما دجاج أو لحم. العميل لم يحدد هذا النوع؛ اسأل أي نوع يقصد ولا تختاره تلقائياً.', 'الشاورما دجاج ولا لحم؟', ('sandwiches_07','sandwiches_08'))
     if item['name'] == 'فول حجازي' and not matches(utterance, 'variant', {'hijazi': {'name':'حجازي','name_en':'Hijazi'}}):
-        raise SelectionClarification('الفول له أكثر من نوع: فول حجازي وفول قلابة. لم يحدد العميل الحجازي؛ لا تختاره تلقائياً. اسأل أي نوع يفضّل، واحفظ الأصناف الواضحة الأخرى.', 'الفول حجازي ولا قلابة؟')
+        raise SelectionClarification('الفول له أكثر من نوع: فول حجازي وفول قلابة. لم يحدد العميل الحجازي؛ لا تختاره تلقائياً. اسأل أي نوع يفضّل، واحفظ الأصناف الواضحة الأخرى.', 'الفول حجازي ولا قلابة؟', [x['id'] for x in menu.items.values() if x['name'].startswith('فول ')])
     if not item['name'].startswith('تميس '):
         return
     flavors = {'cheese': {'name': 'الجبن', 'name_en': 'cheese'}, 'honey': {'name': 'العسل', 'name_en': 'honey'}}
@@ -120,7 +121,7 @@ def check_item_variant(menu, item, utterance):
     expected = 'cheese' if 'جبن' in item['name'] else 'honey' if 'عسل' in item['name'] else None
     if expected not in requested:
         available = '، '.join(x['name'] for x in menu.items.values() if x['name'].startswith('تميس '))
-        raise SelectionClarification('لم يحدد العميل هذا النوع من التميس. لا تضفه ولا تستبدله تلقائياً. المتوفر: ' + available + '. اسأل أي نوع يفضّل.', 'التميس بالجبن ولا بالعسل؟')
+        raise SelectionClarification('لم يحدد العميل هذا النوع من التميس. لا تضفه ولا تستبدله تلقائياً. المتوفر: ' + available + '. اسأل أي نوع يفضّل.', 'التميس بالجبن ولا بالعسل؟', [x['id'] for x in menu.items.values() if x['name'].startswith('تميس ')])
 
 
 def matches(text, group_id, options, *, include_negated=False):

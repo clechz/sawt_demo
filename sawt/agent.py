@@ -132,6 +132,12 @@ class Agent:
             if item_ids:
                 messages[0]['content'] += '\nCATALOG DEFINITIONS FOR CURRENT BASKET (already inspected):\n' + json.dumps([self.engine.menu.get(item_id) for item_id in item_ids], ensure_ascii=False)
             messages[0]['content'] += '\nLatency policy: return independent tool calls together in one response. They execute IN ORDER, not concurrently. Batch all clear edits, then append finish_draft as the LAST call in that SAME batch. It renders the next missing question from saved state, so you need neither another model turn nor a generated line_id. Use checkout instead when the caller finished a complete order; ask_choice when offering a specific interpretation. These terminal calls run only if every preceding edit succeeds without rejected choices. Do not repeat list_branches/get_item when exact definitions are already supplied. For ask_choice the line_id must already be known; never invent it. Other terminal tools (confirm, handoff, offer_handoff, cancel_draft) must be called ALONE. Never guess IDs or omit validation to reduce calls.'
+            messages[0]['content'] += '''
+Batch examples, using IDs from verified catalog definitions:
+- After asking chicken or beef shawarma, caller says "دجاج ساندويتش بصاج بدون حار": emit add_item(item_id="sandwiches_07", quantity=1, options={"meal":["sandwich"],"bread":["saj"],"spice_level":["not_spicy"]}, notes="") AND finish_draft() together. Do not emit only add_item and then spend another turn writing its acknowledgment.
+- Caller says "عطني بيتزا شاورما": emit add_item(item_id="pizza_flatbread_07", quantity=1, options={}, notes="") AND finish_draft() together. The backend asks the missing size after saving this draft.
+These examples authorize nothing in the current turn. Current caller intent and current state always control quantity, options, edits and questions. Mixed information questions still need their factual answer.
+'''
         for step in range(10):
             message = await self.provider.chat(messages, TOOLS)
             if not isinstance(message, dict): raise ProviderError('استجابة النموذج غير صالحة.')
@@ -217,6 +223,7 @@ class Agent:
                     result = {'error': str(exc) if isinstance(exc, RuleError) else 'صيغة الأداة غير صالحة. صحح المعطيات.'}
                     if getattr(exc, 'question', None):
                         result['customer_question'] = exc.question
+                        result['candidate_item_ids'] = list(exc.candidates)
                     # Give the model authoritative repair data after a bad option ID.
                     # Selected options in the state are not the complete menu schema.
                     if isinstance(args, dict) and call.get('function', {}).get('name') in ['add_item', 'update_item', 'replace_item']:

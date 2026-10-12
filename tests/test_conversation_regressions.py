@@ -76,6 +76,24 @@ async def test_dish_identity_question_survives_failed_guess_instead_of_service_q
     assert result['state']['basket']==[] and not result['state']['service']
 
 
+@pytest.mark.parametrize('utterance,item,expected',[
+    ('أبي شاورما وكرك','beverages_09','الشاورما دجاج ولا لحم؟'),
+    ('أبي شاورما لحم','sandwiches_08','الوجبة')])
+async def test_unrelated_saved_dish_cannot_hide_ambiguity_but_correct_variant_resolves_it(store,utterance,item,expected):
+    from tests.test_tool_batches import call
+    sid,_=store.create()
+    provider=SimpleNamespace(supports_tool_batches=True,chat=AsyncMock(side_effect=[
+        {'tool_calls':[
+            call('add_item',{'item_id':'sandwiches_07','quantity':1,'options':{},'notes':''},'wrong'),
+            call('add_item',{'item_id':item,'quantity':1,'options':{},'notes':''},'clear')]},
+        {'content':'تبيه توصيل ولا تستلمه؟'}]))
+    result=await runtime.delegate(sid,utterance,'mixed',0,voice_provider=provider)
+    assert [line['item_id'] for line in result['state']['basket']]==[item]
+    if item=='beverages_09':assert expected in result['reply']
+    else:assert 'دجاج ولا لحم' not in result['reply']
+    assert not result['state']['order_id']
+
+
 async def test_answer_to_dish_question_saves_draft_even_if_planner_first_replies_as_information(store):
     sid,_=store.create();state=new_state()
     state['history']=[{'role':'user','content':'أبغى شاورما'},{'role':'assistant','content':'الشاورما دجاج ولا لحم؟'}]
@@ -161,6 +179,19 @@ async def test_recognition_disagreement_rechecks_audio_but_never_guesses_quantit
 def test_speech_amount_normalization_preserves_value_and_confirmation(text,spoken):
     from sawt.v2_provider import spoken_amounts
     assert spoken_amounts(text)==spoken
+
+
+async def test_recovery_cannot_discard_cancellation_found_by_second_transcription(monkeypatch):
+    monkeypatch.setattr(voice_worker.tx,'load',lambda sid:{'closed':False,'epoch':1,'state':new_state()})
+    # An ordinary-looking live caption is not permission to ignore the other
+    # recognizer's cancellation/negation/question when recovery drops it.
+    caption='الذي الطلب كله'
+    voice=SimpleNamespace(sid='s',send=AsyncMock(),audit=Mock(),fragments=[caption],
+        fragment_spans=[{'start_ms':0,'end_ms':1}],
+        input_audio=SimpleNamespace(wav=Mock(return_value=(b'exact-pcm',{}))),
+        provider=SimpleNamespace(recognize=AsyncMock(side_effect=['ألغي الطلب كله.','الذي ابطلب كله'])))
+    with pytest.raises(AudioWindowError):
+        await voice_worker.RestaurantVoice.verify_transcript(voice,0,1,caption,1)
 
 
 async def test_exhausted_credit_closes_call_instead_of_retrying_speech(monkeypatch):

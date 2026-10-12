@@ -104,10 +104,13 @@ Use ask_choice for all menu option questions; it creates an authoritative contex
                 question = next_question(engine.menu, state)
                 unavailable = list(dict.fromkeys(q['question'] for q in adapter.choice_questions if q['reason'] == 'unavailable'))
                 location_error = next((e['result']['error'] for e in reversed(failed) if e['tool'] in ('set_location','set_delivery_details')), None)
-                unresolved_item = next((e['result']['customer_question'] for e in failed if e['result'].get('customer_question')), None)
+                saved_items={e['args'].get('item_id') for e in reply['events']
+                    if e['tool'] in ('add_item','replace_item') and not e['result'].get('error')}
+                unresolved_item = next((e['result']['customer_question'] for e in failed
+                    if e['result'].get('customer_question') and not saved_items.intersection(e['result'].get('candidate_item_ids',[]))), None)
                 # Ignore a rejected guess only if the correct dish was saved
                 # afterward; otherwise ask about it before unrelated fields.
-                if unresolved_item and not any(e['tool'] in ('add_item','replace_item') and not e['result'].get('error') for e in reply['events']):
+                if unresolved_item:
                     reply['reply'] = unresolved_item
                 elif location_error and not state['location']:
                     reply['reply'] = location_error
