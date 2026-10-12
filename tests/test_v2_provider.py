@@ -74,3 +74,19 @@ def test_closing_one_call_does_not_close_another_calls_pool(monkeypatch):
         assert second.client() is other_client
         await second.aclose()
     asyncio.run(run())
+
+
+async def test_speech_uses_bounded_idle_timeout_without_shortening_planner(monkeypatch):
+    monkeypatch.setattr('sawt.v2_provider.config',lambda:{'key':'test','tts':'test'})
+    timeouts=[]
+    def handle(request):
+        timeouts.append(request.extensions['timeout'])
+        return httpx.Response(200,content=b'speech')
+    provider=V2Provider();provider._loop=asyncio.get_running_loop()
+    provider._client=httpx.AsyncClient(timeout=35,transport=httpx.MockTransport(handle))
+    try:
+        assert await provider.speak('test')==b'speech'
+        await provider.request('other')
+        assert timeouts[0]['read']==8 and timeouts[0]['connect']==5
+        assert timeouts[1]['read']==35
+    finally:await provider.aclose()

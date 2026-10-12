@@ -16,7 +16,7 @@ function setPhase(next){callStatus.phase(next);}
 const error=text=>{$('error').textContent=text;$('error').hidden=!text;};
 async function api(path,options={}){
  const response=await fetch(path,{...options,headers:{'Content-Type':'application/json',...(call?{Authorization:`Bearer ${call.token}`} : {}),'X-Access-Code':accessCode,...options.headers}});
- if(!response.ok){const body=await response.json().catch(()=>({detail:'تعذر الاتصال'}));const e=new Error(body.detail);e.status=response.status;throw e;}return response;
+ if(!response.ok){const body=await response.json().catch(()=>({detail:'تعذر الاتصال'}));const e=new Error(body.detail);e.status=response.status;e.code=body.code;throw e;}return response;
 }
 const player=new ReadbackPlayer({api,createAudio:()=>{const audio=new Audio();playbackMeter.attach(audio);return audio;},releaseAudio:()=>playbackMeter.detach(),mute:value=>{readbackMuted=value;audioElements.forEach(a=>a.muted=value);},phase:setPhase,failure:error,retry:value=>{$('retry-audio').hidden=!value;}});
 const lab=location.pathname==='/lab';let fixture,fixtureContext,fixtureDestination;

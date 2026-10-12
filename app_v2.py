@@ -63,7 +63,8 @@ async def protections(request, call_next):
 @app.exception_handler(Conflict)
 async def conflict_handler(request, exc):
     from fastapi.responses import JSONResponse
-    return JSONResponse({'detail': str(exc)}, status_code=409)
+    code = 'readback_incomplete' if str(exc) == 'Readback has not finished playing' else 'conflict'
+    return JSONResponse({'detail': str(exc), 'code': code}, status_code=409)
 
 
 def authorized(sid, request):
@@ -212,7 +213,9 @@ async def readback_stream(sid: str, receipt_id: str):
                       'tts_ms': round((time.perf_counter()-started)*1000), 'text_hash': quote['text_hash']})
         except BaseException as exc:
             await asyncio.to_thread(tx.fail_audio, sid, receipt_id)
-            await asyncio.to_thread(tx.event, sid, 'readback.failed', {'receipt_id': receipt_id, 'error_type': type(exc).__name__})
+            await asyncio.to_thread(tx.event, sid, 'readback.failed', {'receipt_id': receipt_id, 'error_type': type(exc).__name__,
+                'cause_type': type(exc.__cause__).__name__ if exc.__cause__ else None,
+                'elapsed_ms': round((time.perf_counter()-started)*1000), 'bytes_generated': len(audio)})
             raise
     return StreamingResponse(chunks(), media_type='audio/mpeg', headers={'X-Accel-Buffering': 'no'})
 

@@ -10,6 +10,7 @@ import os
 import shutil
 import subprocess
 import sys
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -56,6 +57,7 @@ def main():
                 report['steps'].append({'name':'storage','exit_code':1,'skipped':'Checkout prerequisite failed; old order evidence is not reused.'})
                 continue
             print('Running '+name,flush=True)
+            started_ns=time.time_ns()
             result=subprocess.run([sys.executable,'-X','utf8',str(ROOT/'scripts'/script),*extra],
                 cwd=ROOT,env=env,capture_output=True,text=True,encoding='utf8',errors='replace')
             (output/(name+'.log')).write_text(result.stdout+result.stderr,encoding='utf8')
@@ -63,10 +65,13 @@ def main():
             print(result.stdout,flush=True)
             if name in ('checkout','storage'):
                 source=ROOT/'runtime'/('cloud-acceptance.json' if name=='checkout' else 'cloud-persistence.json')
-                if source.exists():shutil.copyfile(source,output/(name+'.json'))
+                if source.exists() and source.stat().st_mtime_ns>=started_ns:
+                    shutil.copyfile(source,output/(name+'.json'))
             if result.returncode:
                 print('Failed '+name+'; inspect '+str(output/(name+'.log')),flush=True)
-                if not args.continue_on_failure or 'credit_balance_exhausted' in result.stdout+result.stderr:
+                # Continuing against the wrong deployed version spends calls
+                # without producing evidence about this release.
+                if not args.continue_on_failure or any(reason in result.stdout+result.stderr for reason in ('credit_balance_exhausted','Unexpected worker release')):
                     return result.returncode
         report['passed']=all(s['exit_code']==0 for s in report['steps'])
         return 0 if report['passed'] else 1

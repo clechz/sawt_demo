@@ -135,7 +135,8 @@ def test_stream_preparation_binds_server_text_and_rejects_stale_capability(clien
     assert texts==[app_v2.tx.load(sid)['state']['quote']['text']]
     assert client.get(prepared['url']).content==b'first-second'  # Cached reload, not a second paid generation.
     assert len(texts)==1
-    assert client.post(f'/api/calls/{sid}/playback',headers=headers,json={'receipt_id':prepared['receipt_id'],'phase':'completed','position':8}).status_code==409
+    incomplete=client.post(f'/api/calls/{sid}/playback',headers=headers,json={'receipt_id':prepared['receipt_id'],'phase':'completed','position':8})
+    assert incomplete.status_code==409 and incomplete.json()['code']=='readback_incomplete'
     app_v2.tx.interrupt(sid)
     assert client.get(prepared['url']).status_code==404
 

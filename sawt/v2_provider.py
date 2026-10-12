@@ -107,6 +107,7 @@ class V2Provider(OpenAIProvider):
                 return
         try:
             async with self.client().stream('POST', 'https://api.openai.com/v1/audio/speech', headers=self.headers(),
+                timeout=httpx.Timeout(8,connect=5),
                 json={'model': cfg['tts'], 'voice': voice_name(), 'input': spoken_amounts(text),
                       'instructions': STYLE, 'response_format': response_format}) as response:
                 if response.status_code >= 400:

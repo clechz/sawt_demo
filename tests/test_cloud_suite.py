@@ -1,4 +1,5 @@
 import json
+import os
 import sys
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, Mock
@@ -21,3 +22,32 @@ def test_cloud_runner_stops_on_failure_and_records_incomplete_gates(monkeypatch,
     assert code==(2 if quota else 1 if failed_step is not None else 0)
     for call in run.call_args_list:
         assert call.kwargs['env']['SAWT_EXPECT_WORKER_RELEASE']=='expected-release'
+
+
+def test_release_mismatch_stops_even_when_independent_failures_can_continue(monkeypatch,tmp_path):
+    monkeypatch.setattr(suite,'ROOT',tmp_path)
+    monkeypatch.setattr(sys,'argv',['suite','--release','expected','--continue-on-failure'])
+    monkeypatch.setattr(suite,'preflight',AsyncMock())
+    run=Mock(return_value=SimpleNamespace(returncode=1,stdout='',stderr='AssertionError: Unexpected worker release'))
+    monkeypatch.setattr(suite.subprocess,'run',run)
+    assert suite.main()==1
+    run.assert_called_once()
+    report=json.loads(next((tmp_path/'runtime/cloud-suite').glob('*/suite.json')).read_text())
+    assert not report['passed'] and len(report['steps'])==1
+
+
+def test_failed_checkout_never_reuses_previous_success_file(monkeypatch,tmp_path):
+    monkeypatch.setattr(suite,'ROOT',tmp_path)
+    monkeypatch.setattr(sys,'argv',['suite','--release','expected','--continue-on-failure'])
+    monkeypatch.setattr(suite,'preflight',AsyncMock())
+    (tmp_path/'runtime').mkdir()
+    old=tmp_path/'runtime/cloud-acceptance.json'
+    old.write_text('{"passed":true}')
+    os.utime(old,(1,1))
+    run=Mock(side_effect=[SimpleNamespace(returncode=1 if i==3 else 0,stdout='',stderr='') for i in range(4)])
+    monkeypatch.setattr(suite.subprocess,'run',run)
+    assert suite.main()==1
+    folder=next((tmp_path/'runtime/cloud-suite').iterdir())
+    assert not (folder/'checkout.json').exists()
+    report=json.loads((folder/'suite.json').read_text())
+    assert 'skipped' in report['steps'][-1] and not report['passed']
