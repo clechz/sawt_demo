@@ -313,6 +313,14 @@ def checked_options(menu, item, args, utterance, previous=None):
         evidence = matches(evidence_text, gid, catalog)
         mentioned = matches(evidence_text, gid, catalog, include_negated=True)
         supported = {oid for _, _, oid in evidence}
+        if (gid=='sweetness' and 'half' in group['options'] and not supported
+                and not any(mark in utterance for mark in ('"','«','»','“','”'))
+                and not re.search(r'\b(?:اكتب|ملاحظه|اذا|لو|قال)\b|\b(?:لا|ما|مو)\s+(?:ابي|ابغي|خلي|خل)\s+سكر',normalize(utterance))
+                and re.search(r'(?:^|(?<!\w)(?:و)?(?:خلي|خل|ابي|ابغي)\s+)سكر\s+(?:وسط|متوسط)(?:\s|$)',normalize(utterance))):
+            selections[gid]=[]
+            rejected.append({'group':gid,'reason':'ambiguous','option_id':'half',
+                'question':'تقصد نصف سكر؟'})
+            continue
         # Explicit self-correction supersedes earlier bread choices in this turn.
         if gid == 'bread' and evidence and re.search(r'لا لا|معليش|قصدي|اقصد|بدل', normalize(utterance)):
             supported = {max(evidence, key=lambda m: m[0])[2]}

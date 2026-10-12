@@ -115,6 +115,7 @@ Use ask_choice for all menu option questions; it creates an authoritative contex
             elif changed or adapter.choice_questions or failed:
                 question = next_question(engine.menu, state)
                 unavailable = list(dict.fromkeys(q['question'] for q in adapter.choice_questions if q['reason'] == 'unavailable'))
+                ambiguous = next((q for q in adapter.choice_questions if q['reason']=='ambiguous'),None)
                 location_error = next((e['result']['error'] for e in reversed(failed) if e['tool'] in ('set_location','set_delivery_details')), None)
                 saved_items={e['args'].get('item_id') for e in reply['events']
                     if e['tool'] in ('add_item','replace_item') and not e['result'].get('error')}
@@ -129,6 +130,8 @@ Use ask_choice for all menu option questions; it creates an authoritative contex
                 elif unavailable:
                     state['pending_choice'] = None
                     reply['reply'] = unavailable[0]
+                elif ambiguous:
+                    reply['reply'] = ask_choice(engine.menu,state,ambiguous['line_id'],ambiguous['group'],ambiguous['option_id'])['reply']
                 elif question:
                     reply['reply'] = question
                 elif failed and not changed:

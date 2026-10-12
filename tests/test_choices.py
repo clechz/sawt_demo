@@ -29,6 +29,15 @@ def test_missing_sugar_cannot_be_inferred_from_mixed_or_uncertain_drink_request(
     engine,_=setup
     assert 'sweetness' not in stated_beverage_options(engine.menu.get('beverages_09'),text)
 
+
+@pytest.mark.parametrize('text',['لا أبي سكر وسط','اكتب ملاحظة خلي سكر وسط','خلي سكر وسط إذا مجاني'])
+def test_ambiguous_sugar_proposal_does_not_interpret_negation_notes_or_conditions(setup,text):
+    from sawt.choices import checked_options
+    engine,_=setup
+    args,rejected=checked_options(engine.menu,engine.menu.get('beverages_09'),{'options':{}},text)
+    assert not args['options'].get('sweetness')
+    assert not any(q['reason']=='ambiguous' for q in rejected)
+
 @pytest.mark.parametrize('bread',['saj','brioche','lettuce'])
 def test_unavailable_brown_is_not_replaced_by_valid_bread(setup,bread):
     engine,state=setup

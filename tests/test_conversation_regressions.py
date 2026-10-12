@@ -23,6 +23,29 @@ def store(tmp_path, monkeypatch):
     return tx
 
 
+@pytest.mark.parametrize('sugar',[None,['half']])
+async def test_ambiguous_sugar_gets_one_bound_proposal_after_other_edits(store,sugar):
+    from tests.test_tool_batches import call
+    sid,_=store.create();state=new_state()
+    runtime.engine.act(state,'add_item',{'item_id':'beverages_09','quantity':2,'options':{'ice':['none'],'size':['small']},'notes':''})
+    line=state['basket'][0]['line_id']
+    store.commit_bundle(sid,'seed',0,0,state,[],response={})
+    options={'size':['large'],'ice':['none']}
+    if sugar is not None:options['sweetness']=sugar
+    provider=SimpleNamespace(supports_tool_batches=True,chat=AsyncMock(side_effect=[
+        {'tool_calls':[call('update_item',{'line_id':line,'options':options},'edit')]},
+        {'content':'السكر بدون سكر ولا نصف سكر ولا سكر عادي؟'},
+        {'content':'السكر بدون سكر ولا نصف سكر ولا سكر عادي؟'}]))
+    result=await runtime.delegate(sid,'بدون ثلج، الحجم كبير وخلي سكر وسط.','medium',0,voice_provider=provider)
+    assert result['state']['basket'][0]['options']['size']==['large']
+    assert not result['state']['basket'][0]['options'].get('sweetness')
+    assert result['state']['pending_choice']['option_id']=='half'
+    assert 'نصف سكر' in result['reply'] and not result['state']['order_id']
+    result=await runtime.delegate(sid,'ايوه','accept',store.load(sid)['epoch'],voice_provider=provider)
+    assert result['state']['basket'][0]['options']['sweetness']==['half']
+    assert not result['state']['order_id'] and provider.chat.await_count==3
+
+
 @pytest.mark.parametrize('text',['بستلم','استلام','استلام الفرع','باستلم'])
 async def test_pickup_saves_once_without_planner_or_repeating_service_question(store,text):
     sid,_=store.create()
