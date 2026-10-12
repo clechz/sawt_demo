@@ -77,6 +77,18 @@ class AudioWindow:
         return out.getvalue(), {'start_ms':start_ms,'end_ms':end/BYTES_PER_MS}
 
 
+def check_transcript_clarity(caption, verified):
+    """Known malformed whole-order fragments require repetition, never guessing.
+
+    Two recognizers agreed on this garbled rendering of a synthetic cancel
+    request. Agreement is not semantic confidence. Do not map it to cancel or
+    checkout; both could be destructive interpretations of unclear audio.
+    """
+    malformed = r'(?:الذي|الدي)\s+(?:الطلب|اطلب)\s+كله'
+    if any(re.fullmatch(malformed, normalize(text)) for text in (caption, verified)):
+        raise AudioWindowError('Unclear whole-order request; ask the caller to repeat')
+
+
 def check_recognition(caption, verified):
     """Do not silently drop a question, a negation or a differing quantity."""
     a,b=normalize(caption),normalize(verified)

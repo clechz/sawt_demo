@@ -10,6 +10,22 @@ from sawt.recognition import AudioWindow, AudioWindowError, check_recognition
 from sawt.voice_routing import route_transcript
 
 
+@pytest.mark.parametrize('caption,verified', [
+    ('الذي اطلب كله', 'الذي الطلب كله.'), ('الذي الطلب كله', 'الذي الطلب كله'),
+    ('ألغي الطلب كله', 'الدي الطلب كله'), ('الذي الطلب كله', 'هذا الطلب كله'),
+])
+def test_agreed_garbled_order_request_requires_repeat_not_cancel_or_checkout(caption, verified):
+    from sawt.recognition import check_transcript_clarity
+    with pytest.raises(AudioWindowError, match='Unclear whole-order'):
+        check_transcript_clarity(caption, verified)
+
+
+@pytest.mark.parametrize('text', ['هذا الطلب كله', 'ألغي الطلب كله', 'كنسل طلبي', 'لا تلغي الطلب', 'الطلب كله بدون حار'])
+def test_clear_whole_order_requests_are_not_rejected_as_garbled(text):
+    from sawt.recognition import check_transcript_clarity
+    check_transcript_clarity(text, text)
+
+
 def test_audio_window_preserves_exact_pcm_and_timing():
     audio=AudioWindow(seconds=3)
     pcm=b'\x01\x02'*24000*2

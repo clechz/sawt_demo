@@ -126,6 +126,7 @@ class VoiceCall:
   return {**saved,'events':list(self.audit_events)}
  async def turn(self,pcm,spec,max_latency):
   before=await self.state();floor=max((e['sequence'] for e in before['events']),default=0)
+  input_started=time.monotonic();self.last_audio_diagnostics=None
   for i in range(0,len(pcm),4800):await self.queue.put(pcm[i:i+4800].ljust(4800,b'\0'))
   while not self.queue.empty():await asyncio.sleep(.1)
   await asyncio.sleep(.25);ended=time.monotonic();expect=spec['expect'];target=expect.get('event','delegation.completed')
@@ -151,6 +152,11 @@ class VoiceCall:
   while expects_audio and not any(at>ended and rms>.01 for at,rms in self.output) and time.monotonic()-ended<max_latency:
    await asyncio.sleep(.2)
   audible=next((at-ended for at,rms in self.output if at>ended and rms>.01),None)
+  self.last_audio_diagnostics={'input_pcm_seconds':round(len(pcm)/48000,2),
+   'input_delivery_seconds':round(ended-input_started,2),
+   'peak_rms_after_input':round(max((rms for at,rms in self.output if at>ended),default=0),5),
+   'audible_frames_after_input':sum(at>ended and rms>.01 for at,rms in self.output),
+   'last_audible_offset_seconds':round(max((at-ended for at,rms in self.output if at>input_started and rms>.01),default=-999),2)}
   if expects_audio:assert audible is not None,'No audible response within latency budget'
 
   result['first_received_audio_seconds']=round(audible,2) if audible is not None else None
@@ -215,6 +221,7 @@ async def main():
      record['passed']=True
     except Exception as exc:
      record['error']=str(exc) or type(exc).__name__
+     record['audio_diagnostics']=getattr(call,'last_audio_diagnostics',None)
      if call.call:
       try:record['failed_state']=await call.state()
       except Exception:pass

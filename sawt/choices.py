@@ -163,7 +163,7 @@ def bread_correction(menu, state, text):
     pattern = '|'.join(re.escape(label) for label in sorted(labels, key=len, reverse=True))
     match = re.fullmatch(r'(?:لا\s+)?(?:خل|خلي|خله|خليه|خليها|اقصد|ابي|ابغي)\s+'
         r'(?:(?:الخبز|خبز)\s+)?(?P<new>' + pattern + r')'
-        r'(?:\s+(?:مو|بدل)\s+(?:ال)?(?P<old>' + pattern + r'))?', normalize(text))
+        r'(?:\s*(?:مو|بدل)\s+(?:ال)?(?P<old>' + pattern + r'))?', normalize(text))
     if not match:
         return None
     if match['old'] and labels[match['old']] not in line['options'].get('bread', []):

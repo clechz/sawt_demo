@@ -21,7 +21,7 @@ from sawt.v2_provider import V2Provider, voice_name, ProviderQuotaError, exhaust
 from sawt.transactions import Conflict
 from sawt.recording import CallRecorder, AuditWriter, prune
 from sawt.voice_routing import route_transcript
-from sawt.recognition import AudioWindow, AudioWindowError, check_recognition
+from sawt.recognition import AudioWindow, AudioWindowError, check_recognition, check_transcript_clarity
 from sawt.provider import ProviderError
 from sawt.conversation import say, farewell
 from sawt.audio_gate import SpeechGate
@@ -151,7 +151,7 @@ class RestaurantVoice(Agent):
         if self.provider_failed or self.ending:
             return
         self.duplex_session.append_commentary(say('greeting'))
-        await asyncio.to_thread(tx.event, self.sid, 'voice.connected', {'transport': 'livekit', 'model': 'gpt-live-1', 'recognition_policy':'contextual-draft-v7', 'release':'conversation-v23'})
+        await asyncio.to_thread(tx.event, self.sid, 'voice.connected', {'transport': 'livekit', 'model': 'gpt-live-1', 'recognition_policy':'contextual-draft-v8', 'release':'conversation-v24'})
         await self.send('ready')
 
     def on_client_event(self, event):
@@ -264,6 +264,7 @@ class RestaurantVoice(Agent):
         row = await asyncio.to_thread(tx.load, self.sid)
         if row['closed'] or row['epoch'] != epoch or end != len(self.fragments):
             raise Conflict('Recognition superseded')
+        check_transcript_clarity(text, verified)
         self.audit('transcript.verified', {'caption':text, 'text':verified, **window, 'source':'independent_audio',
             'duration_ms':round((time.perf_counter()-started)*1000)})
         try:

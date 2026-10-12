@@ -56,7 +56,7 @@ def seeded_shawarma():
     return state
 
 
-@pytest.mark.parametrize('text', ['خل الخبز بر مو صاج', 'أقصد خبز أسمر بدل الصاج', 'أبي خبز بر'])
+@pytest.mark.parametrize('text', ['خل الخبز بر مو صاج', 'خل الخبز برمو صاج', 'أقصد خبز أسمر بدل الصاج', 'أبي خبز بر'])
 async def test_unavailable_bread_is_explained_without_planner_or_silent_service_change(tmp_path, monkeypatch, text):
     tx = Transactions(tmp_path / 'bread.db', runtime.engine); sid, _ = tx.create()
     state = seeded_shawarma(); tx.commit_bundle(sid, 'seed', 0, 0, state, [], response={})
