@@ -1,3 +1,4 @@
+import {createExperienceControls, renderSupport} from './experience-ui.js';
 import {ReadbackPlayer} from './playback.js';
 import {PlaybackMeter,MicrophoneMeter} from './audio-meter.js';
 import {createOrderView} from './order-view.js';
@@ -19,11 +20,13 @@ async function api(path,options={}){
  if(!response.ok){const body=await response.json().catch(()=>({detail:'تعذر الاتصال'}));const e=new Error(body.detail);e.status=response.status;e.code=body.code;throw e;}return response;
 }
 const player=new ReadbackPlayer({api,createAudio:()=>{const audio=new Audio();playbackMeter.attach(audio);return audio;},releaseAudio:()=>playbackMeter.detach(),mute:value=>{readbackMuted=value;audioElements.forEach(a=>a.muted=value);},phase:setPhase,failure:error,retry:value=>{$('retry-audio').hidden=!value;}});
+const experienceControls=createExperienceControls(document);
 const lab=location.pathname==='/lab';let fixture,fixtureContext,fixtureDestination;
 if(lab){const panel=document.createElement('section');panel.innerHTML='<p>Local test lab · synthetic file input, no microphone</p><label>Caller fixture <input id="fixture-file" type="file" accept="audio/*"></label><audio id="fixture-player" controls></audio><button id="send-fixture" class="secondary" disabled>Send synthetic speech</button>';document.querySelector('main').append(panel);fixture=$('fixture-player');$('send-fixture').onclick=()=>fixture.play();$('fixture-file').onchange=e=>{if(e.target.files[0]){if(fixture.src)URL.revokeObjectURL(fixture.src);fixture.src=URL.createObjectURL(e.target.files[0]);}};}
 function render(state){
  currentState=state;
  renderOrder(state);
+ renderSupport(document,state.hospitality);
  if(state.quote&&!state.quote.presented&&quoteSeen!==state.quote.token&&room&&!closing){quoteSeen=state.quote.token;player.play(call.id);}
  if(!state.quote&&player.active){player.cancel();if(!closing)setPhase('processing');}
  if(state.order_id&&!closing&&phase!=='ending')setPhase('completed');
@@ -42,12 +45,16 @@ async function start(){
  playbackMeter.prepare();microphoneMeter.prepare();lastMeterTime=0;
  callStatus.reset();$('start').disabled=true;error('');setPhase('connecting');closing=false;quoteSeen=null;currentState=null;call=null;refreshing=false;
  $('order-button').hidden=true;$('order-note').textContent='';
+ renderSupport(document,null);
  try{
+  const experience=experienceControls.value();
+  if(!experience.recording_consent)throw new Error('وافق على تسجيل المكالمة قبل البدء.');
+  experienceControls.setBusy(true);
   room=new LivekitClient.Room({adaptiveStream:true,dynacast:true});
   // Unlock playback inside the click gesture, before network awaits. A blocked
   // speaker must not stop microphone publication or tear down the call.
   void room.startAudio().catch(()=>{$('retry-audio').hidden=false;});
-  const response=await api('/api/calls',{method:'POST',body:JSON.stringify({recording_consent:true})});call=await response.json();localStorage.setItem('sawt-debug-call',JSON.stringify({id:call.id,token:call.token}));
+  const response=await api('/api/calls',{method:'POST',body:JSON.stringify(experience)});call=await response.json();localStorage.setItem('sawt-debug-call',JSON.stringify({id:call.id,token:call.token}));
   room.on(LivekitClient.RoomEvent.LocalTrackPublished,publication=>{if(publication.track?.kind==='audio')microphoneMeter.attachTrack(publication.track.mediaStreamTrack);});
   room.on(LivekitClient.RoomEvent.LocalTrackUnpublished,publication=>{if(publication.kind==='audio')microphoneMeter.detach();});
   room.on(LivekitClient.RoomEvent.TrackSubscribed,track=>{if(track.kind==='audio'){const meter=new MicrophoneMeter(()=>microphoneMeter.context);meter.prepare();meter.attachTrack(track.mediaStreamTrack);remoteMeters.set(track,meter);const element=track.attach();element.autoplay=true;element.muted=readbackMuted;audioElements.add(element);$('media').append(element);element.play().catch(()=>{error('المتصفح منع الصوت. اضغط تشغيل الصوت.');$('retry-audio').hidden=false;});}});
@@ -88,6 +95,7 @@ async function end(){
  if(call)await api(`/api/calls/${call.id}/end`,{method:'POST'}).catch(()=>{});
  if(room){const old=room;room=null;await old.disconnect();}
  for(const element of audioElements)element.remove();audioElements.clear();
+ experienceControls.setBusy(false);
  $('controls').hidden=true;$('start').disabled=false;$('start-label').textContent='ابدأ المكالمة';document.body.classList.remove('active');setPhase('ended');
  muted=false;($('mute-label')||$('mute')).textContent='كتم الميكروفون';$('mute').setAttribute('aria-pressed','false');
 }

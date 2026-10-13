@@ -66,10 +66,11 @@ PERSONA += '\nالافتتاحية: ' + say('greeting')
 
 
 class RestaurantVoice(Agent):
-    def __init__(self, sid, room):
-        super().__init__(instructions=PERSONA, llm=openai.realtime.GPTLiveModel(delegation='client', voice=voice_name()))
+    def __init__(self, sid, room, *, voice=None, instructions=None):
+        selected_voice = voice or voice_name()
+        super().__init__(instructions=instructions or PERSONA, llm=openai.realtime.GPTLiveModel(delegation='client', voice=selected_voice))
         self.sid, self.room = sid, room
-        self.provider = V2Provider()
+        self.provider = V2Provider(voice=selected_voice)
         self.pending = None
         self.last_input = 0.0
         self.last_output_audio = 0.0
@@ -604,7 +605,14 @@ async def entrypoint(ctx: JobContext):
         return
     await asyncio.to_thread(prune, RUNTIME / 'recordings')
     session = AgentSession()
-    voice = RestaurantVoice(sid, ctx.room)
+    from sawt.experience import call_experience
+    experience = call_experience((await asyncio.to_thread(tx.load, sid))['state'])
+    if experience['version'] == 'v3':
+        from sawt.hospitality_voice import make_voice_class
+        HospitalityVoice = make_voice_class(RestaurantVoice)
+        voice = HospitalityVoice(sid, ctx.room, experience)
+    else:
+        voice = RestaurantVoice(sid, ctx.room, voice=experience['voice'])
     @ctx.room.on('participant_disconnected')
     def disconnected(participant):
         if participant.identity == 'caller-' + sid:

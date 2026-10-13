@@ -1,5 +1,7 @@
 # Sawt — Saudi Arabic restaurant voice agent
 
+> **V3 hospitality candidate:** This development branch adds UI voice selection, native-delegation conversation handling and stateful simulated support. Read [V3-IMPLEMENTATION.md](V3-IMPLEMENTATION.md) for the code map, implemented behavior, limitations and release gates. V3 is not yet live-listening verified; the UI selects it explicitly, while API clients omitting the version keep V2. The original menu is unchanged.
+
 A simple call screen over a stateful ordering system. Speak naturally, give details in any order, change your mind after the total, or ask for information without placing an order. The model interprets the conversation; validated Python tools own prices, availability, saved changes and confirmation.
 
 **Current version: V2** (`app_v2.py` + `voice_worker.py`). Orders, delivery zones and staff tickets are simulated. The supplied menu is unchanged: **144 dishes, 12 categories, 4 branches, 1,728 rows**.

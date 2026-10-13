@@ -1,0 +1,50 @@
+{
+  "phase": "1: response ownership and Saudi-choice integration",
+  "branch": "feat/v3-hospitality-voice",
+  "pull_request": 3,
+  "previous_v3_commit": "9c932e7009e646e0fed84afa2cf4ee93e285bd79",
+  "integrated_pr1_head": "4e325ba71c3e47a8e2b876e0f02cc4ca4f4a9c09",
+  "integration_commit": "1d595427f62649f32b531efb174ee4a97c83826b",
+  "tested_application_commit": "69975d7f24ad99bc5257ea08f86f8544ea661440",
+  "ci": {
+    "run_id": 38338711485,
+    "job_id": 115104620353,
+    "run_url": "https://github.com/clechz/sawt_demo/actions/runs/38338711485",
+    "conclusion": "success",
+    "junit_artifact_id": 11785931697,
+    "junit_archive_sha256": "ed297bd4cd5e7fc1b9b92f508bcebbe342f3311e30b58efbc4a6ac8cddcb3656",
+    "python": {"passed": 828, "skipped": 1, "failed": 0, "errors": 0, "source": "Downloaded test-results.xml: 829 total, one skipped"},
+    "postgres": {"exercised": false, "reason": "SAWT_TEST_DATABASE_URL not configured; tests.test_postgres_contract skipped"},
+    "javascript_suite": "passed",
+    "frontend_dependency_install": "passed",
+    "typescript_and_vite_build": "passed"
+  },
+  "local": {
+    "python_passed": 379,
+    "python_scope": "tests/test_hospitality*.py tests/test_domain.py tests/test_transactions.py tests/test_choices.py tests/test_response_style.py",
+    "javascript_passed": 24,
+    "dependency_install": "Local dependency-host DNS resolution failed; full pinned media dependencies were tested in GitHub CI instead",
+    "diff_check": "passed"
+  },
+  "implemented_in_this_phase": [
+    "Integrate all seven PR #1 source and test blobs with original branch ancestry",
+    "Persist explicit task outcome, changed domains and pending-question binding with committed/replayed responses",
+    "Prevent rejected free-text questions and confirmations escaping after planner repair or budget exhaustion",
+    "Correct the choice-guard group-key mismatch in acknowledgment rendering",
+    "Exercise support response ownership through prepare, commit, reload and replay in all four order states"
+  ],
+  "menu": {"sha256": "5d7411b0e2363fed35e7c42b4fc087594838461ad16c069bbae90cc82edc717a", "unchanged": true},
+  "not_completed_by_this_phase": [
+    "Receiver-side acknowledgment for support proposals",
+    "Authenticated logical-call resume and full simulated status progression",
+    "Mid-call voice replacement and voice auditions",
+    "Paid GPT-Live/TTS compatibility and received-audio evaluation",
+    "Real Saudi-listener naturalness and latency testing",
+    "Matched private-preview deployment and production promotion"
+  ],
+  "live_deployed": false,
+  "paid_voice_calls_run": false,
+  "saudi_listener_evaluation_run": false,
+  "main_changed_by_this_phase": false,
+  "scope": "Deterministic and scripted-model integration evidence. Successful tests do not establish natural speech, unseen request understanding, receiver audibility or end-to-end latency. The following evidence-only commit does not change application source."
+}

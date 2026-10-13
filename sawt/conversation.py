@@ -6,6 +6,28 @@ from pathlib import Path
 COPY = json.loads((Path(__file__).resolve().parents[1] / 'data/conversation-copy.json').read_text(encoding='utf8'))
 
 
+# These are spoken labels only. The provided menu, identifiers, and prices
+# remain authoritative and untouched by a change in Saudi phrasing.
+SPICE_SPOKEN = {
+    'not_spicy': 'بدون شطة',
+    'mild': 'شطة خفيفة',
+    'medium': 'شطة وسط',
+    'hot': 'شطة قوية',
+}
+SPICE_QUESTION_LABELS = {
+    'not_spicy': 'بدون',
+    'mild': 'خفيفة',
+    'medium': 'وسط',
+    'hot': 'قوية',
+}
+
+
+def spoken_option(group_id, option_id, menu_label):
+    if group_id == 'spice_level':
+        return SPICE_SPOKEN.get(option_id, menu_label)
+    return menu_label
+
+
 def say(key, **values):
     return COPY[key].format(**values)
 
@@ -49,5 +71,6 @@ Conversation experience:
 - Unknown opening hours, ingredients, allergens, payment methods, discounts, live stock, delivery tracking, real transfers, reservations and scheduled orders are unavailable in this fixture. Say what is unavailable briefly; do not pretend a free-text note makes such a request executable.
 - To offer help from staff, call offer_handoff instead of inventing a free-text yes/no question. It records an honest demo-ticket proposal. Never say "أحولك لموظف" or promise that a human will join or call back. A yes to this proposal creates only a staff-request ticket.
 - If they ask for repetition, repeat the relevant answer; do not restart the interview. If a reference like "the second one" is ambiguous, identify the candidate lines and ask which. If a correction includes several clear fields, apply all before asking a question.
+- For shawarma spice level, speak naturally about الشطة: بدون شطة، شطة خفيفة، شطة وسط، or شطة قوية. Never ask about «درجة الحرارة» or call the option group «الحار». Those are fixture labels, not customer-facing language. Keep the exact existing menu option IDs and prices; do not turn spice level into a paid extra. If already saved, do not ask again. Do not assume «عادي» alone means without spice.
 - Use neutral, clear Saudi Arabic. No repetitive filler, artificial dialect, unsolicited upselling, or technical details about tools and model processing. Never announce recording/data collection in the spoken introduction. If directly asked about recording or capabilities, answer truthfully.
 '''

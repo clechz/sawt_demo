@@ -20,6 +20,9 @@ from sawt.v2_runtime import tx, engine, provider, ROOT, RUNTIME
 from sawt import cloud_storage
 from sawt.transactions import Conflict
 from sawt.recording import prune
+from sawt.experience import available_experiences, validate_experience, call_experience
+from sawt.hospitality import hospitality_view
+from sawt.v2_provider import V2Provider
 
 load_dotenv(ROOT / '.env')
 @asynccontextmanager
@@ -45,6 +48,9 @@ MAX_SECONDS = 600
 
 class StartCall(BaseModel):
     recording_consent: bool = Field(strict=True)
+    voice: Literal['cedar', 'ash', 'marin'] | None = None
+    scenario: Literal['new_order', 'late_delivery', 'missing_item', 'wrong_item'] = 'new_order'
+    experience_version: Literal['v2', 'v3'] = 'v2'
 
 
 @app.middleware('http')
@@ -97,9 +103,15 @@ def lab(request: Request):
     return FileResponse(ROOT / 'static/v2/index.html')
 
 
+@app.get('/api/experience')
+def experience_catalog():
+    return available_experiences()
+
+
 @app.get('/api/health')
 def health():
     return {'transport': 'livekit', 'voice': 'gpt-live-1', 'mock_restaurant': True,
+            'candidate': 'hospitality-v3', 'live_verified': False,
             'configured': all(os.getenv(k) for k in ['OPENAI_API_KEY','LIVEKIT_URL','LIVEKIT_API_KEY','LIVEKIT_API_SECRET'])}
 
 
@@ -130,20 +142,25 @@ def create(request: Request, body: StartCall):
         raise HTTPException(503, 'خدمة المكالمات تحتاج إعداد الاتصال.')
     if body.recording_consent is not True:
         raise HTTPException(400, 'يلزم الموافقة على تسجيل المكالمة قبل البدء.')
-    sid, token = tx.create(enforce_limits=True)
+    try:
+        settings = validate_experience(body.voice, body.scenario, body.experience_version)
+    except ValueError as exc:
+        raise HTTPException(422, str(exc))
+    sid, token = tx.create(enforce_limits=True, experience=settings)
     tx.event(sid, 'recording.consent', {'notice_version': '2026-10-11', 'retention_days': 7, 'storage': 'private_cloud' if cloud_storage.enabled() else 'local'})
     jwt = (api.AccessToken(os.environ['LIVEKIT_API_KEY'], os.environ['LIVEKIT_API_SECRET'])
            .with_identity('caller-' + sid).with_ttl(timedelta(minutes=11))
            .with_grants(api.VideoGrants(room_join=True, room='sawt-' + sid, can_publish=True, can_subscribe=True, can_publish_data=True))
            .with_room_config(api.RoomConfiguration(agents=[api.RoomAgentDispatch(agent_name=os.getenv('SAWT_AGENT_NAME','sawt-v2'), metadata=sid)]))
            .to_jwt())
-    return {'id': sid, 'token': token, 'room_token': jwt, 'url': os.environ['LIVEKIT_URL'], 'max_seconds': MAX_SECONDS}
+    return {'id': sid, 'token': token, 'room_token': jwt, 'url': os.environ['LIVEKIT_URL'], 'max_seconds': MAX_SECONDS,
+            'voice': settings['voice'], 'experience_version': settings['version'], 'scenario': settings['scenario']}
 
 
 @app.get('/api/calls/{sid}')
 def state(sid: str, request: Request, after: int = 0):
     row = authorized(sid, request)
-    return {'state': engine.view(row['state']), 'epoch': row['epoch'], 'closed': bool(row['closed']), 'events': tx.events(sid, after)}
+    return {'state': hospitality_view(row['state'], engine), 'epoch': row['epoch'], 'closed': bool(row['closed']), 'events': tx.events(sid, after)}
 
 
 @app.post('/api/calls/{sid}/end')
@@ -194,8 +211,11 @@ async def readback_stream(sid: str, receipt_id: str):
         audio = bytearray()
         first = True
         checked = 0
+        call_row = await asyncio.to_thread(tx.load, sid)
+        selected = call_experience(call_row['state'])['voice']
+        scoped_provider = provider if selected == provider.voice else V2Provider(voice=selected)
         try:
-            async for chunk in provider.stream_speech(quote['text']):
+            async for chunk in scoped_provider.stream_speech(quote['text']):
                 elapsed = time.perf_counter() - started
                 if elapsed - checked > .5 or first:
                     await asyncio.to_thread(tx.current_receipt, sid, receipt_id)
@@ -217,6 +237,9 @@ async def readback_stream(sid: str, receipt_id: str):
                 'cause_type': type(exc.__cause__).__name__ if exc.__cause__ else None,
                 'elapsed_ms': round((time.perf_counter()-started)*1000), 'bytes_generated': len(audio)})
             raise
+        finally:
+            if scoped_provider is not provider:
+                await scoped_provider.aclose()
     return StreamingResponse(chunks(), media_type='audio/mpeg', headers={'X-Accel-Buffering': 'no'})
 
 

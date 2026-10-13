@@ -1,0 +1,22 @@
+{
+  "release": "hospitality-v3-candidate",
+  "branch": "feat/v3-hospitality-voice",
+  "base_main_commit": "a8dace25f9ec769d72bf4ed6ee34f4acf4056f53",
+  "tested_application_commit": "e347576c6cd10a0a330a7c55632343ca8ec9cff7",
+  "validation_run_id": 38337459327,
+  "validation_artifact_id": 11784708891,
+  "validation_run_url": "https://github.com/clechz/sawt_demo/actions/runs/38337459327",
+  "source_patch_sha256": "027ee6202f6b659aabbe87523ee81f055e7c4a186db03253c737e80e17e17a06",
+  "python": {"passed": 799, "skipped": 1, "failed": 0, "errors": 0, "skipped_module": "tests.test_postgres_contract", "note": "Postgres integration contract was not exercised; SQLite tests are not equivalent evidence."},
+  "javascript": {"passed": 24, "failed": 0, "scope": "Node browser-logic tests; not a real microphone/browser call"},
+  "frontend": {"dependency_install": "passed", "typescript_check": "passed", "vite_build": "passed"},
+  "menu": {"path": "data/restaurant-menu-complex.csv", "sha256": "5d7411b0e2363fed35e7c42b4fc087594838461ad16c069bbae90cc82edc717a", "unchanged_from_base": true},
+  "implemented": ["per-call Cedar/Ash/Marin voice selector", "V3 native-delegation conversation handling", "selective acoustic verification before consequential commits", "stateful simulated support cases, refunds, replacements and cancellation", "persistent UI disclosure and explicit recording consent", "V2 rollback path"],
+  "live_deployed": false,
+  "paid_voice_calls_run": false,
+  "saudi_listener_evaluation_run": false,
+  "voice_default": "cedar",
+  "spruce_equivalence_verified": false,
+  "remaining_release_gates": ["provider access and all three voices on Live and TTS", "received-audio naturalness/latency and interruption evaluation", "Postgres contract tests on isolated preview database", "receiver-side acknowledgment for support proposals before claiming checkout-equivalent receipt strength", "browser microphone/autoplay end-to-end tests", "matching API and worker private-preview deployment"],
+  "scope": "Tested implementation candidate, not a production-readiness or human-rated naturalness claim. Temporary source-transfer workflows are removed in the following housekeeping commit. Main and existing hosted deployment were not changed."
+}
