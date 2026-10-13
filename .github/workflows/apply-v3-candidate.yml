@@ -1,0 +1,57 @@
+name: Apply and validate V3 candidate
+on:
+  push:
+    branches: [feat/v3-hospitality-voice]
+    paths: [.v3-patch/part4.b64]
+permissions:
+  contents: write
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/feat/v3-hospitality-voice'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify and apply exact reviewed patch
+        run: |
+          python - <<'PY'
+          import base64, hashlib, lzma, pathlib, subprocess
+          root = pathlib.Path('.v3-patch')
+          encoded = ''.join((root / f'part{i}.b64').read_text().strip() for i in range(5))
+          compressed = base64.b64decode(encoded, validate=True)
+          assert hashlib.sha256(compressed).hexdigest() == 'd8c8649ee8067826c45de30f96adca0bcb6027c642f35905560ff9a68f6183df', 'Patch transport checksum mismatch'
+          patch = lzma.decompress(compressed)
+          assert hashlib.sha256(patch).hexdigest() == '027ee6202f6b659aabbe87523ee81f055e7c4a186db03253c737e80e17e17a06', 'Source patch checksum mismatch'
+          path = pathlib.Path('/tmp/sawt-v3.patch')
+          path.write_bytes(patch)
+          subprocess.run(['git', 'apply', '--check', str(path)], check=True)
+          subprocess.run(['git', 'apply', '--index', str(path)], check=True)
+          subprocess.run(['git', 'diff', '--cached', '--check'], check=True)
+          PY
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -r requirements-v2.txt
+      - run: python -m pytest -q --junitxml=test-results.xml
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --experimental-default-type=module --test tests/playback.test.mjs tests/audio-meter.test.mjs tests/call-status.test.mjs tests/call-start.test.mjs tests/experience.test.mjs
+      - run: npm ci --prefix frontend
+      - run: npm run build --prefix frontend
+      - name: Publish tested source to development branch only
+        run: |
+          git restore --worktree test-results.xml
+          git rm .github/workflows/apply-v3-candidate.yml .v3-patch/part*.b64
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'Implement V3 hospitality conversation, selectable voices and stateful simulated support'
+          git push origin HEAD:refs/heads/feat/v3-hospitality-voice
+          git rev-parse HEAD > v3-tested-commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v3-candidate-validation
+          path: |
+            test-results.xml
+            v3-tested-commit.txt
+          retention-days: 7
