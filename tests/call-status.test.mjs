@@ -1,10 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createCallStatus} from '../static/v2/call-status.js';
-test('tool progress replaces generic thinking and stale work cannot overwrite new speech',()=>{
+test('quiet progress never exposes individual tool or reasoning stages',()=>{
  const updates=[];const s=createCallStatus((...x)=>updates.push(x));
  s.phase('listening');s.progress({stage:'search_menu',epoch:3});
- assert.deepEqual(updates.at(-1),['processing','أراجع المنيو']);
+ assert.deepEqual(updates.at(-1),['processing','جاري الرد']);
  s.interrupt({epoch:4});s.progress({stage:'saving',epoch:3});
  assert.deepEqual(updates.at(-1),['listening','نسمعك']);
 });
@@ -14,7 +14,7 @@ test('audio activity cannot replace checkout or saving status',()=>{
   s.phase(phase);const last=updates.at(-1);s.audio(.5,.3,false,2000);assert.equal(updates.at(-1),last);
  }
  s.reset();s.progress({stage:'saving',epoch:1});s.audio(.5,.3,false,2000);
- assert.deepEqual(updates.at(-1),['processing','أحفظ التعديل']);
+ assert.deepEqual(updates.at(-1),['processing','جاري الرد']);
 });
 test('audible activity has a quiet hold and mute indication',()=>{
  const updates=[];const s=createCallStatus((...x)=>updates.push(x));s.phase('listening');
