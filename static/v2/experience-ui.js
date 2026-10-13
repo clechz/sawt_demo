@@ -32,7 +32,7 @@ export function renderSupport(root,h,currentOrderId){
  const signature=JSON.stringify(h);if(panel.dataset.signature===signature)return;panel.dataset.signature=signature;
  const nodes=[];const line=text=>{const el=root.createElement('p');el.textContent=text;nodes.push(el);};
  for(const order of Object.values(h.orders||{})){
-  if(order.id===currentOrderId)continue; // Its saved receipt already shows this order.
+  if(order.id===currentOrderId&&order.status==='accepted'&&!order.refunded_halalas)continue; // Its saved receipt already shows this order.
   line(`${order.id} · ${statusText[order.status]||order.status}`);
   if(order.status==='out_for_delivery')line(`الوصول المتوقع خلال ${order.eta_minutes} دقائق`);
   if(order.refunded_halalas)line(`المبلغ المسترجع: ${money(order.refunded_halalas)}`);

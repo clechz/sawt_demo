@@ -1,5 +1,5 @@
 """Paid cloud V3/Ash call: actual PCM, saved state and timed exact readbacks. No Chrome."""
-import asyncio,hashlib,io,json,sys,time,wave
+import asyncio,hashlib,io,json,os,sys,time,wave
 from pathlib import Path
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
 import httpx
@@ -25,8 +25,8 @@ async def main():
             path=ROOT/'runtime'/('challenge-'+hashlib.sha256(text.encode()).hexdigest()[:16]+'.mp3')
             if not path.exists():path.write_bytes(await p.speak(text))
             audio.append(decode(path))
-        password=json.loads((ROOT/'runtime/private-demo.json').read_text())['password']
-        async with httpx.AsyncClient(base_url='https://sawt-demo.vercel.app',headers={'Origin':'https://sawt-demo.vercel.app'},timeout=60) as client:
+        password=os.getenv('SAWT_DEMO_PASSWORD') or json.loads((ROOT/'runtime/private-demo.json').read_text(encoding='utf8'))['password']
+        async with httpx.AsyncClient(base_url='https://sawt-demo.vercel.app',headers={'Origin':'https://sawt-demo.vercel.app','X-Access-Code':os.getenv('SAWT_ACCESS_CODE','')},timeout=60) as client:
             assert (await client.post('/login',data={'password':password})).status_code==303
             call=VoiceCall(client,{'experience_version':'v3','conversation_mode':'model_led','voice':'ash','scenario':'new_order'})
             try:

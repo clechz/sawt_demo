@@ -244,7 +244,7 @@ async def test_commit_records_mode_and_rejects_stale_bundle(engine, tmp_path):
 
 
 def test_worker_passes_same_mode_to_both_preparation_paths():
-    tree = ast.parse((ROOT / 'sawt/hospitality_voice.py').read_text())
+    tree = ast.parse((ROOT / 'sawt/hospitality_voice.py').read_text(encoding='utf8'))
     preparations = [n for n in ast.walk(tree) if isinstance(n, ast.Call)
                     and isinstance(n.func, ast.Name) and n.func.id == 'prepare_turn']
     assert len(preparations) == 2
