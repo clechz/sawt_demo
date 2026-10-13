@@ -93,14 +93,14 @@ def answer(menu, state, text):
         normalized = re.sub(r'^(?:خل|خلي|خله|خليه|خليها)\s+', '', normalized)
         if normalized == 'بدون' and 'none' in group['options']:
             chosen = 'none'
-        elif gid == 'spice_level':
+        if not chosen and gid == 'spice_level':
             # A short answer is safe only while answering the current spice question.
             short = {'بدون': 'not_spicy', 'خفيفه': 'mild', 'خفيف': 'mild',
                      'وسط': 'medium', 'قويه': 'hot'}
             candidate = short.get(normalized)
             if candidate in group['options']:
                 chosen = candidate
-        else:
+        if not chosen:
             for oid, option in group['options'].items():
                 labels = [option['name'], option['name_en']] + ALIASES.get((gid, oid), [])
                 if normalized in {normalize(x) for x in labels}:
