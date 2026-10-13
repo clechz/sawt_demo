@@ -1,9 +1,10 @@
 """Short acknowledgments derived from saved changes, not model claims."""
 import re
 from .domain import BRANCHES, normalize
+from .conversation import spoken_option
 
 GROUPS = {'portion': 'الحجم', 'size': 'الحجم', 'bread': 'الخبز',
-          'sweetness': 'السكر', 'ice': 'الثلج', 'spice_level': 'الحار', 'sauce': 'الصوص'}
+          'sweetness': 'السكر', 'ice': 'الثلج', 'spice_level': 'الشطة', 'sauce': 'الصوص'}
 NUMBERS = {1: 'واحد', 2: 'اثنين', 3: 'ثلاثة', 4: 'أربعة', 5: 'خمسة'}
 
 
@@ -32,8 +33,10 @@ def changes(menu, before, after, *, unresolved=()):
             selected = line['options'].get(gid, [])
             if selected != prior['options'].get(gid, []):
                 label = GROUPS.get(gid, group['name'])
-                value = '، '.join(group['options'][v]['name'] for v in selected)
-                if gid in ('ice', 'sweetness') and selected:
+                value = '، '.join(spoken_option(gid, v, group['options'][v]['name']) for v in selected)
+                if gid == 'spice_level':
+                    phrase = 'خليتها ' + value if selected else 'شلت الشطة'
+                elif gid in ('ice', 'sweetness') and selected:
                     phrase = 'خليته ' + value.replace('نصف سكر','نص سكر')
                 else:
                     phrase = 'خليت ' + label + ' ' + value if selected else 'شلت ' + label
