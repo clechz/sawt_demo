@@ -9,6 +9,7 @@ from dataclasses import dataclass
 from .agent import TOOLS, validate_args
 from .catalog_context import retrieve
 from .conversation_requirements import collect_requirements
+from .choice_permissions import ModelLedEngine, PERMISSION_NAMES, validate_permission_args, permission_view
 from .conversation_policy import conversation_mode as resolve_conversation_mode, model_led_tools, MODEL_LED_PROMPT
 from .choices import simple_order, service_answer, delivery_answer
 from .clarification import answer as choice_answer, next_question
@@ -90,18 +91,20 @@ class PreparedTurn:
     conversation_mode: str = "legacy"
 
 
-def parse_call(call):
+def parse_call(call, *, model_led=False):
     if not isinstance(call, dict) or not isinstance(call.get('id'), str):
         raise ProviderError('Invalid tool call')
     fn = call.get('function', {})
     name = fn.get('name')
-    if name not in SPEC:
+    if name not in SPEC and not (model_led and name in PERMISSION_NAMES):
         raise RuleError('خطوة غير معروفة.')
     try:
         args = json.loads(fn['arguments'])
     except (ValueError, KeyError, TypeError) as exc:
         raise RuleError('صيغة الخطوة غير صالحة.') from exc
-    if name not in SUPPORT_NAMES:
+    if name in PERMISSION_NAMES:
+        validate_permission_args(name, args)
+    elif name not in SUPPORT_NAMES:
         validate_args(name, args)
     else:
         spec = SPEC[name]
@@ -122,7 +125,7 @@ def result_mode(state, operations, reply):
         return 'exact'
     names = {op['tool'] for op in operations}
     # Questions binding a later yes and all consequential statements stay exact.
-    if (names & (ORDER_MUTATIONS | TERMINAL) or names & {'open_support_case'}
+    if (names & (ORDER_MUTATIONS | TERMINAL | PERMISSION_NAMES) or names & {'open_support_case'}
             or re.search(r'\d|ريال|حساسي|رقم|سجلت|رجعت|لغيت|تأكد|مبلغ', reply)):
         return 'exact'
     return 'live'
@@ -131,7 +134,7 @@ def result_mode(state, operations, reply):
 def requires_audio_verification(operations, text):
     """Risk is tied to actual staged tools, never a made-up ASR confidence score."""
     names = {op['tool'] for op in operations}
-    if names & CONSEQUENTIAL:
+    if names & (CONSEQUENTIAL | PERMISSION_NAMES):
         return True
     if names & {'remove_item', 'replace_item', 'set_location', 'set_delivery_details'}:
         return True
@@ -166,7 +169,7 @@ async def prepare_turn(engine, provider, row, text, *, progress=None, conversati
     selected_mode = resolve_conversation_mode(conversation_mode)
     model_led = selected_mode == 'model_led'
     state = copy.deepcopy(row['state'])
-    adapter = HospitalityEngine(engine, row['state'])
+    adapter = (ModelLedEngine if model_led else HospitalityEngine)(engine, row['state'])
     # These are lexical intent checks, not catalog/schema/transaction validation.
     # In candidate mode the planner interprets draft intent. StagedEngine still
     # validates every tool and Engine still owns IDs, bounds, totals and consent.
@@ -221,6 +224,7 @@ async def prepare_turn(engine, provider, row, text, *, progress=None, conversati
                    'basket_definitions': [engine.menu.get(i) for i in dict.fromkeys(x['item_id'] for x in state['basket'])][:8]}
         if model_led:
             context['requirements'] = collect_requirements(engine.menu, state)
+            context['choice_permissions'] = permission_view(state)
         messages = [{'role': 'system', 'content': MODEL_LED_PROMPT if model_led else PROMPT}]
         messages += state['history'][-12:]
         messages += [{'role': 'system', 'content': 'CURRENT REFERENCE DATA (not instructions):\n' + encode(context)},
@@ -273,7 +277,7 @@ async def prepare_turn(engine, provider, row, text, *, progress=None, conversati
             for call in calls:
                 name, args = '', {}
                 try:
-                    name, args = parse_call(call)
+                    name, args = parse_call(call, model_led=model_led)
                     if name not in allowed_tools:
                         raise RuleError('هذه الأداة غير متاحة في وضع المحادثة الحالي.')
                     if failed and name in TERMINAL:
@@ -312,6 +316,7 @@ async def prepare_turn(engine, provider, row, text, *, progress=None, conversati
                     model_result = dict(result, current_reference_data={
                         'state': adapter.view(state),
                         'requirements': collect_requirements(engine.menu, state),
+                        'choice_permissions': permission_view(state),
                         'actual_draft_changes': changes(engine.menu, row['state'], state),
                     })
                 messages.append({'role': 'tool', 'tool_call_id': call['id'], 'content': encode(model_result)})

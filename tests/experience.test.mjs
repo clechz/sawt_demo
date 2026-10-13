@@ -1,3 +1,4 @@
+import './worker-binding.test.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {selectedExperience,createExperienceControls,renderSupport} from '../static/v2/experience-ui.js';

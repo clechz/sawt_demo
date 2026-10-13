@@ -33,7 +33,7 @@ def available_experiences():
     }
 
 
-def validate_experience(voice=None, scenario="new_order", version="v3"):
+def validate_experience(voice=None, scenario="new_order", version="v3", *, conversation_mode=None):
     if version not in ("v2", "v3"):
         raise ValueError("Unknown experience version")
     selected = voice or ("cedar" if version == "v3" else os.getenv("SAWT_VOICE", "marin"))
@@ -41,7 +41,12 @@ def validate_experience(voice=None, scenario="new_order", version="v3"):
         raise ValueError("Unsupported voice; choose Cedar, Ash or Marin")
     if scenario not in SCENARIOS or (version == "v2" and scenario != "new_order"):
         raise ValueError("Unknown scenario")
+    from .conversation_policy import conversation_mode as resolve_mode
+    mode = resolve_mode(conversation_mode) if version == 'v3' else 'legacy'
+    if version == 'v2' and conversation_mode not in (None, 'legacy'):
+        raise ValueError('Model-led mode requires V3')
     return {"version": version, "voice": selected, "scenario": scenario,
+            "conversation_mode": mode,
             "profile_version": "saudi-host-1", "simulation": True}
 
 
@@ -49,7 +54,12 @@ def call_experience(state):
     saved = state.get("experience")
     if not saved:
         return validate_experience(version="v2")
-    return validate_experience(saved.get("voice"), saved.get("scenario", "new_order"), saved.get("version", "v2"))
+    value = validate_experience(saved.get("voice"), saved.get("scenario", "new_order"), saved.get("version", "v2"),
+                                conversation_mode=saved.get('conversation_mode', 'legacy'))
+    if saved.get('worker_contract'):
+        import copy
+        value['worker_contract'] = copy.deepcopy(saved['worker_contract'])
+    return value
 
 
 def voice_instructions():

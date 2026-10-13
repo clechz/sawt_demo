@@ -39,6 +39,8 @@ def describe_outcome(before: dict, after: dict, operations: list[dict], reply: s
         changed.append('order')
     if before.get('hospitality', {}) != after.get('hospitality', {}):
         changed.append('support')
+    if before.get('choice_permissions', {}) != after.get('choice_permissions', {}):
+        changed.append('conversation_permissions')
     successful = [op for op in operations if not op.get('result', {}).get('error')]
     names = {op['tool'] for op in successful}
     pending = None
@@ -59,6 +61,8 @@ def describe_outcome(before: dict, after: dict, operations: list[dict], reply: s
         kind = 'support'
     elif names & {'cancel_draft'}:
         kind = 'control'
+    elif names & {'set_choice_permission'} and not names & ORDER_EDITS:
+        kind = 'clarification'
     elif has_choice_guard or (pending and pending['kind'] == 'menu_choice'):
         kind = 'clarification'
     elif names & ORDER_EDITS or names & {'confirm'}:

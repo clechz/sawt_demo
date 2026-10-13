@@ -36,6 +36,12 @@ def model_led_tools(catalog: list[dict]) -> list[dict]:
                 'Read authoritative staged order and support state. Each tool result also '
                 'includes current reference data and structured missing requirements. '
                 'These facts do not prescribe the next question or authorize checkout.')
+    from .choice_permissions import PERMISSION_TOOLS
+    tools.extend(copy.deepcopy(PERMISSION_TOOLS))
+    for entry in tools:
+        if entry['function']['name'] in {'add_item', 'update_item', 'replace_item'}:
+            entry['function']['description'] += (' Use these options only for explicit customer choices or preserved selections. '
+                'For choices the customer asks YOU to make, use set_choice_permission and select_delegated_options.')
     return tools
 
 
@@ -92,3 +98,22 @@ invent refunds, duplicate compensation, courier progress or a completed human in
 Unknown IDs stay unknown. Reuse existing cases on repeats. Explain unavailable capabilities
 plainly and offer the supported review route; do not force an unfamiliar request into ordering.
 '''
+
+# Keep interpretation in the model; enforce scope in tools, not phrase matching.
+MODEL_LED_PROMPT += """
+SCOPED CHOICES: For 'you choose', first call set_choice_permission for ONLY the
+option groups delegated on the referenced current line, with a verbatim excerpt of
+CURRENT customer speech. Then call select_delegated_options. Both may run in one
+ordered batch when line_id is known, after a required dish replacement. No extra
+model round is needed just to obtain a permission ID. This is NOT permission to
+choose quantities, fulfillment, a branch, address or checkout. A negated/retracted
+instruction ('don't choose', 'لا تختار لي') means revoke, not delegate. Do not extract
+an affirmative phrase while ignoring a negation or correction elsewhere in the turn.
+Interpret a bare 'you choose' using the actual previous question. Ambiguous scope
+needs clarification, not permission for every missing group. Customer-specified
+values use normal edits and override delegated choices. Permissions expire when
+used or when that dish is replaced/removed; never revive old permissions from history.
+Treat a denied delegated selection as denial, not a reason to use update_item to
+bypass scope. Recommendations are not popularity facts. No 'most popular' claim
+without data. Preserve the user's current explicit choices and constraints.
+"""
