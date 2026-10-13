@@ -106,10 +106,10 @@ ALIASES = {
     ('portion', 'large'): ['كبير', 'كبيرة', 'large'],
     ('portion', 'double'): ['دبل', 'double'],
     ('sweetness', 'half'): ['نص سكر', 'سكر نص', 'سكر نصف', 'نص السكر', 'نصف السكر', 'half sugar'],
-    ('spice_level', 'not_spicy'): ['مو حار', 'غير حار', 'بدون حار', 'ما أبي حار', 'ما أبغى حار', 'لا تحط حار', 'بدون شطة', 'not spicy', 'no spice'],
-    ('spice_level', 'mild'): ['خفيف', 'حار خفيف', 'mild'],
-    ('spice_level', 'medium'): ['حار وسط', 'متوسط', 'medium'],
-    ('spice_level', 'hot'): ['حار', 'حارة', 'hot', 'spicy'],
+    ('spice_level', 'not_spicy'): ['مو حار', 'غير حار', 'بدون حار', 'ما أبي حار', 'ما أبغى حار', 'لا تحط حار', 'بدون شطة', 'بلا شطة', 'من غير شطة', 'ما أبي شطة', 'ما أبغى شطة', 'لا تحط شطة', 'بدون شطه', 'no chili', 'not spicy', 'no spice'],
+    ('spice_level', 'mild'): ['خفيف', 'حار خفيف', 'شطة خفيفة', 'mild'],
+    ('spice_level', 'medium'): ['حار وسط', 'شطة وسط', 'متوسط', 'medium'],
+    ('spice_level', 'hot'): ['حار', 'حارة', 'شطة قوية', 'شطة زيادة', 'hot', 'spicy'],
 }
 
 
@@ -313,7 +313,7 @@ def explicit_single_shawarma_choices(menu, item, utterance):
         return {}
     if re.search(r'(?<!\w)(?:dont|don t|do not|no)\s+(?:want|order|add)(?!\w)', text):
         return {}
-    dish = r'(?<!\w)(?:شاورما\s+(?:ال)?(?:دجاج|لحم)|(?:chicken|beef)\s+shawarma|shawarma\s+(?:chicken|beef))(?!\w)'
+    dish = r'(?<!\w)(?:و)?(?:شاورما\s+(?:ال)?(?:دجاج|لحم)|(?:chicken|beef)\s+shawarma|shawarma\s+(?:chicken|beef))(?!\w)'
     variants = re.findall(dish, text)
     mentioned_ids = {'sandwiches_07' if 'دجاج' in name or 'chicken' in name else 'sandwiches_08'
                      for name in variants}
