@@ -6,17 +6,17 @@
   <link rel="stylesheet" href="/assets/ui/orb.css"><link rel="stylesheet" href="/assets/call.css"><link rel="stylesheet" href="/assets/experience.css">
 </head>
 <body>
-<header class="brand"><img src="/assets/sawt-logo.svg" alt="صوت" width="105" height="38"></header>
+<header class="brand"><img src="/assets/sawt-logo.svg" alt="صوت" width="105" height="38"><span class="brand-credit">تحدي عبدالله</span></header>
 <main>
   <section class="call-panel" aria-label="المكالمة">
     <div class="orb-control">
       <div id="voice-orb" class="voice-orb"></div>
-      <button id="start" class="primary-button" aria-label="ابدأ مكالمتك"><span id="start-label">ابدأ المكالمة</span></button>
+      <button id="start" class="primary-button" aria-label="ابدأ مكالمتك" aria-describedby="recording-notice"><span id="start-label">ابدأ المكالمة</span></button>
     </div>
     <div class="call-state"><h1 id="call-phase">جاهزين لك</h1><time id="call-time" dir="ltr" aria-label="مدة المكالمة">0:00</time></div>
     <p id="status" class="sr-only" role="status" aria-live="polite"></p>
+    <p id="recording-notice" class="recording-notice">ببدء المكالمة، توافق على تسجيلها للمراجعة.</p>
     <p class="simulation-disclosure">مساعد صوتي تجريبي · الطلبات والدفع والتعويضات محاكاة فقط.</p>
-    <label class="recording-consent"><input id="experience-consent" type="checkbox"> أوافق على تسجيل المكالمة.</label>
     <div id="controls" class="controls" hidden>
       <button id="mute" class="mute-button" aria-pressed="false" title="كتم ميكروفوني فقط"><i class="mic-on" data-icon="mic"></i><i class="mic-off" data-icon="muted"></i><span id="mute-label" class="sr-only">كتم الميكروفون</span></button>
       <button id="end" class="end-button" title="إنهاء المكالمة"><i data-icon="hangup"></i><span class="sr-only">إنهاء المكالمة</span></button>
@@ -26,7 +26,7 @@
     <button id="retry-audio" class="secondary" hidden>تشغيل الصوت / إعادة الملخص</button>
     <button id="order-button" class="order-button" aria-describedby="order-note" hidden><span>طلبك</span><span id="total"></span><i data-icon="chevron"></i></button>
     <p id="order-note" class="sr-only"></p>
-    <form id="access" hidden><label for="code">رمز الدخول للتجربة</label><div><input id="code" type="password" autocomplete="off"><button type="submit">متابعة</button></div></form>
+    <form id="access" hidden><label for="code">رمز الدخول للتجربة</label><div><input id="code" type="password" autocomplete="off"><button type="submit" aria-describedby="recording-notice">متابعة</button></div></form>
   </section>
 </main>
 <dialog id="order" aria-labelledby="order-title">

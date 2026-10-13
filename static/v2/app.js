@@ -50,8 +50,9 @@ async function start(){
  $('order-button').hidden=true;$('order-note').textContent='';
  renderSupport(document,null);
  try{
-  const experience=experienceControls.value();
-  if(!experience.recording_consent)throw new Error('وافق على تسجيل المكالمة قبل البدء.');
+  // Called by the start button or access-form submission, after the visible notice.
+  const experience=experienceControls.value({startRequested:true});
+  if(!experience.recording_consent)throw new Error('تعذر بدء المكالمة. حدّث الصفحة وحاول مرة ثانية.');
   experienceControls.setBusy(true);
   room=new LivekitClient.Room({adaptiveStream:true,dynacast:true});
   const activeRoom=room;
