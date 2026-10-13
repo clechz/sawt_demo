@@ -18,7 +18,7 @@ def profile():
 def available_experiences():
     return {
         "version": "v3-candidate",
-        "default_voice": "cedar",
+        "default_voice": "ash",
         "voices": [{"id": name, "label": name.title()} for name in VOICES],
         "voice_change": "between_calls",
         "spruce_available": False,
@@ -36,7 +36,7 @@ def available_experiences():
 def validate_experience(voice=None, scenario="new_order", version="v3", *, conversation_mode=None):
     if version not in ("v2", "v3"):
         raise ValueError("Unknown experience version")
-    selected = voice or ("cedar" if version == "v3" else os.getenv("SAWT_VOICE", "marin"))
+    selected = voice or ("ash" if version == "v3" else os.getenv("SAWT_VOICE", "marin"))
     if selected not in VOICES:
         raise ValueError("Unsupported voice; choose Cedar, Ash or Marin")
     if scenario not in SCENARIOS or (version == "v2" and scenario != "new_order"):

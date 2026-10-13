@@ -15,7 +15,7 @@ ROOT = Path(__file__).resolve().parents[1]
 SOURCE_FILES = (
     'voice_worker.py', 'sawt/hospitality_voice.py', 'sawt/hospitality_runtime.py',
     'sawt/conversation_policy.py', 'sawt/conversation_requirements.py',
-    'sawt/choice_permissions.py', 'sawt/release_contract.py',
+    'sawt/choice_permissions.py', 'sawt/release_contract.py', 'sawt/microphone.py',
     'sawt/domain.py', 'sawt/transactions.py', 'sawt/choices.py',
     'sawt/experience.py', 'sawt/hospitality.py', 'sawt/v2_provider.py',
     'sawt/provider.py', 'sawt/recognition.py', 'sawt/audio_gate.py',

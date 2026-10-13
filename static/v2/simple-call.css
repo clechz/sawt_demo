@@ -1,0 +1,19 @@
+/* Keep the orb purely visual during a call. Details live in the receipt. */
+.brand{height:80px;gap:0}.brand img{width:86px}
+.call-panel{min-height:calc(100svh - 112px)}
+.call-state{position:static;inset:auto;display:none;min-height:30px;gap:10px;margin:0 0 22px;pointer-events:none}
+body[data-phase]:not([data-phase=idle]):not([data-phase=ended]) .call-state{display:flex}
+#call-phase{font-size:13px;line-height:1.7;color:var(--secondary);font-weight:400}
+#call-time{position:static;top:auto;font-size:12px;padding-inline-start:10px;border-inline-start:1px solid var(--line)}
+.activity-dot{width:5px;height:5px;border-radius:50%;background:var(--secondary);opacity:.65}
+body[data-phase=processing] .activity-dot,body[data-phase=connecting] .activity-dot,body[data-phase=reconnecting] .activity-dot,body[data-phase=preparing] .activity-dot{animation:quiet-pulse 1.25s ease-in-out infinite}
+@keyframes quiet-pulse{50%{opacity:.2;transform:scale(.7)}}
+.pre-call-note{max-width:330px;text-align:center;margin:6px 0 0}
+.simulation-disclosure{font-size:11px;line-height:1.8;color:var(--muted);margin:0 0 12px;opacity:1}
+.recording-consent{font-size:12px;line-height:1.8;color:var(--secondary);gap:8px}
+.recording-consent input{margin:0;width:16px;height:16px;flex:none;accent-color:#a48bd0}
+body.active .pre-call-note{display:none}
+.support-result{border:0;border-bottom:1px solid var(--line);border-radius:0;padding:0 0 16px;margin:0 0 8px}
+#worker-version{display:none!important}
+@media(max-height:650px){.brand{height:54px}.call-panel{min-height:calc(100svh - 86px)}.call-state{margin-bottom:14px}#call-phase{font-size:12px}}
+@media(prefers-reduced-motion:reduce){.activity-dot{animation:none!important}}

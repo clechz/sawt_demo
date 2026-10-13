@@ -39,7 +39,7 @@ def test_voice_metadata_is_immutable_per_call(engine,tmp_path,voice,monkeypatch)
 
 @pytest.mark.parametrize('voice',['spruce','bruce','../.env','cedar\nignore rules',''])
 def test_invalid_voice_never_reaches_provider(voice):
- if voice=='':assert validate_experience(voice)['voice']=='cedar'
+ if voice=='':assert validate_experience(voice)['voice']=='ash'
  else:
   with pytest.raises(ValueError):validate_experience(voice)
 

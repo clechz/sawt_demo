@@ -1,3 +1,4 @@
+import {setMicrophoneCapture,syncMicrophoneMute} from './microphone-control.js';
 import {validateCallBinding,validateReadyBinding} from './worker-binding.js';
 import {createExperienceControls, renderSupport} from './experience-ui.js';
 import {ReadbackPlayer} from './playback.js';
@@ -12,7 +13,7 @@ const playbackMeter=new PlaybackMeter();
 const microphoneMeter=new MicrophoneMeter();
 const remoteMeters=new Map();
 let lastMeterTime=0;
-let phase='idle',readbackMuted=false,workerVerified=false,workerReadyTimer;
+let phase='idle',readbackMuted=false,workerVerified=false,workerReadyTimer,micSequence=0,micBusy=false;
 const callStatus=createCallStatus((next,text)=>{phase=next;document.body.dataset.phase=next;$('call-phase').textContent=text;$('status').textContent=text;});
 function setPhase(next){callStatus.phase(next);}
 const error=text=>{$('error').textContent=text;$('error').hidden=!text;};
@@ -28,6 +29,7 @@ function render(state){
  currentState=state;
  renderOrder(state);
  renderSupport(document,state.hospitality);
+ if(!$('support-result').hidden)$('order-button').hidden=false;
  if(state.quote&&!state.quote.presented&&quoteSeen!==state.quote.token&&room&&workerVerified&&!closing){quoteSeen=state.quote.token;player.play(call.id);}
  if(!state.quote&&player.active){player.cancel();if(!closing)setPhase('processing');}
  if(state.order_id&&workerVerified&&!closing&&phase!=='ending')setPhase('completed');
@@ -44,7 +46,7 @@ function animate(time=0){if(!room)return;if(time-lastMeterTime>=25){const local=
 async function start(){
  if(room)return;
  playbackMeter.prepare();microphoneMeter.prepare();lastMeterTime=0;
- workerVerified=false;clearTimeout(workerReadyTimer);
+ workerVerified=false;clearTimeout(workerReadyTimer);micSequence=0;micBusy=false;muted=false;$('mute').disabled=false;
  const versionLabel=$('worker-version');if(versionLabel){versionLabel.hidden=true;versionLabel.textContent='';}
  callStatus.reset();$('start').disabled=true;error('');setPhase('connecting');closing=false;quoteSeen=null;currentState=null;call=null;refreshing=false;
  $('order-button').hidden=true;$('order-note').textContent='';
@@ -69,7 +71,8 @@ async function start(){
     if(event.type==='ready'){
      try{const binding=validateReadyBinding(call,event);workerVerified=true;clearTimeout(workerReadyTimer);
       audioElements.forEach(a=>a.muted=readbackMuted);
-      const label=$('worker-version');if(label){label.hidden=false;label.textContent=`${binding.conversation_mode} · ${binding.voice} · ${binding.source_fingerprint.slice(0,8)}`;}
+      // Keep build identity in diagnostics, not on the caller's main screen.
+      document.body.dataset.voice=binding.voice;
       setPhase('listening');if(lab)$('send-fixture').disabled=false;
      }catch(e){error(e.message);void end();return;}
     }
@@ -86,7 +89,7 @@ async function start(){
    }catch{}
   });
   room.on(LivekitClient.RoomEvent.Reconnecting,()=>{if(room!==activeRoom||closing)return;player.cancel();quoteSeen=null;setPhase('reconnecting');});
-  room.on(LivekitClient.RoomEvent.Reconnected,()=>{if(room!==activeRoom||closing)return;setPhase(workerVerified?'listening':'connecting');refresh();});
+  room.on(LivekitClient.RoomEvent.Reconnected,()=>{if(room!==activeRoom||closing)return;setPhase(workerVerified?'listening':'connecting');void syncMicrophoneMute(activeRoom.localParticipant,call.id,muted,++micSequence).catch(()=>error('تعذر مزامنة الميكروفون. حالة الكتم المحلية محفوظة.'));refresh();});
   room.on(LivekitClient.RoomEvent.Disconnected,()=>{if(room===activeRoom&&!closing){error('انقطعت المكالمة. طلبك المحفوظ موجود في تفاصيل الطلب.');end();}});
   let connectTimeout;
   try{await Promise.race([room.connect(call.url,call.room_token),new Promise((_,reject)=>{connectTimeout=setTimeout(()=>reject(new Error('تعذر اتصال الصوت. جرّب Chrome أو Edge وتحقق من الشبكة.')),25000);})]);}finally{clearTimeout(connectTimeout);}
@@ -114,7 +117,21 @@ async function end(){
  muted=false;($('mute-label')||$('mute')).textContent='كتم الميكروفون';$('mute').setAttribute('aria-pressed','false');
 }
 $('start').onclick=start;$('end').onclick=end;
-$('mute').onclick=async()=>{if(!room)return;const next=!muted;try{if(lab){for(const publication of room.localParticipant.audioTrackPublications.values())next?await publication.mute():await publication.unmute();}else await room.localParticipant.setMicrophoneEnabled(!next);muted=next;($('mute-label')||$('mute')).textContent=muted?'تشغيل الميكروفون':'كتم الميكروفون';$('mute').setAttribute('aria-pressed',String(muted));}catch{error('تعذر تغيير الميكروفون. حاول مرة ثانية.');}};
+$('mute').onclick=async()=>{
+ if(!room||closing||micBusy)return;
+ const activeRoom=room,activeCall=call.id,next=!muted;
+ micBusy=true;$('mute').disabled=true;
+ try{
+  // MediaStreamTrack.enabled=false supplies silence without stopping capture's
+  // transport. Remote tracks, ReadbackPlayer and in-flight replies stay alone.
+  setMicrophoneCapture(activeRoom.localParticipant,next);
+  muted=next;
+  ($('mute-label')||$('mute')).textContent=muted?'تشغيل الميكروفون':'كتم الميكروفون';
+  $('mute').setAttribute('aria-pressed',String(muted));
+  await syncMicrophoneMute(activeRoom.localParticipant,activeCall,muted,++micSequence);
+ }catch(e){if(room===activeRoom&&!closing)error(e.message||'تعذر مزامنة الميكروفون. حالة الكتم المحلية محفوظة.');}
+ finally{if(room===activeRoom&&!closing){micBusy=false;$('mute').disabled=false;}}
+};
 $('retry-audio').onclick=()=>{error('');playbackMeter.prepare();microphoneMeter.prepare();for(const meter of remoteMeters.values())meter.prepare();for(const audio of audioElements)void audio.play().catch(()=>{});if(workerVerified&&currentState?.quote&&!currentState.quote.presented)player.play(call.id);else room?.startAudio().then(()=>$('retry-audio').hidden=true).catch(e=>error(e.message));};
 $('order-button').onclick=()=>$('order').showModal();$('close-order').onclick=()=>$('order').close();
 for(const dialog of [$('order')])dialog.addEventListener('click',event=>{if(event.target!==dialog)return;const box=dialog.getBoundingClientRect();if(event.clientX<box.left||event.clientX>box.right||event.clientY<box.top||event.clientY>box.bottom)dialog.close();});

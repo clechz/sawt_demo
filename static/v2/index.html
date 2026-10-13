@@ -3,37 +3,26 @@
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#101014"><title>تحدي صوت — عبدالله</title>
-  <link rel="stylesheet" href="/assets/ui/orb.css"><link rel="stylesheet" href="/assets/call.css"><link rel="stylesheet" href="/assets/experience.css">
+  <link rel="stylesheet" href="/assets/ui/orb.css"><link rel="stylesheet" href="/assets/call.css"><link rel="stylesheet" href="/assets/experience.css"><link rel="stylesheet" href="/assets/simple-call.css">
 </head>
 <body>
-<header class="brand"><img src="/assets/sawt-logo.svg" alt="صوت" width="105" height="38"><span class="brand-credit">تحدي عبدالله</span><span class="experience-badge">صوت ذكي · محاكاة</span></header>
+<header class="brand"><img src="/assets/sawt-logo.svg" alt="صوت" width="105" height="38"></header>
 <main>
   <section class="call-panel" aria-label="المكالمة">
     <div class="orb-control">
       <div id="voice-orb" class="voice-orb"></div>
       <button id="start" class="primary-button" aria-label="ابدأ مكالمتك"><span id="start-label">ابدأ المكالمة</span></button>
-      <div class="call-state"><h1 id="call-phase">جاهزين لك</h1><time id="call-time" dir="ltr" aria-label="مدة المكالمة">0:00</time></div>
     </div>
+    <div class="call-state"><span class="activity-dot" aria-hidden="true"></span><h1 id="call-phase">جاهزين لك</h1><time id="call-time" dir="ltr" aria-label="مدة المكالمة">0:00</time></div>
     <p id="status" class="sr-only" role="status" aria-live="polite"></p>
-    <p id="worker-version" dir="ltr" class="experience-badge" hidden></p>
-    <details id="experience-settings" class="experience-settings">
-      <summary>الصوت والتجربة <span id="voice-current" dir="ltr">Cedar</span></summary>
-      <div class="experience-fields">
-        <label for="voice-choice">الصوت</label>
-        <select id="voice-choice"><option value="cedar">Cedar</option><option value="ash">Ash</option><option value="marin">Marin</option></select>
-        <label for="scenario-choice">بداية المكالمة</label>
-        <select id="scenario-choice"><option value="new_order">مكالمة جديدة</option><option value="late_delivery">طلب متأخر</option><option value="missing_item">صنف ناقص</option><option value="wrong_item">صنف غير صحيح</option></select>
-        <p id="scenario-brief">اطلب أو اسأل بطريقتك.</p>
-        <p id="voice-change-note">اختر الصوت قبل المكالمة. تقدر تغيّره بعد ما تنهيها.</p>
-      </div>
-    </details>
-    <p class="simulation-disclosure">تجربة بصوت مولد بالذكاء الاصطناعي. الطلبات والدفع والاسترجاع والموظفون محاكاة، ولا تتحرك أموال حقيقية.</p>
-    <label class="recording-consent"><input id="experience-consent" type="checkbox"> أوافق على تسجيل المكالمة للمراجعة.</label>
+    <div class="pre-call-note">
+      <p class="simulation-disclosure">تجربة بالذكاء الاصطناعي، بدون طلبات حقيقية.</p>
+      <label class="recording-consent"><input id="experience-consent" type="checkbox"> أوافق على تسجيل المكالمة للمراجعة.</label>
+    </div>
     <div id="controls" class="controls" hidden>
       <button id="mute" class="mute-button" aria-pressed="false"><i class="mic-on" data-icon="mic"></i><i class="mic-off" data-icon="muted"></i><span id="mute-label" class="sr-only">كتم الميكروفون</span></button>
       <button id="end" class="end-button" title="إنهاء المكالمة"><i data-icon="hangup"></i><span class="sr-only">إنهاء المكالمة</span></button>
     </div>
-    <section id="support-result" class="support-result" aria-label="متابعة الطلب والبلاغات" aria-live="polite" hidden></section>
     <div id="error" role="alert" hidden></div>
     <button id="retry-audio" class="secondary" hidden>تشغيل الصوت / إعادة الملخص</button>
     <button id="order-button" class="order-button" aria-describedby="order-note" hidden><span>طلبك</span><span id="total"></span><i data-icon="chevron"></i></button>
@@ -44,6 +33,7 @@
 <dialog id="order" aria-labelledby="order-title">
   <div class="sheet-handle" aria-hidden="true"></div>
   <header class="order-heading"><div><h2 id="order-title">طلبك</h2><span id="order-badge" class="order-badge"></span></div><button id="close-order" aria-label="إغلاق الطلب"><i data-icon="close"></i></button></header>
+  <section id="support-result" class="support-result" aria-label="متابعة الطلب والبلاغات" aria-live="polite" hidden></section>
   <div id="basket"></div>
   <dl id="order-meta"></dl>
   <div class="order-totals"><div id="delivery-row"><span>رسوم التوصيل</span><span id="order-delivery"></span></div><div class="grand-total"><span>الإجمالي</span><strong id="order-total"></strong></div></div>
