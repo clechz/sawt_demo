@@ -1,15 +1,9 @@
-.experience-settings{width:min(100%,23rem);margin:1.25rem auto 0;text-align:start;font-size:.9rem}
-.experience-settings summary{cursor:pointer;list-style:none;display:flex;justify-content:space-between;padding:.65rem 1rem;border:1px solid #ffffff25;border-radius:1rem}
-.experience-fields{display:grid;grid-template-columns:auto 1fr;gap:.7rem;align-items:center;padding:1rem}
-.experience-fields select{min-width:0;padding:.6rem;border-radius:.65rem;background:#212126;color:inherit;border:1px solid #ffffff35;font:inherit}
-.experience-fields p{grid-column:1/-1;margin:0;line-height:1.7;font-size:.8rem;opacity:.8}
-.simulation-disclosure{max-width:26rem;margin:1rem auto .5rem;font-size:.75rem;line-height:1.8;opacity:.7}
-.recording-consent{display:flex;align-items:center;justify-content:center;gap:.5rem;font-size:.8rem}
-.recording-consent input{width:1rem;height:1rem;accent-color:#d9b773}
-.support-result{max-width:25rem;margin:1rem auto;padding:.7rem 1rem;border:1px solid #ffffff25;border-radius:1rem;text-align:start;font-size:.85rem}
-.support-result p{margin:.3rem 0;overflow-wrap:anywhere}
-.experience-settings select:focus-visible,.experience-settings summary:focus-visible,.recording-consent input:focus-visible{outline:2px solid #d9b773;outline-offset:3px}
+/* One clear consent choice; the conversation has no settings panel. */
+.simulation-disclosure{max-width:24rem;margin:12px auto 8px;text-align:center;font-size:11px;line-height:1.75;color:#96919f}
+.recording-consent{display:flex;align-items:center;justify-content:center;gap:9px;color:#bcb7c6;font-size:12px;line-height:1.8;cursor:pointer}
+.recording-consent input{width:16px;height:16px;accent-color:#baa5d8;flex:none}
+.recording-consent input:focus-visible{outline:2px solid #d9b773;outline-offset:3px}
+.support-result{max-width:25rem;margin:14px auto;padding:12px 16px;border:1px solid #ffffff1c;border-radius:14px;text-align:start;font-size:12px;color:#d0cbd7}
+.support-result p{margin:4px 0;overflow-wrap:anywhere}
 body.active .simulation-disclosure,body.active .recording-consent{display:none}
-
-.experience-badge{font-size:10px;white-space:nowrap;color:var(--secondary);border:1px solid #3e3547;border-radius:20px;padding:4px 8px}
-@media(max-width:480px){.brand{gap:9px}.experience-badge{font-size:9px;padding:3px 6px}}
+@media(max-width:480px){.simulation-disclosure{font-size:10px}}
