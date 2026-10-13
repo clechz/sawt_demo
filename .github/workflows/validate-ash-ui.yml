@@ -2,7 +2,7 @@ name: Validate Ash UI and microphone repair
 on:
   push:
     branches: [fix/ash-clean-ui-mic-mute-20261013]
-    paths: [.github/workflows/validate-ash-ui.yml]
+    paths: [.github/workflows/validate-ash-ui.yml, scripts/check_ash_ui_browser.py, scripts/apply_ash_ui_candidate.py]
 permissions:
   contents: write
 concurrency:
