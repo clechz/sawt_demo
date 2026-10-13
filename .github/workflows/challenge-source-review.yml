@@ -1,0 +1,23 @@
+name: Challenge tool source review
+on:
+  push:
+    branches: [fix/challenge-tool-coverage-20261013]
+    paths: [.github/workflows/challenge-source-review.yml]
+permissions:
+  contents: read
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: f37e481273b33ed0f9b20848aabb61af933c10e1
+          persist-credentials: false
+      - run: git archive --format=tar.gz --output=/tmp/sawt-challenge-source.tar.gz HEAD
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: sawt-challenge-source
+          path: /tmp/sawt-challenge-source.tar.gz
+          retention-days: 1
+          if-no-files-found: error
