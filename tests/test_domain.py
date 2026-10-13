@@ -176,3 +176,24 @@ def test_model_confirmation_question_always_gets_authoritative_readback(engine):
     assert s['quote'] and not s['quote']['presented']
     assert result['reply']==engine.summary(s)
     assert result['events'][-1]['source']=='readback_guard'
+
+
+def test_laban_is_plain_without_sugar_question_and_other_drinks_keep_choices(engine):
+    from sawt.conversation_requirements import collect_requirements
+    s = new_state()
+    engine.act(s, 'add_item', {'item_id':'beverages_03', 'quantity':1,
+        'options':{'size':['medium'], 'ice':['regular']}, 'notes':''})
+    line = s['basket'][0]
+    assert line['options']['sweetness'] == ['none']
+    assert collect_requirements(engine.menu, s)['missing_options'] == []
+    assert set(engine.menu.get('beverages_03')['groups']['sweetness']['options']) == {'none'}
+    assert len(engine.menu.get('beverages_09')['groups']['sweetness']['options']) > 1
+    engine.act(s, 'set_service', {'service':'pickup'})
+    engine.act(s, 'set_branch', {'branch_id':'ruh_narjis'})
+    result = engine.act(s, 'checkout', {})
+    assert result['quote'] and engine.view(s)['total'] == 1000
+    assert 'سكر' not in result['reply']
+    old = copy.deepcopy(s)
+    with pytest.raises(RuleError):
+        engine.act(s, 'update_item', {'line_id':line['line_id'], 'options':{'sweetness':['regular']}})
+    assert s == old

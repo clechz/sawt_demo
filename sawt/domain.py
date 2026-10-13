@@ -50,6 +50,15 @@ class Menu:
                 })
                 group['options'][row['option_id']] = {'name': row['option_name_ar'], 'name_en': row['option_name_en'], 'delta': halalas(row['option_price_delta_sar'])}
 
+        # Product correction: plain laban is unsweetened, not a customizable
+        # sugary drink. Preserve the source CSV and apply this explicit override
+        # consistently to retrieval, validation and missing-choice calculation.
+        laban = self.items.get('beverages_03')
+        if laban and 'sweetness' in laban['groups']:
+            sweetness = laban['groups']['sweetness']
+            sweetness.update(required=False, min=0,
+                             options={'none': sweetness['options']['none']})
+
     def get(self, item_id):
         if item_id not in self.items:
             raise RuleError('الصنف غير موجود. ابحث في القائمة أولاً.')
@@ -110,7 +119,8 @@ class Menu:
                 if oid not in group['options']:
                     raise RuleError('الخيار غير موجود لهذا الصنف.')
                 option = group['options'][oid]
-                option_names.append(option['name'])
+                if not (line['item_id'] == 'beverages_03' and gid == 'sweetness'):
+                    option_names.append(option['name'])
                 delta += option['delta']
         if not isinstance(line['notes'], str) or len(line['notes']) > 300:
             raise RuleError('الملاحظات طويلة جداً.')
@@ -123,6 +133,8 @@ class Menu:
         item = self.get(item_id)
         if not isinstance(selections, dict): return selections
         result = copy.deepcopy(selections)
+        if item_id == 'beverages_03' and not result.get('sweetness'):
+            result['sweetness'] = ['none']
         size_aliases = {'large meal': 'large', 'regular meal': 'regular', 'family meal': 'family',
                         'وجبه كبيره': 'large', 'وجبه عاديه': 'regular', 'وجبه عائليه': 'family'}
         for gid, chosen in result.items():
@@ -179,6 +191,7 @@ class Engine:
             # Speak natural option names; keep catalog data and validated totals intact.
             spoken_names = [spoken_option(gid, oid, group['options'][oid]['name'])
                             for gid, group in item['groups'].items()
+                            if not (x['item_id'] == 'beverages_03' and gid == 'sweetness')
                             for oid in x['options'].get(gid, [])]
             lines.append(f"{x['quantity']} من {x['name']}، " + '، '.join(spoken_names) + notes + f"، بسعر {money(x['line_total'])} ريال")
         fulfillment = ('التوصيل إلى ' + state['location']['city'] + '، حي ' + state['location']['zone'] + '، ' + state['location']['address'] + ' من ' if state['service']=='delivery' else 'استلام من ') + view['branch']['name'] + '.'

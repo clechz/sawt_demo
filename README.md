@@ -4,7 +4,7 @@
 
 A simple call screen over a stateful ordering system. Speak naturally, give details in any order, change your mind after the total, or ask for information without placing an order. The model interprets the conversation; validated Python tools own prices, availability, saved changes and confirmation.
 
-**Application entry points** (`app_v2.py` + `voice_worker.py`). Orders, delivery zones and staff tickets are simulated. The supplied menu is unchanged: **144 dishes, 12 categories, 4 branches, 1,728 rows**.
+**Application entry points** (`app_v2.py` + `voice_worker.py`). Orders, delivery zones and staff tickets are simulated. The source CSV is preserved; one explicit product override serves laban unsweetened without a sugar question. The catalog contains: **144 dishes, 12 categories, 4 branches, 1,728 rows**.
 
 ## Reviewer starting points
 
