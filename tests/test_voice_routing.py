@@ -145,3 +145,23 @@ def test_microphone_check_bypasses_restaurant_planner_without_swallowing_order()
     for text in ['هلا والله تسمعني؟', 'تسمعني', 'ألو تسمعني؟']:
         assert route_transcript(text) == 'recover'
     assert route_transcript('تسمعني أبي شاورما') == 'backend'
+
+
+import pytest
+@pytest.mark.asyncio
+async def test_lifetime_normal_close_does_not_emit_provider_failure(monkeypatch):
+    from unittest.mock import AsyncMock
+    import asyncio
+    monkeypatch.setattr(voice_worker.asyncio, 'sleep', AsyncMock())
+    monkeypatch.setattr(voice_worker.tx, 'load', Mock(return_value={'closed':True,'state':{'quote':None},'created':0}))
+    voice=SimpleNamespace(ending=False,provider_failed=False,sid='closed-call',
+        send=AsyncMock(),room=SimpleNamespace(disconnect=AsyncMock()),
+        audit=Mock(),spawn=Mock())
+    async def close_session():
+        voice_worker.RestaurantVoice.on_provider_event(voice,{'type':'session.closed','reason':'close_requested'})
+    voice.session=SimpleNamespace(aclose=AsyncMock(side_effect=close_session))
+    await voice_worker.RestaurantVoice.watch_lifetime(voice)
+    assert voice.ending and not voice.provider_failed
+    voice.spawn.assert_not_called()
+    voice.send.assert_awaited_once_with('ended')
+    voice.room.disconnect.assert_awaited_once()

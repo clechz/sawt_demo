@@ -4,6 +4,19 @@ See [the seven submission gates](SUBMISSION-READINESS.md). The merged candidate
 passed 938 Python tests (one optional skip), 63 Node tests and the frontend build.
 A fresh README dependency install and uvicorn/page smoke also passed.
 
+## Human-call follow-up
+
+The kabsa/laban call reached a prepared 117 SAR checkout but never confirmed.
+Normal lifetime shutdown did not mark `ending` before closing the provider
+session, allowing its own `session.closed` event to enter the fatal-error path.
+The lifecycle now marks intentional shutdown first; the regression simulates the
+provider close callback and verifies no fatal error is dispatched. This is a
+confirmed code defect, not proof of the exact unrecorded browser error wording.
+Thirty-three routing/provider tests passed. Exact speech instructions now request
+connected, understated Saudi delivery while preserving all supplied facts. A
+Cedar sample generated successfully; naturalness and full-call behavior remain
+unverified. Historical failures and the hosted deployment blocker still apply.
+
 ## Continuing local voice verification
 
 The user selected **Cedar** after the Ash run. Local real-audio testing found and

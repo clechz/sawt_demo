@@ -569,6 +569,7 @@ class RestaurantVoice(Agent):
             try:
                 row = await asyncio.to_thread(tx.load, self.sid)
             except Exception:
+                self.ending = True
                 await self.send('error', message=say('storage_error'))
                 await session.aclose()
                 await self.room.disconnect()
@@ -580,6 +581,8 @@ class RestaurantVoice(Agent):
                 self.reading = False
                 self.duplex_session.append_thinking('The application has finished playing the exact checkout summary to the caller. Await their explicit acceptance or correction; delegate even a short yes. Do not repeat the summary.')
             if row['closed'] or time.time() - row['created'] > 600 or time.monotonic() > deadline:
+                # Our own shutdown must not re-enter the provider failure path.
+                self.ending = True
                 if not row['closed']:
                     await asyncio.to_thread(tx.interrupt, self.sid, close=True)
                 await self.send('ended')

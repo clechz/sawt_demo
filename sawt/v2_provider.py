@@ -6,7 +6,10 @@ from pathlib import Path
 import httpx
 from .provider import OpenAIProvider, ProviderError, config
 
-STYLE = 'Read the Arabic text exactly as written, in a clear Saudi accent at a natural pace.'
+STYLE = ('Speak to one caller in clear, broadly Saudi Arabic with a light regional accent. '
+         'Use a relaxed, warm customer-service delivery, connected phrases and natural short pauses. '
+         'Avoid an announcer voice, exaggerated cheerfulness, sing-song emphasis or word-by-word reading. '
+         'Preserve the supplied words, quantities, negations and prices exactly; do not add greetings or filler.')
 
 CALLS_UNAVAILABLE = 'خدمة المكالمات غير متاحة حالياً. حاول لاحقاً.'
 
