@@ -10,22 +10,17 @@ export function selectedExperience(voice,scenario,consent){
  if(!VOICES.has(voice)||!Object.hasOwn(BRIEFS,scenario))throw new Error('اختيار غير متاح.');
  return {voice,scenario,recording_consent:consent===true,experience_version:'v3',conversation_mode:'model_led'};
 }
+// Deliberately no voice/scenario picker in the customer-facing experience.
+// The saved old preference must not silently override Ash on this release.
 export function createExperienceControls(root){
- const voice=root.getElementById('voice-choice'),scenario=root.getElementById('scenario-choice');
  const consent=root.getElementById('experience-consent');
- try{const saved=localStorage.getItem('sawt-preferred-voice');if(VOICES.has(saved))voice.value=saved;}catch{}
- const update=()=>{
-  root.getElementById('voice-current').textContent=voice.value[0].toUpperCase()+voice.value.slice(1);
-  root.getElementById('scenario-brief').textContent=BRIEFS[scenario.value];
-  try{localStorage.setItem('sawt-preferred-voice',voice.value);}catch{}
- };
- voice.addEventListener('change',update);scenario.addEventListener('change',update);update();
+ if(!consent)throw new Error('Recording consent control is missing');
  return {
-  value:()=>selectedExperience(voice.value,scenario.value,consent.checked),
-  setBusy:busy=>{voice.disabled=scenario.disabled=consent.disabled=busy;
-   root.getElementById('voice-change-note').textContent=busy?'الصوت ثابت للمكالمة الحالية. غيّره بعد ما تنهيها.':'اختر الصوت قبل المكالمة. تقدر تغيّره بعد ما تنهيها.';}
+  value:()=>selectedExperience('ash','new_order',consent.checked),
+  setBusy:busy=>{consent.disabled=busy;}
  };
 }
+
 const statusText={accepted:'تم استلام الطلب',out_for_delivery:'الطلب مع المندوب',delivered:'تم التوصيل',cancelled:'الطلب ملغي',open:'البلاغ مفتوح',resolved:'تم حل البلاغ',review_requested:'بانتظار المراجعة'};
 const money=value=>new Intl.NumberFormat('ar-SA',{style:'currency',currency:'SAR'}).format(value/100);
 export function renderSupport(root,h){
