@@ -31,7 +31,7 @@ jobs:
         with:
           python-version: '3.12'
       - run: python -m pip install -r requirements-v2.txt
-      - run: python -m pytest -q --junitxml=test-results.xml
+      - run: python -m pytest -q --junitxml=v3-test-results.xml
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -40,7 +40,6 @@ jobs:
       - run: npm run build --prefix frontend
       - name: Publish tested source to development branch only
         run: |
-          git restore --worktree test-results.xml
           git rm .github/workflows/apply-v3-candidate.yml .v3-patch/part*.b64
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
@@ -52,6 +51,6 @@ jobs:
         with:
           name: v3-candidate-validation
           path: |
-            test-results.xml
+            v3-test-results.xml
             v3-tested-commit.txt
           retention-days: 7
