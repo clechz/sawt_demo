@@ -6,31 +6,19 @@
   <link rel="stylesheet" href="/assets/ui/orb.css"><link rel="stylesheet" href="/assets/call.css"><link rel="stylesheet" href="/assets/experience.css">
 </head>
 <body>
-<header class="brand"><img src="/assets/sawt-logo.svg" alt="صوت" width="105" height="38"><span class="brand-credit">تحدي عبدالله</span><span class="experience-badge">صوت ذكي · محاكاة</span></header>
+<header class="brand"><img src="/assets/sawt-logo.svg" alt="صوت" width="105" height="38"></header>
 <main>
   <section class="call-panel" aria-label="المكالمة">
     <div class="orb-control">
       <div id="voice-orb" class="voice-orb"></div>
       <button id="start" class="primary-button" aria-label="ابدأ مكالمتك"><span id="start-label">ابدأ المكالمة</span></button>
-      <div class="call-state"><h1 id="call-phase">جاهزين لك</h1><time id="call-time" dir="ltr" aria-label="مدة المكالمة">0:00</time></div>
     </div>
+    <div class="call-state"><h1 id="call-phase">جاهزين لك</h1><time id="call-time" dir="ltr" aria-label="مدة المكالمة">0:00</time></div>
     <p id="status" class="sr-only" role="status" aria-live="polite"></p>
-    <p id="worker-version" dir="ltr" class="experience-badge" hidden></p>
-    <details id="experience-settings" class="experience-settings">
-      <summary>الصوت والتجربة <span id="voice-current" dir="ltr">Cedar</span></summary>
-      <div class="experience-fields">
-        <label for="voice-choice">الصوت</label>
-        <select id="voice-choice"><option value="cedar">Cedar</option><option value="ash">Ash</option><option value="marin">Marin</option></select>
-        <label for="scenario-choice">بداية المكالمة</label>
-        <select id="scenario-choice"><option value="new_order">مكالمة جديدة</option><option value="late_delivery">طلب متأخر</option><option value="missing_item">صنف ناقص</option><option value="wrong_item">صنف غير صحيح</option></select>
-        <p id="scenario-brief">اطلب أو اسأل بطريقتك.</p>
-        <p id="voice-change-note">اختر الصوت قبل المكالمة. تقدر تغيّره بعد ما تنهيها.</p>
-      </div>
-    </details>
-    <p class="simulation-disclosure">تجربة بصوت مولد بالذكاء الاصطناعي. الطلبات والدفع والاسترجاع والموظفون محاكاة، ولا تتحرك أموال حقيقية.</p>
-    <label class="recording-consent"><input id="experience-consent" type="checkbox"> أوافق على تسجيل المكالمة للمراجعة.</label>
+    <p class="simulation-disclosure">مساعد صوتي تجريبي · الطلبات والدفع والتعويضات محاكاة فقط.</p>
+    <label class="recording-consent"><input id="experience-consent" type="checkbox"> أوافق على تسجيل المكالمة.</label>
     <div id="controls" class="controls" hidden>
-      <button id="mute" class="mute-button" aria-pressed="false"><i class="mic-on" data-icon="mic"></i><i class="mic-off" data-icon="muted"></i><span id="mute-label" class="sr-only">كتم الميكروفون</span></button>
+      <button id="mute" class="mute-button" aria-pressed="false" title="كتم ميكروفوني فقط"><i class="mic-on" data-icon="mic"></i><i class="mic-off" data-icon="muted"></i><span id="mute-label" class="sr-only">كتم الميكروفون</span></button>
       <button id="end" class="end-button" title="إنهاء المكالمة"><i data-icon="hangup"></i><span class="sr-only">إنهاء المكالمة</span></button>
     </div>
     <section id="support-result" class="support-result" aria-label="متابعة الطلب والبلاغات" aria-live="polite" hidden></section>
