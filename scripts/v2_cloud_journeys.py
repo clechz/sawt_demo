@@ -87,7 +87,8 @@ class ClarificationRequired(Exception):
 
 
 class VoiceCall:
- def __init__(self,client):
+ def __init__(self,client,experience=None):
+  self.experience=experience
   self.client=client;self.room=rtc.Room();self.queue=asyncio.Queue();self.events=[];self.output=[];self.tasks=[];self.call=None;self.source=None;self.pub=None;self.pump_task=None;self.audit_events=[];self.cursor=0
   @self.room.on('data_received')
   def data(packet):
@@ -108,7 +109,7 @@ class VoiceCall:
    except asyncio.QueueEmpty:chunk=b'\0'*4800
    await self.source.capture_frame(rtc.AudioFrame(chunk,24000,1,len(chunk)//2))
  async def start(self, wait_seconds=0):
-  self.call=await create_call(self.client,wait_seconds);self.auth={'Authorization':'Bearer '+self.call['token']}
+  self.call=await create_call(self.client,wait_seconds,experience=self.experience);self.auth={'Authorization':'Bearer '+self.call['token']}
   await self.room.connect(self.call['url'],self.call['room_token'])
   self.source=rtc.AudioSource(24000,1,queue_size_ms=100)
   self.track=rtc.LocalAudioTrack.create_audio_track('automated-regression',self.source)

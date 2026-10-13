@@ -5,8 +5,11 @@ import {PlaybackMeter,MicrophoneMeter} from './audio-meter.js';
 import {createOrderView} from './order-view.js';
 import {createCallStatus} from './call-status.js';
 import {setMicrophoneSilenced} from './microphone-mute.js';
+import {createCompletionView} from './completion.js';
+import {stopMediaNow,animateHangup,closeSavedCall} from './call-lifecycle.js';
 const $=id=>document.getElementById(id);
 const renderOrder=createOrderView();
+const completion=createCompletionView(document);
 let call,room,poll,timer,clockTimer,frame,closing=false,muted=false,quoteSeen,accessCode='',refreshing=false,currentState;
 const audioElements=new Set();
 const playbackMeter=new PlaybackMeter();
@@ -28,10 +31,10 @@ if(lab){const panel=document.createElement('section');panel.innerHTML='<p>Local 
 function render(state){
  currentState=state;
  renderOrder(state);
- renderSupport(document,state.hospitality);
+ renderSupport(document,state.hospitality,state.order_id);
  if(state.quote&&!state.quote.presented&&quoteSeen!==state.quote.token&&room&&workerVerified&&!closing){quoteSeen=state.quote.token;player.play(call.id);}
  if(!state.quote&&player.active){player.cancel();if(!closing)setPhase('processing');}
- if(state.order_id&&workerVerified&&!closing&&phase!=='ending')setPhase('completed');
+ completion.render(state);
 }
 async function refresh(){
  if(!call||closing||refreshing)return;
@@ -43,7 +46,8 @@ async function refresh(){
 function publishLevel(level){level=Number.isFinite(level)?Math.sqrt(Math.max(0,Math.min((level-.008)/.65,1))):0;document.documentElement.style.setProperty('--level',String(1+level*.15));document.documentElement.style.setProperty('--voice-energy',String(level));window.dispatchEvent(new CustomEvent('sawt:audio-level',{detail:level}));}
 function animate(time=0){if(!room)return;if(time-lastMeterTime>=25){const local=muted?0:Math.max(microphoneMeter.level(),room.localParticipant.audioLevel||0);let remote=0;if(!readbackMuted&&workerVerified){for(const meter of remoteMeters.values())remote=Math.max(remote,meter.level());for(const participant of room.remoteParticipants.values())remote=Math.max(remote,participant.audioLevel||0);}publishLevel(Math.max(local,remote,playbackMeter.level()));callStatus.audio(local,remote,muted,time);lastMeterTime=time;}frame=requestAnimationFrame(animate);}
 async function start(){
- if(room)return;
+ if(room||$('start').disabled)return;
+ completion.reset();$('new-call').hidden=true;$('call-ended-note').hidden=true;
  playbackMeter.prepare();microphoneMeter.prepare();lastMeterTime=0;
  workerVerified=false;clearTimeout(workerReadyTimer);
  callStatus.reset();$('start').disabled=true;error('');setPhase('connecting');closing=false;quoteSeen=null;currentState=null;call=null;refreshing=false;
@@ -105,17 +109,28 @@ async function start(){
 async function end(){
  if(lab)$('send-fixture').disabled=true;
  if(closing)return;closing=true;
+ const endedRoom=room,endedCall=call;room=null;
+ void stopMediaNow(endedRoom,audioElements,player,fixture);
  clearTimeout(workerReadyTimer);workerVerified=false;
  clearInterval(poll);clearInterval(clockTimer);clearTimeout(timer);cancelAnimationFrame(frame);player.cancel();fixture?.pause();
  playbackMeter.close();microphoneMeter.close();for(const meter of remoteMeters.values())meter.detach();remoteMeters.clear();publishLevel(0);
- if(call)await api(`/api/calls/${call.id}/end`,{method:'POST'}).catch(()=>{});
- if(room){const old=room;room=null;await old.disconnect();}
- for(const element of audioElements)element.remove();audioElements.clear();
+ setPhase('ending');$('mute').disabled=true;$('end').disabled=true;
+ void closeSavedCall(endedCall,accessCode).then(data=>{
+  if(data&&call?.id===endedCall?.id&&closing){render(data.state);showEndedReceipt();}
+ }).catch(()=>{if(call?.id===endedCall?.id&&closing)error('انتهت المكالمة. تعذّر تحديث آخر حالة للطلب.');});
+ if(endedRoom)await animateHangup(document);
  experienceControls.setBusy(false);
  $('controls').hidden=true;$('start').disabled=false;$('start-label').textContent='ابدأ المكالمة';document.body.classList.remove('active');setPhase('ended');
  muted=false;($('mute-label')||$('mute')).textContent='كتم الميكروفون';$('mute').title='كتم ميكروفوني فقط';$('mute').setAttribute('aria-pressed','false');
+ $('mute').disabled=false;$('end').disabled=false;showEndedReceipt();
 }
-$('start').onclick=start;$('end').onclick=end;
+function showEndedReceipt(){
+ if(!closing)return;
+ const saved=completion.render(currentState);$('new-call').hidden=!saved;
+ $('call-ended-note').hidden=false;
+ $('call-ended-note').textContent=saved?'انتهت المكالمة':currentState?.basket?.length?'انتهت المكالمة · الطلب ما تأكد':'انتهت المكالمة';
+}
+$('start').onclick=start;$('new-call').onclick=start;$('end').onclick=end;
 $('mute').onclick=()=>{if(!room||closing)return;const next=!muted;try{
  // Do not unpublish/stop the microphone: the AI must keep receiving a live silent track.
  setMicrophoneSilenced(room,next);muted=next;
@@ -128,4 +143,4 @@ $('retry-audio').onclick=()=>{error('');playbackMeter.prepare();microphoneMeter.
 $('order-button').onclick=()=>$('order').showModal();$('close-order').onclick=()=>$('order').close();
 for(const dialog of [$('order')])dialog.addEventListener('click',event=>{if(event.target!==dialog)return;const box=dialog.getBoundingClientRect();if(event.clientX<box.left||event.clientX>box.right||event.clientY<box.top||event.clientY>box.bottom)dialog.close();});
 $('access').onsubmit=e=>{e.preventDefault();accessCode=$('code').value;start();};
-window.addEventListener('pagehide',()=>{player.cancel();playbackMeter.close();microphoneMeter.close();room?.disconnect();});
+window.addEventListener('pagehide',()=>{void stopMediaNow(room,audioElements,player,fixture);playbackMeter.close();microphoneMeter.close();});

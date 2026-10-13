@@ -32,6 +32,14 @@ def test_matching_contract_passes():
     c=worker_contract(validate_experience('cedar',conversation_mode='model_led'))
     check_worker_contract(c,copy.deepcopy(c))
 
+def test_windows_and_linux_source_newlines_have_same_contract(tmp_path):
+    for name in SOURCE_FILES:
+        path=tmp_path/name;path.parent.mkdir(parents=True,exist_ok=True);path.write_bytes(b'one\ntwo\n')
+    before=source_fingerprint(tmp_path)
+    for name in SOURCE_FILES:
+        if not name.endswith('.csv'):(tmp_path/name).write_bytes(b'one\r\ntwo\r\n')
+    assert source_fingerprint(tmp_path)==before
+
 def test_call_mode_is_saved_not_changed_by_worker_environment(tmp_path,monkeypatch):
     e=Engine(Menu(Path(__file__).resolve().parents[1]/'data/restaurant-menu-complex.csv'))
     tx=Transactions(tmp_path/'calls.db',e)

@@ -13,7 +13,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - run: node --experimental-default-type=module --test tests/playback.test.mjs tests/audio-meter.test.mjs tests/call-status.test.mjs tests/call-start.test.mjs tests/experience.test.mjs tests/call-status.test.mjs tests/microphone-mute.test.mjs
+      - run: node --experimental-default-type=module --test tests/*.test.mjs
       - run: npm ci --prefix frontend
       - run: npm run build --prefix frontend
       - uses: actions/upload-artifact@v4

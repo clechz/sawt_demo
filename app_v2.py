@@ -14,6 +14,7 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
+from starlette.background import BackgroundTask
 from pydantic import BaseModel, Field
 from livekit import api
 from sawt.v2_runtime import tx, engine, provider, ROOT, RUNTIME
@@ -200,8 +201,13 @@ async def readback_stream(sid: str, receipt_id: str):
     capture.mkdir(parents=True, exist_ok=True)
     file = capture / (receipt_id + '.mp3')
     if receipt['duration'] > 0:
+        if file.is_file():
+            return FileResponse(file, media_type='audio/mpeg')
         if cloud_storage.enabled():
-            content = await asyncio.to_thread(cloud_storage.download, sid, file.name)
+            try:
+                content = await asyncio.to_thread(cloud_storage.download, sid, file.name)
+            except Exception:
+                raise HTTPException(503, 'Readback archive unavailable; request a new readback')
             if content is None:
                 raise HTTPException(404, 'Readback file unavailable')
             return Response(content, media_type='audio/mpeg')
@@ -230,7 +236,6 @@ async def readback_stream(sid: str, receipt_id: str):
                 yield chunk
             duration = await asyncio.to_thread(audio_duration, bytes(audio))
             await asyncio.to_thread(file.write_bytes, bytes(audio))
-            await asyncio.to_thread(cloud_storage.upload, file, sid)
             await asyncio.to_thread(tx.finish_audio, sid, receipt_id, duration)
             await asyncio.to_thread(tx.event, sid, 'readback.generated', {'receipt_id': receipt_id, 'duration': duration,
                       'tts_ms': round((time.perf_counter()-started)*1000), 'text_hash': quote['text_hash']})
@@ -243,7 +248,17 @@ async def readback_stream(sid: str, receipt_id: str):
         finally:
             if scoped_provider is not provider:
                 await scoped_provider.aclose()
-    return StreamingResponse(chunks(), media_type='audio/mpeg', headers={'X-Accel-Buffering': 'no'})
+    async def archive():
+        # Archive storage is not evidence of playback. A suspension must not
+        # invalidate fully generated audio or delay its delivery to the caller.
+        if not file.is_file():
+            return
+        try:
+            await asyncio.wait_for(asyncio.to_thread(cloud_storage.upload, file, sid), 5)
+        except Exception as exc:
+            await asyncio.to_thread(tx.event, sid, 'recording.archive_failed',
+                                   {'kind': 'readback', 'error_type': type(exc).__name__})
+    return StreamingResponse(chunks(), media_type='audio/mpeg', headers={'X-Accel-Buffering': 'no'}, background=BackgroundTask(archive))
 
 
 class Playback(BaseModel):

@@ -16,10 +16,10 @@ def assert_provider_available(events):
             raise RuntimeError('Voice provider failed before the call could continue')
 
 
-async def create_call(client, wait_seconds=0):
+async def create_call(client, wait_seconds=0, *, experience=None):
     deadline=time.monotonic()+wait_seconds
     while True:
-        response=await client.post('/api/calls',json={'recording_consent':True})
+        response=await client.post('/api/calls',json={'recording_consent':True,**(experience or {})})
         if response.status_code!=409 or 'Call budget reached' not in response.text:
             response.raise_for_status()
             return response.json()

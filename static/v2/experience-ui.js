@@ -25,13 +25,14 @@ export function createExperienceControls(root){
 
 const statusText={accepted:'تم استلام الطلب',out_for_delivery:'الطلب مع المندوب',delivered:'تم التوصيل',cancelled:'الطلب ملغي',open:'البلاغ مفتوح',resolved:'تم حل البلاغ',review_requested:'بانتظار المراجعة'};
 const money=value=>new Intl.NumberFormat('ar-SA',{style:'currency',currency:'SAR'}).format(value/100);
-export function renderSupport(root,h){
+export function renderSupport(root,h,currentOrderId){
  const panel=root.getElementById('support-result');
  if(!panel)return;
  if(!h){panel.hidden=true;panel.replaceChildren();delete panel.dataset.signature;return;}
  const signature=JSON.stringify(h);if(panel.dataset.signature===signature)return;panel.dataset.signature=signature;
  const nodes=[];const line=text=>{const el=root.createElement('p');el.textContent=text;nodes.push(el);};
  for(const order of Object.values(h.orders||{})){
+  if(order.id===currentOrderId)continue; // Its saved receipt already shows this order.
   line(`${order.id} · ${statusText[order.status]||order.status}`);
   if(order.status==='out_for_delivery')line(`الوصول المتوقع خلال ${order.eta_minutes} دقائق`);
   if(order.refunded_halalas)line(`المبلغ المسترجع: ${money(order.refunded_halalas)}`);

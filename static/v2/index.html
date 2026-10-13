@@ -4,6 +4,7 @@
   <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#101014"><title>تحدي صوت — عبدالله</title>
   <link rel="stylesheet" href="/assets/ui/orb.css"><link rel="stylesheet" href="/assets/call.css"><link rel="stylesheet" href="/assets/experience.css">
+  <link rel="stylesheet" href="/assets/completion.css">
 </head>
 <body>
 <header class="brand"><img src="/assets/sawt-logo.svg" alt="صوت" width="105" height="38"><span class="brand-credit">تحدي عبدالله</span></header>
@@ -22,6 +23,9 @@
       <button id="end" class="end-button" title="إنهاء المكالمة"><i data-icon="hangup"></i><span class="sr-only">إنهاء المكالمة</span></button>
     </div>
     <section id="support-result" class="support-result" aria-label="متابعة الطلب والبلاغات" aria-live="polite" hidden></section>
+    <section id="completion" class="completion-card" aria-labelledby="completion-title" aria-live="polite" hidden></section>
+    <p id="call-ended-note" class="call-ended-note" hidden></p>
+    <button id="new-call" class="secondary new-call" hidden>مكالمة جديدة</button>
     <div id="error" role="alert" hidden></div>
     <button id="retry-audio" class="secondary" hidden>تشغيل الصوت / إعادة الملخص</button>
     <button id="order-button" class="order-button" aria-describedby="order-note" hidden><span>طلبك</span><span id="total"></span><i data-icon="chevron"></i></button>
