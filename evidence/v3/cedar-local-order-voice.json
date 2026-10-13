@@ -1,0 +1,56 @@
+{
+  "target": "http://127.0.0.1:8773",
+  "scope": "Synthetic Arabic caller PCM through real LiveKit/OpenAI; local API, worker and SQLite. Timed simulated readback receipts, not physical browser playback or human accent certification. Ordering and support suites overlapped, so timings are not a quiet-load benchmark.",
+  "passed": true,
+  "turns": [
+    {
+      "input": "أبي اثنين شاورما دجاج ساندوتش صاج بدون حار، وواحد شاورما لحم ساندوتش صاج حار. استلام من فرع النرجس بالرياض. اقرأ ملخص الطلب.",
+      "state_seconds": 6.66,
+      "reply": "طلبك: 2 من شاورما دجاج، ساندويتش فقط، صاج، بدون شطة، بسعر 36.00 ريال؛ 1 من شاورما لحم، ساندويتش فقط، صاج، شطة قوية، بسعر 22.00 ريال. استلام من فرع النرجس بالرياض. المجموع 58.00 ريال، والوقت المتوقع 20 دقيقة. نأكد الطلب؟",
+      "readback_download_seconds": 5.56,
+      "readback_duration": 27.26,
+      "tts_first_byte_ms": 915,
+      "received_readback": "طلبك، اثنين من شاورما دجاج، ساندويتش فقط، خبز صاج، بدون شطة، بسعر ستة وثلاثين ريال. واحد من شاورما لحم، ساندويتش فقط، خبز صاج، شطة قوية، بسعر اثنين وعشرين ريال. استلام من فرع النرجس بالرياض. المجموع ثمانية وخمسين ريال، والوقت المتوقع عشرين دقيقة. نأكد الطلب؟",
+      "passed": true
+    },
+    {
+      "input": "احذف شاورما اللحم وخلي الدجاج ثلاثة بدل اثنين. اقرأ ملخص الطلب.",
+      "state_seconds": 6.58,
+      "reply": "طلبك: 3 من شاورما دجاج، ساندويتش فقط، صاج، بدون شطة، بسعر 54.00 ريال. استلام من فرع النرجس بالرياض. المجموع 54.00 ريال، والوقت المتوقع 20 دقيقة. نأكد الطلب؟",
+      "readback_download_seconds": 6.67,
+      "readback_duration": 18.91,
+      "tts_first_byte_ms": 3965,
+      "received_readback": "طلبك ثلاثة من شاورما دجاج، ساندويتش فقط، خبز صاج بدون شطة، بسعر أربعة وخمسين ريال، استلام من فرع النرجس بالرياض، المجموع أربعة وخمسين ريال، والوقت المتوقع عشرين دقيقة، نأكد الطلب.",
+      "passed": true
+    },
+    {
+      "input": "غير الاستلام إلى فرع الروضة بجدة وخلي الدجاج حار. اقرأ ملخص الطلب من جديد.",
+      "state_seconds": 3.73,
+      "reply": "طلبك: 3 من شاورما دجاج، ساندويتش فقط، صاج، شطة قوية، بسعر 54.00 ريال. استلام من فرع الروضة بجدة. المجموع 54.00 ريال، والوقت المتوقع 20 دقيقة. نأكد الطلب؟",
+      "readback_download_seconds": 11.12,
+      "readback_duration": 17.21,
+      "tts_first_byte_ms": 5363,
+      "received_readback": "طلبك، ثلاثة من شاورما دجاج ساندوتش فقط خبز صاج شطة قوية بسعر أربعة وخمسين ريال، استلام من فرع الروضة بجدة، المجموع أربعة وخمسين ريال والوقت المتوقع عشرين دقيقة، نأكد الطلب.",
+      "passed": true
+    },
+    {
+      "input": "نعم اعتمد الطلب.",
+      "state_seconds": 1.33,
+      "reply": "تأكد طلبك. رقمه إس، F، 1، F، 6، 1، 7، 3، 8، E، 2، 8، 2.",
+      "first_received_audio_seconds": 5.89,
+      "passed": true
+    }
+  ],
+  "worker_contract": {
+    "conversation_mode": "model_led",
+    "experience_version": "v3",
+    "planner_model": "gpt-4.1",
+    "protocol": 1,
+    "source_fingerprint": "ae38b71c9f0ddf9ac0c908d5d84e4ec0eb11ad3de55fdfcc6a2e04415bfb9c5a",
+    "voice": "cedar",
+    "voice_model": "gpt-live-1"
+  },
+  "order_id": "S-F1F61738E282",
+  "tested_source": "ea64d61 (local isolated snapshot, before integration with b91b0ee)",
+  "voice": "cedar"
+}

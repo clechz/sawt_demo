@@ -1,5 +1,9 @@
 # SAWT challenge audit — 13 October 2026
 
+See [the seven submission gates](SUBMISSION-READINESS.md). The merged candidate
+passed 938 Python tests (one optional skip), 63 Node tests and the frontend build.
+A fresh README dependency install and uvicorn/page smoke also passed.
+
 ## Continuing local voice verification
 
 The user selected **Cedar** after the Ash run. Local real-audio testing found and
@@ -14,9 +18,12 @@ The full regression run passed 929 Python tests (one optional skip) and 63 Node
 checks; subsequent support-offer guard changes passed 71 focused regressions.
 Sixteen real-model persisted-state turns passed, including the recent pizza
 issue. The earlier Ash local ordering call passed all four turns; its report is
-[evidence/v3/local-order-voice.json](evidence/v3/local-order-voice.json). Cedar
-ordering/support calls are being rerun; do not infer a pass from the prepared
-scripts. Timings containing listening acknowledgements are labeled accordingly.
+[evidence/v3/local-order-voice.json](evidence/v3/local-order-voice.json). Cedar ordering passed all four turns and support passed all six turns on the
+`ea64d61` local snapshot. See [ordering evidence](evidence/v3/cedar-local-order-voice.json)
+and [support evidence](evidence/v3/cedar-local-support-voice.json). These runs precede
+the merge of `b91b0ee`; they do not certify the merged or hosted release.
+Ordering state results took 1.33–6.66 seconds; readback first-byte times reached
+5.36 seconds. Latency remains an open release issue. Timings containing listening acknowledgements are labeled accordingly.
 
 Hosted rollout and the final demonstration video are still pending. The hourly
 thread follow-up checks quota recovery and coordinates matching API/worker
@@ -51,8 +58,8 @@ recording was heard again. Raw human transcripts and recordings remain private.
   speaking unsupported removal/edit claims. It does not mutate the order or
   replace the model with a general intent classifier.
 - Delegation could keep only the last caption and lose earlier choices in a
-  fragmented request. It now retains unconsumed fragments unless a complete
-  native utterance supplies the boundary.
+  fragmented request. It now retains unconsumed fragments until successful work consumes them; native pending text is not trusted as
+  a complete request boundary.
 - A real-model hot-option correction initially produced confirmation wording
   without applying the edit. The repair gate requires mutations and a fresh
   checkout/readback before asking for confirmation. Explicit staff requests

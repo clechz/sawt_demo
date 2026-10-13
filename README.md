@@ -16,12 +16,13 @@ A simple call screen over a stateful ordering system. Speak naturally, give deta
 | How would operations safely change behavior? | [PRODUCT.md](PRODUCT.md) |
 | What should I show in the video? | [DEMO.md](DEMO.md) |
 | How do I automate complete cloud calls? | [VOICE-TESTS.md](VOICE-TESTS.md) |
+| Are all seven submission gates met? | [Submission checklist](SUBMISSION-READINESS.md) |
 | What was tested, and what remains uncertain? | [TESTING.md](TESTING.md), [submission checks](SUBMISSION-CHECK.txt) |
 | What does the assistant say? | [37 reusable phrases and request map](CALL-EXPERIENCE.txt) |
 
 ## Release audit — 2026-10-13
 
-Application changes: `f9f00ecb2cbe0f2267e1893cdf109b946c05c2df`. [CI passed](https://github.com/clechz/sawt_demo/actions/runs/38392581865). The current UI uses V3, model-led conversation, fixed Cedar voice. API clients that omit the experience still select V2.
+Latest integration combines the Cedar voice/support fixes (`ea64d61`) with the correction, hangup and receipt regressions (`b91b0ee`). Historical [CI for f9f00ec](https://github.com/clechz/sawt_demo/actions/runs/38392581865) does not certify this integration. The current UI uses V3, model-led conversation, fixed Cedar voice. API clients that omit the experience still select V2.
 
 **Not ready for final submission recording.** The candidate passed offline and real-provider text/state checks, but Vercel rejected production deployment with `api-deployments-free-per-day` (more than 100 deployments). The new LiveKit worker was rolled back to `TKcMfpvSprXd` to stay matched to the existing website. Latest source is on main; it is not the hosted release. Saved recording access returned HTTP 403, so the recent human call was diagnosed from persisted events/transcripts, not a fresh audio listen.
 
@@ -150,7 +151,7 @@ Paid provider checks (no Chrome automation):
 ```bash
 python scripts/v2_interaction_eval.py
 python scripts/v2_release_replay.py
-# Full deployed voice suite, sequential calls, stops at first failed gate:
+# Deployed four-turn ordering acceptance (not all challenge scenarios):
 python scripts/verify_challenge_voice.py
 # Requires the API and voice worker running on localhost:8766:
 python scripts/v2_recognition_replay.py --edges

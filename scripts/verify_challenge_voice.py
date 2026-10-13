@@ -1,5 +1,5 @@
 """Paid V3/Cedar call: actual PCM, saved state and timed exact readbacks. No Chrome."""
-import argparse,asyncio,hashlib,io,json,sys,time,wave
+import argparse,asyncio,hashlib,io,json,os,sys,time,wave
 from pathlib import Path
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
 import httpx
@@ -29,8 +29,8 @@ async def main():
             path=ROOT/'runtime'/('challenge-'+hashlib.sha256(text.encode()).hexdigest()[:16]+'.mp3')
             if not path.exists():path.write_bytes(await p.speak(text))
             audio.append(decode(path))
-        password=None if args.local else json.loads((ROOT/'runtime/private-demo.json').read_text())['password']
-        async with httpx.AsyncClient(base_url=base,headers={'Origin':base},timeout=60) as client:
+        password=None if args.local else (os.getenv('SAWT_DEMO_PASSWORD') or json.loads((ROOT/'runtime/private-demo.json').read_text(encoding='utf8'))['password'])
+        async with httpx.AsyncClient(base_url=base,headers={'Origin':base,'X-Access-Code':os.getenv('SAWT_ACCESS_CODE','')},timeout=60) as client:
             if not args.local:assert (await client.post('/login',data={'password':password})).status_code==303
             call=VoiceCall(client,{'experience_version':'v3','conversation_mode':'model_led','voice':'cedar','scenario':'new_order'})
             try:

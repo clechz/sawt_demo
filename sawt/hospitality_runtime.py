@@ -304,8 +304,8 @@ async def prepare_turn(engine, provider, row, text, *, progress=None, conversati
                     if progress:
                         await progress(name)
                     key = encode([name, args])
-                    if key in seen:
-                        result = copy.deepcopy(seen[key])
+                    if key in seen and seen[key][0] == state['revision']:
+                        result = copy.deepcopy(seen[key][1])
                     else:
                         before_call = copy.deepcopy(state)
                         operations_before = len(adapter.operations)
@@ -319,7 +319,10 @@ async def prepare_turn(engine, provider, row, text, *, progress=None, conversati
                             del adapter.choice_questions[choices_before:]
                             adapter.support_changed = support_before
                             raise
-                        seen[key] = copy.deepcopy(result)
+                        # Replay only against the state that produced this result.
+                        # A later correction can deliberately return to an earlier
+                        # quantity/option; a cached response must not swallow it.
+                        seen[key] = (state['revision'], copy.deepcopy(result))
                     failed = failed or bool(result.get('error') or result.get('choice_guard'))
                 except (RuleError, KeyError, ValueError, TypeError) as exc:
                     failed = True

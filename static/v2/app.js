@@ -66,7 +66,7 @@ async function start(){
   const response=await api('/api/calls',{method:'POST',body:JSON.stringify(experience)});call=await response.json();validateCallBinding(call,experience);localStorage.setItem('sawt-debug-call',JSON.stringify({id:call.id,token:call.token}));
   room.on(LivekitClient.RoomEvent.LocalTrackPublished,publication=>{if(publication.track?.kind==='audio')microphoneMeter.attachTrack(publication.track.mediaStreamTrack);});
   room.on(LivekitClient.RoomEvent.LocalTrackUnpublished,publication=>{if(publication.kind==='audio')microphoneMeter.detach();});
-  room.on(LivekitClient.RoomEvent.TrackSubscribed,track=>{if(track.kind==='audio'){const meter=new MicrophoneMeter(()=>microphoneMeter.context);meter.prepare();meter.attachTrack(track.mediaStreamTrack);remoteMeters.set(track,meter);const element=track.attach();element.autoplay=true;element.muted=readbackMuted||!workerVerified;audioElements.add(element);$('media').append(element);element.play().catch(()=>{error('المتصفح منع الصوت. اضغط تشغيل الصوت.');$('retry-audio').hidden=false;});}});
+  room.on(LivekitClient.RoomEvent.TrackSubscribed,track=>{if(room!==activeRoom||closing)return;if(track.kind==='audio'){const meter=new MicrophoneMeter(()=>microphoneMeter.context);meter.prepare();meter.attachTrack(track.mediaStreamTrack);remoteMeters.set(track,meter);const element=track.attach();element.autoplay=true;element.muted=readbackMuted||!workerVerified;audioElements.add(element);$('media').append(element);element.play().catch(()=>{error('المتصفح منع الصوت. اضغط تشغيل الصوت.');$('retry-audio').hidden=false;});}});
   room.on(LivekitClient.RoomEvent.TrackUnsubscribed,track=>{remoteMeters.get(track)?.detach();remoteMeters.delete(track);for(const element of track.detach()){audioElements.delete(element);element.remove();}});
   room.on(LivekitClient.RoomEvent.DataReceived,(bytes,participant,kind,topic)=>{
    if(room!==activeRoom||closing||topic!=='sawt'||participant?.identity===room?.localParticipant.identity)return;
@@ -144,3 +144,15 @@ $('order-button').onclick=()=>$('order').showModal();$('close-order').onclick=()
 for(const dialog of [$('order')])dialog.addEventListener('click',event=>{if(event.target!==dialog)return;const box=dialog.getBoundingClientRect();if(event.clientX<box.left||event.clientX>box.right||event.clientY<box.top||event.clientY>box.bottom)dialog.close();});
 $('access').onsubmit=e=>{e.preventDefault();accessCode=$('code').value;start();};
 window.addEventListener('pagehide',()=>{void stopMediaNow(room,audioElements,player,fixture);playbackMeter.close();microphoneMeter.close();});
+
+// Recover only authenticated committed state; never reconnect media on reload.
+async function restoreReceipt(){
+ try{
+  const saved=JSON.parse(localStorage.getItem('sawt-debug-call')||'null');
+  if(!saved||!/^[a-f0-9]{32}$/.test(saved.id)||typeof saved.token!=='string')return;
+  const response=await api(`/api/calls/${saved.id}?after=999999999`,{headers:{Authorization:`Bearer ${saved.token}`}});
+  const data=await response.json();
+  if(!room&&!call&&data.state?.order_id){closing=true;render(data.state);setPhase('ended');showEndedReceipt();}
+ }catch{}
+}
+void restoreReceipt();

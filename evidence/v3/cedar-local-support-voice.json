@@ -1,0 +1,56 @@
+{
+  "scope": "Synthetic Arabic caller PCM through real LiveKit/OpenAI; local API, worker and SQLite. Timed simulated readback receipts, not physical browser playback or human accent certification. Ordering and support suites overlapped, so timings are not a quiet-load benchmark.",
+  "cases": [
+    {
+      "scenario": "new_order",
+      "turns": [
+        {
+          "input": "بكم شاورما الدجاج ساندوتش؟",
+          "state_seconds": 1.89,
+          "first_audio_including_backchannel_seconds": 0.0,
+          "passed": true
+        },
+        {
+          "input": "عندي شكوى وأبي أكلم مسؤول.",
+          "state_seconds": 4.2,
+          "first_audio_including_backchannel_seconds": 1.45,
+          "passed": true
+        },
+        {
+          "input": "لا شكراً، ما أبي تحويل.",
+          "state_seconds": 2.11,
+          "first_audio_including_backchannel_seconds": 1.23,
+          "passed": true
+        }
+      ],
+      "passed": true
+    },
+    {
+      "scenario": "missing_item",
+      "turns": [
+        {
+          "input": "طلبي وصل ناقص الشكشوكة، أبي استرجاع قيمتها.",
+          "state_seconds": 2.86,
+          "first_audio_including_backchannel_seconds": 3.5,
+          "passed": true
+        },
+        {
+          "input": "نعم أوافق على الاسترجاع.",
+          "state_seconds": 1.33,
+          "first_audio_including_backchannel_seconds": 2.51,
+          "passed": true
+        },
+        {
+          "input": "رجع قيمة نفس الشكشوكة مرة ثانية.",
+          "state_seconds": 1.73,
+          "first_audio_including_backchannel_seconds": 0.94,
+          "passed": true
+        }
+      ],
+      "passed": true
+    }
+  ],
+  "passed": true,
+  "tested_source": "ea64d61 (local isolated snapshot, before integration with b91b0ee)",
+  "voice": "cedar"
+}

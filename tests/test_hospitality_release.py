@@ -66,12 +66,18 @@ async def test_support_outcome_survives_every_order_state(engine, tmp_path, kind
     tx.commit_bundle(sid, 'fixture', row['epoch'], row['state']['revision'], state, [], 'fixture', {})
     before = tx.load(sid)['state']
     phrase = 'سجلت المشكلة. وش الحل اللي تفضله؟'
+    def offer(messages):
+        case = next(json.loads(m['content'])['case'] for m in messages if m['role'] == 'tool' and 'case' in json.loads(m['content']))
+        return calls(tool('offer_resolution', case_id=case['id'], resolution='refund_item'))
     planner = Planner(calls(tool('open_support_case', category='missing_item', details='الشكشوكة ناقصة',
-        order_id='S-DEMO7001', line_id='seed-line-1')), {'content': phrase})
+        order_id='S-DEMO7001', line_id='seed-line-1')), {'content': phrase}, offer)
     prepared = await prepare_turn(engine, planner, tx.load(sid), 'الشكشوكة ناقصة')
     result = await commit_turn(tx, sid, 'complaint', prepared)
     saved = tx.load(sid)['state']
-    assert result['reply'] == phrase
+    assert planner.calls == 3  # A logged complaint alone must not end the support flow.
+    assert result['reply'] != phrase
+    assert saved['hospitality']['pending_resolution']['kind'] == 'refund_item'
+    assert saved['hospitality']['ledger'] == []
     assert saved['basket'] == before['basket']
     assert saved['order_id'] == before['order_id']
     assert len(saved['hospitality']['cases']) == 1

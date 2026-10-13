@@ -25,17 +25,15 @@ export function createCompletionView(root=document){
    }
    orderId=receipt.id;
    const heading=el('header','receipt-heading');
-   const mark=el('span','receipt-mark',receipt.cancelled?'—':'✓');mark.setAttribute('aria-hidden','true');
-   const title=el('h2','',receipt.cancelled?'تم إلغاء الطلب':'تم تأكيد طلبك');title.id='completion-title';
-   const identity=el('p','receipt-number');identity.append('رقم الطلب ',el('bdi','',receipt.id));
-   const intro=el('div','');intro.append(title,identity);heading.append(mark,intro);
+   const title=el('h2','',receipt.cancelled?'الطلب ملغي':`طلبك ${receipt.id}`);title.id='completion-title';
+   const intro=el('div','');intro.append(title);heading.append(intro);
    const items=el('div','receipt-items');
    for(const line of receipt.items){
     const row=el('article','receipt-line');const description=el('div','');
     description.append(el('p','receipt-item-name',`${line.quantity} × ${line.name}`));
     const options=[...(line.option_names||[]),line.notes].filter(Boolean).join(' · ');
     if(options)description.append(el('p','receipt-options',options));
-    row.append(description,el('bdi','receipt-price',price(line.line_total)));items.append(row);
+    row.append(description);items.append(row);
    }
    const fulfillment=el('div','receipt-fulfillment');
    const service=receipt.service==='pickup'?'استلام من الفرع':receipt.service==='delivery'?'توصيل':'';
@@ -43,9 +41,7 @@ export function createCompletionView(root=document){
    if(receipt.service==='delivery'&&receipt.address)fulfillment.append(el('p','receipt-address',receipt.address));
    const total=el('div','receipt-total');total.append(el('span','','الإجمالي'),el('bdi','',price(receipt.total)));
    const nodes=[heading,items,fulfillment];
-   if(receipt.service==='delivery')nodes.push(el('p','receipt-fee',`يشمل رسوم التوصيل ${price(receipt.deliveryFee)}`));
    nodes.push(total);
-   if(receipt.refunded)nodes.push(el('p','receipt-refund',`المبلغ المسترجع: ${price(receipt.refunded)}`));
    panel.replaceChildren(...nodes);panel.dataset.cancelled=String(receipt.cancelled);panel.hidden=false;
    root.body.classList.add('has-completion');return true;
   }

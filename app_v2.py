@@ -171,7 +171,9 @@ def state(sid: str, request: Request, after: int = 0):
 def end(sid: str, request: Request):
     authorized(sid, request)
     tx.interrupt(sid, close=True)
-    return {'closed': True}
+    # Close serializes against confirmation. Return its final committed state
+    # so hangup between polling ticks cannot hide a just-confirmed receipt.
+    return {'closed': True, 'state': hospitality_view(tx.load(sid)['state'], engine)}
 
 
 @app.post('/api/calls/{sid}/readback')
