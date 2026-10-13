@@ -99,3 +99,15 @@ body:has(dialog[open]){overflow:hidden}
 }
 @media(max-height:650px){.brand{height:60px}.call-panel{min-height:calc(100svh - 92px)}.orb-control{width:230px;margin-bottom:4px}.primary-button{font-size:20px}#call-phase{font-size:18px}.order-button{margin-top:10px}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{transition:none!important;animation:none!important}}
+
+/* Keep the orb entirely visual during calls; status and timer sit quietly below. */
+.brand{height:76px;gap:0}
+.brand img{width:90px}
+.call-panel{min-height:calc(100svh - 100px)}
+.orb-control{margin-bottom:0}
+.call-state{position:relative;inset:auto;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-height:44px;margin:1px auto 12px;pointer-events:none}
+#call-phase{font:400 12px/1.7 Sawt,'Sawt Latin',sans-serif;color:#b6b0bf;margin:0}
+#call-time{position:static;top:auto;font-size:11px;line-height:1.5;color:#8e8898}
+.controls{margin-top:2px}
+body.active .call-state{min-height:44px}
+@media(max-width:480px){.brand{height:68px}.brand img{width:82px}.call-panel{min-height:calc(100svh - 88px)}.orb-control{margin-bottom:0}}
