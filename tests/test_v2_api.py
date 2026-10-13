@@ -74,8 +74,39 @@ def test_hangup_invalidates_confirmation_and_forged_receipt(client):
     call=start(client).json();headers={'Authorization':'Bearer '+call['token']}
     r=client.post('/api/calls/'+call['id']+'/playback',headers=headers,json={'receipt_id':'forged','phase':'completed','position':100})
     assert r.status_code==409
-    assert client.post('/api/calls/'+call['id']+'/end',headers=headers).status_code==200
+    ended=client.post('/api/calls/'+call['id']+'/end',headers=headers)
+    assert ended.status_code==200 and ended.json()['state']['order_id'] is None
     assert client.get('/api/calls/'+call['id'],headers=headers).json()['closed']
+
+def test_blob_archive_failure_does_not_invalidate_completed_readback(client, monkeypatch, tmp_path):
+    call=start(client).json(); sid=call['id']; headers={'Authorization':'Bearer '+call['token']}
+    tx=app_v2.tx; state=tx.load(sid)['state']
+    for name,args in [('set_service',{'service':'pickup'}),('set_branch',{'branch_id':'ruh_narjis'}),
+        ('add_item',{'item_id':'breakfast_01','quantity':1,'options':{'portion':['large'],'bread':['tamees']},'notes':''})]:
+        app_v2.engine.act(state,name,args)
+    tx.commit_bundle(sid,'seed',0,0,state,[])
+    tx.execute(sid,'quote',state['revision'],0,'checkout',{})
+    rid=client.post('/api/calls/'+sid+'/readback',headers=headers).json()['receipt_id']
+    monkeypatch.setattr(app_v2,'RUNTIME',tmp_path)
+    monkeypatch.setattr(app_v2,'audio_duration',lambda audio:1)
+    async def speech(text):
+        yield b'complete-test-audio'
+    monkeypatch.setattr(app_v2.provider,'stream_speech',speech)
+    def suspended(*args):
+        raise RuntimeError('Blob suspended')
+    monkeypatch.setattr(app_v2.cloud_storage,'upload',suspended)
+    response=client.get('/api/calls/'+sid+'/readback/'+rid)
+    assert response.content==b'complete-test-audio'
+    receipt,quote=tx.current_receipt(sid,rid)
+    assert receipt['duration']==1 and not quote['presented']
+    events=tx.events(sid)
+    assert any(e['kind']=='readback.archive_failed' for e in events)
+    assert not any(e['kind']=='readback.failed' for e in events)
+    tx.playback(sid,rid,'started')
+    with tx.connect() as db:
+        db.execute('UPDATE receipts SET started=started-2 WHERE id=?',(rid,))
+    tx.playback(sid,rid,'completed',1)
+    assert tx.load(sid)['state']['quote']['presented']
 
 def test_no_client_control_over_readback_text(client):
     call=start(client).json();headers={'Authorization':'Bearer '+call['token']}

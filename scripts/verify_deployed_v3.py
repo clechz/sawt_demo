@@ -50,12 +50,22 @@ async def worker_probe(client, report):
     # Client is already authenticated to this exact origin. No cookie/token is logged.
     from livekit import rtc
     response = await client.post('/api/calls', json={'recording_consent': True,
-        'voice': 'cedar', 'scenario': 'new_order', 'experience_version': 'v3'})
+        'voice': 'ash', 'scenario': 'new_order', 'experience_version': 'v3', 'conversation_mode': 'model_led'})
     report['call_creation_status'] = response.status_code
     if response.status_code != 200:
         report['blocked_at'] = 'call_creation'
         return
     call = response.json()
+    sys.path.insert(0, str(ROOT))
+    from sawt.release_contract import worker_contract, check_worker_contract
+    from sawt.experience import validate_experience
+    expected = worker_contract(validate_experience('ash', conversation_mode='model_led'))
+    try:
+        check_worker_contract(expected, call.get('required_worker'))
+    except ValueError:
+        report['blocked_at'] = 'production_api_source_mismatch'
+        await client.post('/api/calls/' + call['id'] + '/end', headers={'Authorization': 'Bearer ' + call['token']})
+        return
     report['api_experience_version'] = call.get('experience_version')
     report['api_voice'] = call.get('voice')
     auth = {'Authorization': 'Bearer ' + call['token']}
@@ -105,11 +115,19 @@ async def worker_probe(client, report):
             state_response.raise_for_status()
             saved = state_response.json()
             connected = [e['payload'] for e in saved.get('events', []) if e.get('kind') == 'voice.connected']
-            report['worker'] = [{k: event.get(k) for k in ('release', 'model', 'voice', 'scenario')} for event in connected]
+            report['worker'] = [{k: event.get(k) for k in ('release', 'model', 'voice', 'scenario', 'conversation_mode', 'worker_contract')} for event in connected]
             report['audio_received'] = audio
             report['events'] = events
-            report['worker_v3_startup_verified'] = bool(connected and connected[-1].get('release') == 'hospitality-v3-candidate'
-                and connected[-1].get('voice') == 'cedar' and audio['nonzero_samples'] > 0
+            matched = False
+            if connected:
+                try:
+                    check_worker_contract(expected, connected[-1].get('worker_contract'))
+                    matched = True
+                except ValueError:
+                    report['blocked_at'] = 'production_worker_source_mismatch'
+            report['worker_v3_startup_verified'] = bool(matched
+                and connected[-1].get('conversation_mode') == 'model_led'
+                and connected[-1].get('voice') == 'ash' and audio['nonzero_samples'] > 0
                 and not any(e.get('fatal') for e in events))
     except Exception as exc:
         report['worker_error_type'] = type(exc).__name__
@@ -131,10 +149,10 @@ async def worker_probe(client, report):
 async def main():
     OUT.mkdir(parents=True, exist_ok=True)
     report = {'checked_at_utc': dt.datetime.now(dt.timezone.utc).isoformat(),
-        'source_commit': os.getenv('GITHUB_SHA'), 'scope': 'Real HTTP probes and optional authenticated startup; not a completed ordering/support call or human accent rating',
+        'source_commit': os.getenv('SAWT_VERIFY_COMMIT') or os.getenv('GITHUB_SHA'), 'scope': 'Real HTTP probes and optional authenticated startup; not a completed ordering/support call or human accent rating',
         'complete_call_verified': False, 'surfaces': {}}
     # Exercise the current gateway allowlist, not a reimplementation of it.
-    tree = ast.parse((ROOT / 'private_demo.py').read_text())
+    tree = ast.parse((ROOT / 'private_demo.py').read_text(encoding='utf8'))
     fn = next(n for n in tree.body if isinstance(n, ast.FunctionDef) and n.name == 'allowed')
     ns = {'re': re}
     exec(compile(ast.Module(body=[fn], type_ignores=[]), 'gateway-under-test', 'exec'), ns)
@@ -143,7 +161,7 @@ async def main():
         'admin_blocked': not ns['allowed']('/recordings', 'GET')}
     password = os.getenv('SAWT_DEMO_PASSWORD', '')
     report['demo_password_available_to_job'] = bool(password)
-    for label, url in (('production', PRODUCTION), ('v3_preview', PREVIEW)):
+    for label, url in (('production', PRODUCTION),):
         surface = report['surfaces'][label] = {'url': url, 'authenticated': False}
         headers = {'Origin': url}
         access = os.getenv('SAWT_ACCESS_CODE', '')
@@ -167,13 +185,13 @@ async def main():
             if surface['authenticated']:
                 for path in ('/', '/api/health', '/api/experience', '/assets/experience-ui.js'):
                     surface['authenticated ' + path] = safe_response(await client.get(path))
-                if label == 'v3_preview':
+                if label == 'production':
                     await worker_probe(client, surface)
-    report['status'] = 'STARTUP_VERIFIED_ONLY' if report['surfaces']['v3_preview'].get('worker_v3_startup_verified') else 'BLOCKED_OR_FAILED'
+    report['status'] = 'STARTUP_VERIFIED_ONLY' if report['surfaces']['production'].get('worker_v3_startup_verified') else 'BLOCKED_OR_FAILED'
     (OUT / 'report.json').write_text(json.dumps(report, ensure_ascii=False, indent=2))
     print(json.dumps(report, ensure_ascii=False, indent=2))
     # An unavailable/failed check must never make the release indicator green.
-    return 0 if report['status'] == 'STARTUP_VERIFIED_ONLY' and report['source_gateway_checks']['experience_route_allowed'] else 1
+    return 0 if report['status'] == 'STARTUP_VERIFIED_ONLY' and report['source_gateway_checks']['call_creation_allowed'] and report['source_gateway_checks']['admin_blocked'] else 1
 
 
 if __name__ == '__main__':

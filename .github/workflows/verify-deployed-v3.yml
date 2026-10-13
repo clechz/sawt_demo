@@ -1,10 +1,10 @@
 name: Verify deployed V3 call path
 on:
   workflow_dispatch:
-  push:
-    branches: [feat/v3-hospitality-voice]
-    paths:
-      - .github/workflows/verify-deployed-v3.yml
+  workflow_run:
+    workflows: [Deploy SAWT voice worker]
+    types: [completed]
+    branches: [main]
 permissions:
   contents: read
 concurrency:
@@ -12,10 +12,14 @@ concurrency:
   cancel-in-progress: false
 jobs:
   verify:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 6
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+          persist-credentials: false
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -32,6 +36,7 @@ jobs:
         env:
           SAWT_DEMO_PASSWORD: ${{ secrets.SAWT_DEMO_PASSWORD }}
           SAWT_ACCESS_CODE: ${{ secrets.SAWT_ACCESS_CODE }}
+          SAWT_VERIFY_COMMIT: ${{ github.event.workflow_run.head_sha || github.sha }}
         run: python scripts/verify_deployed_v3.py
       - uses: actions/upload-artifact@v4
         if: always()

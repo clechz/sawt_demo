@@ -170,7 +170,9 @@ def state(sid: str, request: Request, after: int = 0):
 def end(sid: str, request: Request):
     authorized(sid, request)
     tx.interrupt(sid, close=True)
-    return {'closed': True}
+    # Close serializes against confirmation. Return its final committed state
+    # so hangup between polling ticks cannot hide a just-confirmed receipt.
+    return {'closed': True, 'state': hospitality_view(tx.load(sid)['state'], engine)}
 
 
 @app.post('/api/calls/{sid}/readback')
@@ -230,10 +232,17 @@ async def readback_stream(sid: str, receipt_id: str):
                 yield chunk
             duration = await asyncio.to_thread(audio_duration, bytes(audio))
             await asyncio.to_thread(file.write_bytes, bytes(audio))
-            await asyncio.to_thread(cloud_storage.upload, file, sid)
             await asyncio.to_thread(tx.finish_audio, sid, receipt_id, duration)
             await asyncio.to_thread(tx.event, sid, 'readback.generated', {'receipt_id': receipt_id, 'duration': duration,
                       'tts_ms': round((time.perf_counter()-started)*1000), 'text_hash': quote['text_hash']})
+            # Archive availability is independent of synthesis and actual playout.
+            # A suspended Blob store must not invalidate audio already delivered.
+            # Playback still requires the current receipt, elapsed time and position.
+            try:
+                await asyncio.to_thread(cloud_storage.upload, file, sid)
+            except Exception as exc:
+                await asyncio.to_thread(tx.event, sid, 'readback.archive_failed',
+                    {'receipt_id': receipt_id, 'error_type': type(exc).__name__})
         except BaseException as exc:
             await asyncio.to_thread(tx.fail_audio, sid, receipt_id)
             await asyncio.to_thread(tx.event, sid, 'readback.failed', {'receipt_id': receipt_id, 'error_type': type(exc).__name__,

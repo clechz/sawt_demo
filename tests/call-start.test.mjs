@@ -27,6 +27,7 @@ test('blocked autoplay still publishes mic; direct caller and AI samples drive t
  const sandbox={validateCallBinding,validateReadyBinding,setMicrophoneSilenced,TextDecoder,createExperienceControls:()=>({value:()=>({recording_consent:true,experience_version:"v3",conversation_mode:"model_led",voice:"ash",scenario:"new_order"}),setBusy(){}}),renderSupport:()=>{},PlaybackMeter:Playback,MicrophoneMeter:Meter,ReadbackPlayer:class{cancel(){}},createOrderView:()=>()=>{},createCallStatus:()=>({reset(){},phase(){},audio(){}}),document:{getElementById:element,body:{dataset:{},classList:{add(){},remove(){}}},documentElement:{style:{setProperty(){}}}},window:{addEventListener(){},dispatchEvent:e=>levels.push(e.detail)},CustomEvent:class{constructor(type,options){this.detail=options.detail;}},location:{pathname:'/'},localStorage:{setItem(){}},LivekitClient:{Room,RoomEvent:events},fetch:async path=>{order.push('fetch');return{ok:true,json:async()=>path==='/api/calls'?{id:'test',token:'token',max_seconds:600,required_worker:binding}:{state:{}}};},setTimeout:()=>1,clearTimeout(){},setInterval:()=>1,clearInterval(){},requestAnimationFrame:fn=>{frame=fn;return 1;},cancelAnimationFrame(){},console};
  try{
   const code=readFileSync(new URL('../static/v2/app.js',import.meta.url),'utf8').replace(/^import .*;\r?\n/gm,'');
+  sandbox.renderFinalReceipt=()=>{};
   vm.runInNewContext(code,sandbox);await element('start').onclick();
   assert.ok(order.indexOf('unlock')<order.indexOf('fetch'),'speaker unlock precedes network request');
   assert.ok(order.includes('microphone'),'autoplay rejection must not abort microphone');
@@ -48,6 +49,13 @@ test('blocked autoplay still publishes mic; direct caller and AI samples drive t
   assert.equal(order.filter(x=>x==='microphone').length,publicationToggleCount,'mute cannot change SDK publication');
   element('mute').onclick();assert.equal(micTrack.enabled,true);
   sample=0;frame(220);assert.equal(levels.at(-1),0,'silence stops speech energy');
-  instance.events.TrackUnsubscribed(track);await element('end').onclick();
+  // Hold the server cleanup request. Audio must be cut before it resolves.
+  let finishEnd;const originalFetch=sandbox.fetch;
+  sandbox.fetch=path=>path.endsWith('/end')?new Promise(resolve=>{finishEnd=()=>resolve({ok:true});}):originalFetch(path);
+  const ending=element('end').onclick();
+  assert.equal(remoteElement.muted,true,'hangup silences AI immediately even if server is stuck');
+  instance.events.TrackSubscribed(track);
+  assert.equal(remoteElement.muted,true,'late subscription cannot resurrect audio after hangup');
+  finishEnd();await ending;
  }finally{globalThis.MediaStream=oldStream;}
 });

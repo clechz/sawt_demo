@@ -32,6 +32,7 @@ export function renderSupport(root,h){
  const signature=JSON.stringify(h);if(panel.dataset.signature===signature)return;panel.dataset.signature=signature;
  const nodes=[];const line=text=>{const el=root.createElement('p');el.textContent=text;nodes.push(el);};
  for(const order of Object.values(h.orders||{})){
+  if(order.source==='confirmed_simulation'&&!order.refunded_halalas&&order.status==='accepted')continue;
   line(`${order.id} · ${statusText[order.status]||order.status}`);
   if(order.status==='out_for_delivery')line(`الوصول المتوقع خلال ${order.eta_minutes} دقائق`);
   if(order.refunded_halalas)line(`المبلغ المسترجع: ${money(order.refunded_halalas)}`);
