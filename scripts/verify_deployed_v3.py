@@ -50,7 +50,7 @@ async def worker_probe(client, report):
     # Client is already authenticated to this exact origin. No cookie/token is logged.
     from livekit import rtc
     response = await client.post('/api/calls', json={'recording_consent': True,
-        'voice': 'ash', 'scenario': 'new_order', 'experience_version': 'v3', 'conversation_mode': 'model_led'})
+        'voice': 'cedar', 'scenario': 'new_order', 'experience_version': 'v3', 'conversation_mode': 'model_led'})
     report['call_creation_status'] = response.status_code
     if response.status_code != 200:
         report['blocked_at'] = 'call_creation'
@@ -59,7 +59,7 @@ async def worker_probe(client, report):
     sys.path.insert(0, str(ROOT))
     from sawt.release_contract import worker_contract, check_worker_contract
     from sawt.experience import validate_experience
-    expected = worker_contract(validate_experience('ash', conversation_mode='model_led'))
+    expected = worker_contract(validate_experience('cedar', conversation_mode='model_led'))
     try:
         check_worker_contract(expected, call.get('required_worker'))
     except ValueError:
@@ -127,7 +127,7 @@ async def worker_probe(client, report):
                     report['blocked_at'] = 'production_worker_source_mismatch'
             report['worker_v3_startup_verified'] = bool(matched
                 and connected[-1].get('conversation_mode') == 'model_led'
-                and connected[-1].get('voice') == 'ash' and audio['nonzero_samples'] > 0
+                and connected[-1].get('voice') == 'cedar' and audio['nonzero_samples'] > 0
                 and not any(e.get('fatal') for e in events))
     except Exception as exc:
         report['worker_error_type'] = type(exc).__name__

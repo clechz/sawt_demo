@@ -48,3 +48,22 @@ async def test_support_answer_dispatches_without_native_event():
  voice.consumed=1
  await voice.dispatch_resolution_reply()
  assert len(voice.dispatched)==1
+
+
+@pytest.mark.asyncio
+async def test_exhausted_private_replans_resume_unconsumed_request_only():
+ import asyncio, time
+ class PendingBase(Base):
+  def __init__(self,*a,**k):
+   super().__init__(*a,**k);self.fragments=['أبي شاورما',' صاج',' بدون حار'];self.consumed=0;self.pending=None;self.dispatched=[];self.last_input=time.monotonic()-1
+  def on_delegation(self,d):self.dispatched.append(d)
+ voice=make_voice_class(PendingBase)('id',None,{'voice':'cedar'})
+ voice.pending=asyncio.create_task(asyncio.sleep(.01))
+ await voice.resume_delegated_request()
+ assert len(voice.dispatched)==1 and voice.delegation_start==0
+ voice.consumed=len(voice.fragments)
+ await voice.resume_delegated_request()
+ assert len(voice.dispatched)==1
+ voice.consumed=0;voice.ending=True
+ await voice.resume_delegated_request()
+ assert len(voice.dispatched)==1

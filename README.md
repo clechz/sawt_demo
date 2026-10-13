@@ -22,6 +22,8 @@ A simple call screen over a stateful ordering system. Speak naturally, give deta
 
 ## Release audit — 2026-10-13
 
+**Latest live retest failed; do not infer readiness from CI.** See [current results and blockers](SUBMISSION-READINESS.md#latest-retest-release-gate-failed).
+
 Latest integration combines the Cedar voice/support fixes (`ea64d61`) with the correction, hangup and receipt regressions (`b91b0ee`). Historical [CI for f9f00ec](https://github.com/clechz/sawt_demo/actions/runs/38392581865) does not certify this integration. The current UI uses V3, model-led conversation, fixed Cedar voice. API clients that omit the experience still select V2.
 
 **Not ready for final submission recording.** The candidate passed offline and real-provider text/state checks, but Vercel rejected production deployment with `api-deployments-free-per-day` (more than 100 deployments). The new LiveKit worker was rolled back to `TKcMfpvSprXd` to stay matched to the existing website. Latest source is on main; it is not the hosted release. Saved recording access returned HTTP 403, so the recent human call was diagnosed from persisted events/transcripts, not a fresh audio listen.

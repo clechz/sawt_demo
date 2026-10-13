@@ -9,6 +9,8 @@ from .domain import normalize
 
 def unsupported_claim(before, after, reply):
     text = normalize(reply)
+    if not after['basket'] and re.search(r'طلبك (?:فيه|يحتوي|عباره عن)|في (?:طلبك|السله)\s*[:：]', text):
+        return 'The saved basket is empty. Do not describe requested dishes as an existing order. Save the clear requested items/options with tools, then summarize only saved state or ask one genuine clarification.'
     # Future offers and negative statements do not claim completed deletion.
     removed = bool(re.search(r'\b(?:شلت|حذفت|حذفنا|استبعدت|استبعدناه|انحذف|انشال)\b|\bتم (?:حذف|استبعاد|ازاله)|\b(?:removed|deleted)\b', text))
     old = {x['line_id']: x for x in before['basket']}

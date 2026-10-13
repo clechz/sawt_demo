@@ -2,6 +2,25 @@
 
 This is an evidence checklist, not a declaration that the hosted release is ready.
 
+## Latest retest: release gate failed
+
+The newer integrated local call failed after treating a bread option as an extra
+dish and describing an unsaved basket. A following run exhausted three private
+replans while the caller continued speaking and timed out. The resulting fixes
+add an empty-basket claim guard, clarify option attachment, and resume already
+delegated unfinished work. **940 Python tests pass (one optional skip), but these
+last fixes still need a successful full real-voice retest.** Earlier audio passes
+below remain historical evidence, not a pass for this revision.
+
+The existing Vercel release accepted login and a Cedar call, but answered an
+Arabic price question by falsely claiming there were no sandwiches. Deployment
+of the fixes is still rejected by `api-deployments-free-per-day`.
+Local HTTPS serves the page, but calling through the LAN address returns 403:
+the code-free allowlist contains an old device IP. Changing it awaits explicit
+approval after automatic approval review rejected the update. Localhost remains
+available. No firewall or certificate trust changes were made in this retest.
+
+
 | Required gate | Status and evidence |
 |---|---|
 | Repository runs from README | **Verified on Windows / Python 3.12.** Fresh virtual environment installed `requirements-v2.txt`; both entry points imported. A clean tracked-source copy launched with the documented uvicorn command; health and call page returned HTTP 200. Credentials are still required for voice. macOS/Linux commands were not executed. |

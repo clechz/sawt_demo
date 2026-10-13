@@ -1,5 +1,5 @@
 """Paid V3/Cedar call: actual PCM, saved state and timed exact readbacks. No Chrome."""
-import argparse,asyncio,hashlib,io,json,os,sys,time,wave
+import argparse,asyncio,hashlib,io,json,os,ssl,sys,time,wave
 from pathlib import Path
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
 import httpx
@@ -19,8 +19,10 @@ TEXTS=[
 async def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--local', action='store_true', help='Use isolated loopback API on port 8773, without hosted login')
+    parser.add_argument('--local-url', default='http://127.0.0.1:8773', help='Local API URL; used only with --local')
+    parser.add_argument('--ca-file', type=Path, help='Trusted local CA PEM for HTTPS verification')
     args=parser.parse_args()
-    base='http://127.0.0.1:8773' if args.local else 'https://sawt-demo.vercel.app'
+    base=args.local_url.rstrip('/') if args.local else 'https://sawt-demo.vercel.app'
     report={'target':base,'scope':'synthetic caller, real LiveKit audio and cloud state; timed simulated readback receipts; no human accent score','passed':False,'turns':[]}
     p=V2Provider(voice='cedar');call=None
     try:
@@ -30,7 +32,7 @@ async def main():
             if not path.exists():path.write_bytes(await p.speak(text))
             audio.append(decode(path))
         password=None if args.local else (os.getenv('SAWT_DEMO_PASSWORD') or json.loads((ROOT/'runtime/private-demo.json').read_text(encoding='utf8'))['password'])
-        async with httpx.AsyncClient(base_url=base,headers={'Origin':base,'X-Access-Code':os.getenv('SAWT_ACCESS_CODE','')},timeout=60) as client:
+        async with httpx.AsyncClient(base_url=base,headers={'Origin':base,'X-Access-Code':os.getenv('SAWT_ACCESS_CODE','')},timeout=60,verify=ssl.create_default_context(cafile=str(args.ca_file)) if args.ca_file else True) as client:
             if not args.local:assert (await client.post('/login',data={'password':password})).status_code==303
             call=VoiceCall(client,{'experience_version':'v3','conversation_mode':'model_led','voice':'cedar','scenario':'new_order'})
             try:

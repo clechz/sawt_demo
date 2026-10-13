@@ -256,3 +256,22 @@ def test_worker_passes_same_mode_to_both_preparation_paths():
              and n.args and isinstance(n.args[0], ast.Constant) and n.args[0].value == 'ready']
     assert len(ready) == 1
     assert {'conversation_mode', 'worker_release'} <= {k.arg for k in ready[0].keywords}
+
+
+@pytest.mark.asyncio
+async def test_empty_basket_claim_repaired_into_saved_item_before_reply(engine, tmp_path):
+    tx = Transactions(tmp_path / 'calls.db', engine)
+    sid, _ = tx.create()
+    planner = Scripted({'content': 'طلبك فيه: ٢ شاورما دجاج'},
+        calls(call('add_item', item_id='sandwiches_07', quantity=2,
+                   options={'meal':['sandwich'], 'bread':['saj'], 'spice_level':['not_spicy']}, notes='')),
+        {'content':'استلام ولا توصيل؟'})
+    p = await prepare_turn(engine, planner, tx.load(sid),
+        'أبي اثنين شاورما دجاج، ساندويتش صاج بدون حار', conversation_mode='model_led')
+    await commit_turn(tx, sid, 'empty-basket-claim', p)
+    saved = tx.load(sid)['state']
+    assert len(saved['basket']) == 1
+    assert saved['basket'][0]['quantity'] == 2
+    assert saved['basket'][0]['options']['bread'] == ['saj']
+    assert saved['order_id'] is None
+    assert p.reply == 'استلام ولا توصيل؟'

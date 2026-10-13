@@ -126,6 +126,17 @@ def make_voice_class(base):
             if self.awaiting_resolution and not self.ending and len(self.fragments)>self.consumed:
                 self.on_delegation(SimpleNamespace(id=None, pending_transcript=''))
 
+        async def resume_delegated_request(self):
+            # Only resume already-delegated business work. A long utterance can
+            # invalidate all three private plans; never silently abandon it.
+            pending = self.pending
+            if pending and not pending.done():
+                await asyncio.gather(asyncio.shield(pending), return_exceptions=True)
+            while not self.ending and time.monotonic() - self.last_input < .6:
+                await asyncio.sleep(.05)
+            if not self.ending and len(self.fragments) > self.consumed:
+                self.on_delegation(SimpleNamespace(id=None, pending_transcript=''))
+
         def on_delegation(self, delegation):
             # Native delegation carries the current open caption in supported
             # LiveKit releases, not function arguments. Keep unfinished work
@@ -287,8 +298,8 @@ def make_voice_class(base):
                         if completed and proposal and not proposal['presented'] and await current():
                             await asyncio.to_thread(mark_proposal_presented, tx, self.sid, proposal['id'], prepared.epoch)
                     return
-                if await still_current():
-                    self.duplex_session.append_commentary('خذ راحتك، كمل طلبك وأنا معك.', delegation_id=delegation_id)
+                self.audit('delegation.deferred', {'reason': 'speech_outlasted_private_replans'})
+                self.spawn(self.resume_delegated_request())
             except ProviderQuotaError:
                 self.provider_failed = True
                 await self.close_failed_voice(CALLS_UNAVAILABLE)
