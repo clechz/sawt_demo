@@ -10,14 +10,16 @@ export function selectedExperience(voice,scenario,consent){
  if(!VOICES.has(voice)||!Object.hasOwn(BRIEFS,scenario))throw new Error('اختيار غير متاح.');
  return {voice,scenario,recording_consent:consent===true,experience_version:'v3',conversation_mode:'model_led'};
 }
-// Deliberately no voice/scenario picker in the customer-facing experience.
-// The saved old preference must not silently override Ash on this release.
+// Ash remains fixed; no previous voice preference can override it.
+// A deliberate start acknowledges the recording notice beside the button.
+// Merely loading the page or reading its settings grants nothing.
 export function createExperienceControls(root){
- const consent=root.getElementById('experience-consent');
- if(!consent)throw new Error('Recording consent control is missing');
+ const notice=root.getElementById('recording-notice');
+ if(!notice?.textContent?.trim())throw new Error('Recording notice is missing');
+ let busy=false;
  return {
-  value:()=>selectedExperience('ash','new_order',consent.checked),
-  setBusy:busy=>{consent.disabled=busy;}
+  value:({startRequested=false}={})=>selectedExperience('ash','new_order',startRequested===true&&!busy),
+  setBusy:value=>{busy=value===true;}
  };
 }
 
