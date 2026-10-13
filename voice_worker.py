@@ -206,15 +206,20 @@ class RestaurantVoice(Agent):
         await self.send('input', epoch=epoch)
 
     async def close_failed_voice(self, message=None):
-        if self.pending and not self.pending.done():
+        # Do not cancel the task that is performing failure cleanup.
+        if (self.pending and self.pending is not asyncio.current_task()
+                and not self.pending.done()):
             self.pending.cancel()
-        await asyncio.to_thread(tx.interrupt, self.sid, close=True)
         try:
+            await asyncio.to_thread(tx.interrupt, self.sid, close=True)
             if self.room.isconnected():
                 await self.send('error', fatal=True, code='credit_balance_exhausted' if message==CALLS_UNAVAILABLE else 'voice_unavailable', message=message or say('voice_error'))
         finally:
-            await self.media_session.aclose()
-            await self.room.disconnect()
+            # Cleanup must still run if persistence, sending or media fails.
+            try:
+                await self.media_session.aclose()
+            finally:
+                await self.room.disconnect()
 
     def on_transcript(self, event):
         if getattr(self,'ending',False):return
