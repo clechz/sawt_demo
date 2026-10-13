@@ -65,7 +65,11 @@ class Menu:
         return copy.deepcopy(self.items[item_id])
 
     def search(self, query, branch=None, limit=5, offset=0):
-        words = normalize(query).split()
+        # Saudi category words should reach the same catalog, not look absent.
+        query_text = normalize(query).replace('sweet tooth', 'desserts')
+        aliases = {'حلا':'حلويات', 'حلي':'حلويات', 'حلو':'حلويات',
+                   'ساندوتش':'sandwiches', 'سندوتش':'sandwiches'}
+        words = [aliases.get(word, word) for word in query_text.split()]
         ranked = []
         for item in self.items.values():
             text = normalize(' '.join([item['name'], item['name_en'], item['category'], item['category_id']]))

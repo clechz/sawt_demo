@@ -197,3 +197,10 @@ def test_laban_is_plain_without_sugar_question_and_other_drinks_keep_choices(eng
     with pytest.raises(RuleError):
         engine.act(s, 'update_item', {'line_id':line['line_id'], 'options':{'sweetness':['regular']}})
     assert s == old
+
+
+@pytest.mark.parametrize('query',['حلا','حلى','شي حلو','sweet tooth'])
+def test_saudi_dessert_words_retrieve_real_desserts(menu, query):
+    result = menu.search(query)
+    assert result['items']
+    assert all(item['category_id']=='desserts' for item in result['items'])
