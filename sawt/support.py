@@ -55,8 +55,6 @@ def file_case(state, category, description, order_reference=''):
     if len(order_reference) > 64:
         raise ValueError('رقم الطلب طويل')
     cases = state.setdefault('support_cases', [])
-    if len(cases) >= 10:
-        raise ValueError('الحد الأقصى للبلاغات التجريبية في المكالمة')
     # Same customer repeating the exact issue must not file duplicate cases.
     from .domain import normalize
     existing = next((c for c in cases if c['category'] == category
@@ -66,6 +64,8 @@ def file_case(state, category, description, order_reference=''):
         case = existing
         repeated = True
     else:
+        if len(cases) >= 10:
+            raise ValueError('الحد الأقصى للبلاغات التجريبية في المكالمة')
         case = {
             'case_id': 'T-' + uuid.uuid4().hex[:8].upper(),
             'category': category,
