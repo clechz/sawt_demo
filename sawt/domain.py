@@ -348,4 +348,4 @@ def requests_human(text):
     # A substring shortcut must never turn "ما أبي موظف" into a handoff.
     if set(text.split()) & {'ما', 'لا', 'مو', 'مش', 'مب', 'ماني', 'لست', 'ليس', 'بدون'}:
         return False
-    return any(re.search(r'(?<!\w)' + re.escape(normalize(x)) + r'(?!\w)', text) for x in ['أبي موظف', 'أبغى موظف', 'اكلم موظف', 'أكلم انسان', 'خدمة العملاء', 'عندي شكوى', 'ابي اشتكي', 'أبغى اشتكي', 'حولني'])
+    return any(re.search(r'(?<!\w)' + re.escape(normalize(x)) + r'(?!\w)', text) for x in ['أبي موظف', 'أبغى موظف', 'اكلم موظف', 'أكلم انسان', 'ابي اكلم خدمة العملاء', 'ابغى اكلم خدمة العملاء', 'حولني'])
