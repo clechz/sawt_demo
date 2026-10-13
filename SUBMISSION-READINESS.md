@@ -2,6 +2,12 @@
 
 This is an evidence checklist, not a declaration that the hosted release is ready.
 
+Publication update: the repository is public and the user's 4 min 7 sec
+[application recording](https://github.com/clechz/sawt_demo/releases/tag/submission-demo-2026-10-13)
+is uploaded. Both links were checked without authentication. Video content has
+not been fully reviewed against the architecture, model-research and product
+explanation requirements; earlier references to a missing video are historical.
+
 ## Latest local order-ending retest: passed; hosted release pending
 
 [Recorded test evidence](evidence/v3/cedar-order-ending.json): a synthetic Arabic
