@@ -1,0 +1,112 @@
+name: Deploy SAWT voice worker
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - voice_worker.py
+      - 'sawt/**'
+      - 'data/**'
+      - Dockerfile
+      - .dockerignore
+      - livekit.toml
+      - 'requirements*.txt'
+      - .github/workflows/deploy-livekit.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sawt-cloud-production-worker
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: github.repository == 'clechz/sawt_demo' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+        with:
+          persist-credentials: false
+      - name: Check credentials and existing deployment target without displaying values
+        env:
+          LIVEKIT_URL: ${{ secrets.LIVEKIT_URL }}
+          LIVEKIT_API_KEY: ${{ secrets.LIVEKIT_API_KEY }}
+          LIVEKIT_API_SECRET: ${{ secrets.LIVEKIT_API_SECRET }}
+        run: |
+          python3 - <<'PY'
+          import os, pathlib, sys, tomllib
+          from urllib.parse import urlsplit
+          required = ('LIVEKIT_URL', 'LIVEKIT_API_KEY', 'LIVEKIT_API_SECRET')
+          missing = [name for name in required if not os.environ.get(name, '').strip()]
+          summary = pathlib.Path(os.environ['GITHUB_STEP_SUMMARY'])
+          if missing:
+              message = 'Worker deployment BLOCKED: add these repository Actions secrets: ' + ', '.join(missing)
+              print('::error::' + message)
+              summary.write_text('## Worker not deployed\n\n' + message + '\n\nNo credentials were printed and no LiveKit deployment was attempted.\n')
+              sys.exit(1)
+          config = tomllib.loads(pathlib.Path('livekit.toml').read_text())
+          if config.get('agent', {}).get('id') != 'CA_SJBGJojRjxZK' or config.get('project', {}).get('subdomain') != 'sawt-v2-1z4xpadl':
+              raise SystemExit('Unexpected agent/project in livekit.toml. Review target before deploying.')
+          url = urlsplit(os.environ['LIVEKIT_URL'].strip())
+          expected_host = config['project']['subdomain'] + '.livekit.cloud'
+          if (url.scheme != 'wss' or url.hostname != expected_host or url.username or url.password or url.query or url.fragment or url.path not in ('', '/')):
+              raise SystemExit('LIVEKIT_URL does not match the existing SAWT project. No deployment attempted.')
+          print('Required credentials are present; existing agent target matches. Values are not logged.')
+          summary.write_text('## Worker deployment prerequisites\n\nTarget: existing `sawt-cloud` agent. Credential presence and configured target checked; authentication is checked by the deployment action.\n')
+          PY
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install pinned application dependencies
+        run: python -m pip install -r requirements-v2.txt
+      - name: Run Python regression tests
+        run: python -m pytest -q --junitxml=/tmp/sawt-worker-tests.xml
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run browser-logic regression tests
+        run: node --experimental-default-type=module --test tests/playback.test.mjs tests/audio-meter.test.mjs tests/call-status.test.mjs tests/call-start.test.mjs tests/experience.test.mjs tests/worker-binding.test.mjs
+      - name: Check frontend build
+        run: npm ci --prefix frontend && npm run build --prefix frontend
+      - name: Restore tracked build outputs before packaging the exact committed source
+        run: |
+          git restore --worktree .
+          git diff --exit-code
+          git rev-parse HEAD
+      - name: Deploy existing SAWT worker
+        uses: livekit/deploy-action@48cc4d2614132f7d67d04d38c62b47ba29c027e0 # v2.12.2
+        env:
+          LIVEKIT_URL: ${{ secrets.LIVEKIT_URL }}
+          LIVEKIT_API_KEY: ${{ secrets.LIVEKIT_API_KEY }}
+          LIVEKIT_API_SECRET: ${{ secrets.LIVEKIT_API_SECRET }}
+          SECRET_LIST: ''
+        with:
+          OPERATION: deploy
+          WORKING_DIRECTORY: '.'
+      - name: Wait for LiveKit running status
+        uses: livekit/deploy-action@48cc4d2614132f7d67d04d38c62b47ba29c027e0 # v2.12.2
+        env:
+          LIVEKIT_URL: ${{ secrets.LIVEKIT_URL }}
+          LIVEKIT_API_KEY: ${{ secrets.LIVEKIT_API_KEY }}
+          LIVEKIT_API_SECRET: ${{ secrets.LIVEKIT_API_SECRET }}
+          SECRET_LIST: ''
+        with:
+          OPERATION: status-retry
+          WORKING_DIRECTORY: '.'
+          TIMEOUT: 5m
+      - name: Record deployment scope, not a completed voice-test claim
+        run: |
+          {
+            echo ''
+            echo '## Deployment action completed'
+            echo "Source commit: \`$GITHUB_SHA\`"
+            echo 'Existing agent: `CA_SJBGJojRjxZK`.'
+            echo 'Deploy and running-status checks completed. No agent was created and no runtime-secret values were supplied for replacement.'
+            echo 'This does NOT establish that the production website serves this source, that a new call passed its worker contract, that recording completed, or that conversation quality passed. Verify those separately before marking the release ready.'
+          } >> "$GITHUB_STEP_SUMMARY"
