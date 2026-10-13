@@ -69,6 +69,18 @@ def make_voice_class(base):
             self.delegation_start = 0
             self.latest_final_transcript = ''
 
+        async def on_enter(self):
+            await super().on_enter()
+            from .microphone import MicrophoneBridge
+            self.microphone_bridge = MicrophoneBridge(self.sid, self.room, self.duplex_session, self.audit)
+            self.microphone_bridge.bind()
+
+        async def on_exit(self):
+            bridge = getattr(self, 'microphone_bridge', None)
+            if bridge is not None:
+                bridge.close()
+            await super().on_exit()
+
         async def announce_ready(self):
             from .v2_runtime import tx
             try:

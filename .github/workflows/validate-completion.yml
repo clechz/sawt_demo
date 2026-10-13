@@ -1,0 +1,60 @@
+name: Validate final receipt and call lifecycle
+on:
+  push:
+    branches: [fix/final-receipt-and-call-lifecycle]
+    paths: [.github/workflows/validate-completion.yml, scripts/apply_completion_candidate.py, scripts/check_completion_browser.py]
+permissions:
+  contents: write
+concurrency:
+  group: sawt-completion-candidate
+  cancel-in-progress: false
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - name: Apply candidate to current main UI without overwriting its latest design
+        run: python3 scripts/apply_completion_candidate.py
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -r requirements-v2.txt
+      - name: Full Python regression suite
+        run: python -m pytest -q --junitxml=/tmp/completion-python.xml
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: All browser logic tests
+        run: node --experimental-default-type=module --test tests/*.test.mjs | tee /tmp/completion-js.txt
+      - name: Production frontend build
+        run: npm ci --prefix frontend && npm run build --prefix frontend
+      - name: Install isolated browser harness
+        run: |
+          python -m pip install playwright==1.56.0
+          python -m playwright install --with-deps chromium
+      - name: Desktop mobile reduced-motion completion and immediate media shutdown
+        run: python scripts/check_completion_browser.py
+      - name: Publish validated application source only to this development branch
+        run: |
+          git restore --worktree .github/workflows
+          git add sawt static/v2 tests
+          git diff --cached --check
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'Integrate saved receipt, animated hangup and input-only mute into latest caller UI'
+          git push origin HEAD:refs/heads/fix/final-receipt-and-call-lifecycle
+          git rev-parse HEAD > /tmp/completion-tested-commit.txt
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: completion-validation
+          path: |
+            /tmp/completion-python.xml
+            /tmp/completion-js.txt
+            /tmp/completion-tested-commit.txt
+            /tmp/sawt-completion-evidence/
+          retention-days: 7
