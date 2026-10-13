@@ -15,10 +15,14 @@ below remain historical evidence, not a pass for this revision.
 The existing Vercel release accepted login and a Cedar call, but answered an
 Arabic price question by falsely claiming there were no sandwiches. Deployment
 of the fixes is still rejected by `api-deployments-free-per-day`.
-Local HTTPS serves the page, but calling through the LAN address returns 403:
-the code-free allowlist contains an old device IP. Changing it awaits explicit
-approval after automatic approval review rejected the update. Localhost remains
-available. No firewall or certificate trust changes were made in this retest.
+The user approved code-free access for exactly `10.207.119.67/32`; that local
+allowlist update is applied. The trusted LAN HTTPS retest passed initial ordering,
+removal/quantity correction and branch/spice changes. Final confirmation saved the
+correct 54 SAR order, but no confirmation audio arrived within five seconds after
+the saved state was observed. **The full voice gate remains failed.** See the
+[LAN retest](evidence/v3/cedar-lan-retest.json). Testing from this PC through its LAN
+address does not prove reachability from another computer. No firewall or
+certificate trust changes were made.
 
 
 | Required gate | Status and evidence |
