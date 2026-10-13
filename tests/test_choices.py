@@ -108,6 +108,45 @@ def test_single_dish_fast_path_does_not_duplicate_an_existing_basket(setup):
     engine.act(state,'add_item',{'item_id':'breakfast_01','quantity':1,'options':{},'notes':''},utterance='شكشوكة')
     assert simple_order(engine.menu,state,'أبي شكشوكة كبير تميس وتوصيل') is None
 
+@pytest.mark.parametrize('utterance,planner_options,expected', [
+    ('أبي شاورما دجاج بدون حار', {}, {'spice_level': ['not_spicy']}),
+    ('I want chicken shawarma and not spicy', {'spice_level': ['hot']}, {'spice_level': ['not_spicy']}),
+    ('أبي شاورما الدجاج ساندويتش صاج بدون حار', {},
+     {'meal': ['sandwich'], 'bread': ['saj'], 'spice_level': ['not_spicy']}),
+    ('أبغى شاورما دجاج وجبة بريوش مو حار', {},
+     {'meal': ['meal'], 'bread': ['brioche'], 'spice_level': ['not_spicy']}),
+    ('أبي شاورما دجاج ما أبغى حار', {}, {'spice_level': ['not_spicy']}),
+    ('أبي شاورما دجاج لو سمحت بدون حار', {}, {'spice_level': ['not_spicy']}),
+])
+def test_shawarma_one_turn_persists_stated_choices_even_when_planner_omits_them(setup, utterance, planner_options, expected):
+    staged, state = setup
+    result = staged.act(state, 'add_item', {
+        'item_id': 'sandwiches_07', 'quantity': 1,
+        'options': planner_options, 'notes': '',
+    }, utterance=utterance)
+    assert not result.get('choice_guard')
+    assert state['basket'][0]['options'] == expected
+    assert state['basket'][0]['quantity'] == 1
+    assert not state['order_id']
+
+
+@pytest.mark.parametrize('utterance', [
+    'هل شاورما دجاج بدون حار؟',
+    'أبي شاورما دجاج بدون حار إذا مجاني',
+    'أبي شاورما دجاج وشاي كرك بدون حار',
+    'أبي شاورما دجاج وشاورما لحم بدون حار',
+    'أبي شاورما دجاج حار أو بدون حار',
+    'ما أبي شاورما دجاج بدون حار',
+    'اكتب «أبي شاورما دجاج بدون حار»',
+])
+def test_shawarma_single_dish_recovery_does_not_guess_in_ambiguous_context(setup, utterance):
+    staged, state = setup
+    staged.act(state, 'add_item', {
+        'item_id': 'sandwiches_07', 'quantity': 1, 'options': {}, 'notes': '',
+    }, utterance=utterance)
+    assert not state['basket'][0]['options'].get('spice_level')
+
+
 def test_negated_heat_does_not_authorize_hot(setup):
     engine,state=setup
     shawarma(engine,state,'وجبة مع صاج بدون حار',{'meal':['meal'],'bread':['saj'],'spice_level':['hot']})
