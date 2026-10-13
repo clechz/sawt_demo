@@ -16,6 +16,7 @@ from .hospitality import (HospitalityEngine, SUPPORT_TOOLS, SUPPORT_NAMES, SUPPO
 from .provider import ProviderError
 from .response_style import changes, combine
 from .transactions import Conflict, encode
+from .outcomes import TurnOutcome, describe_outcome
 from .recognition import check_recognition, check_transcript_clarity, AudioWindowError
 
 CATALOG = [t for t in TOOLS if t['function']['name'] not in ('handoff', 'offer_handoff')] + SUPPORT_TOOLS
@@ -83,6 +84,7 @@ class PreparedTurn:
     text: str
     requires_verification: bool
     speech_mode: str
+    outcome: TurnOutcome | None = None
 
 
 def parse_call(call):
@@ -220,18 +222,22 @@ async def prepare_turn(engine, provider, row, text, *, progress=None):
                 raise ProviderError('Invalid planner response')
             calls = message.get('tool_calls') or []
             if not calls:
-                reply = message.get('content')
-                if not isinstance(reply, str) or not reply.strip():
+                # Rejected wording must never remain a publishable reply while
+                # subsequent repair calls are running (or after budget expiry).
+                candidate = message.get('content')
+                reply = None
+                if not isinstance(candidate, str) or not candidate.strip():
                     raise ProviderError('Empty planner reply')
                 from .clarification import question_targets
-                targets = question_targets(engine.menu, state, reply)
+                targets = question_targets(engine.menu, state, candidate)
                 if targets:
                     messages.append({'role': 'system', 'content': 'Use ask_choice to persist that option question before asking it. Known line/group pairs: ' + encode(targets)})
                     continue
                 # No text-generated success statement can create an order.
-                if not state.get('order_id') and re.search(r'نأكد الطلب|نعتمد الطلب|تأكد طلبك|تم تأكيد', reply):
+                if not state.get('order_id') and re.search(r'نأكد الطلب|نعتمد الطلب|تأكد طلبك|تم تأكيد', candidate):
                     messages.append({'role': 'system', 'content': 'Use checkout for final confirmation; text cannot confirm an order. Otherwise ask the actual missing field.'})
                     continue
+                reply = candidate.strip()
                 break
             if not isinstance(calls, list):
                 raise ProviderError('Invalid planner tool list')
@@ -295,7 +301,7 @@ async def prepare_turn(engine, provider, row, text, *, progress=None):
     names = {op['tool'] for op in adapter.operations}
     if names & ORDER_MUTATIONS and not names & SUPPORT_NAMES and not state.get('quote') and not state.get('order_id'):
         acknowledgement = changes(engine.menu, row['state'], state,
-                                  unresolved={(q['line_id'], q['group_id']) for q in adapter.choice_questions})
+                                  unresolved={(q['line_id'], q['group']) for q in adapter.choice_questions})
         if acknowledgement and not reply.startswith(acknowledgement):
             reply = combine(acknowledgement, reply)
     # An intervening subject expires the ability of a later yes to accept an old offer.
@@ -304,13 +310,18 @@ async def prepare_turn(engine, provider, row, text, *, progress=None):
         adapter.engine.touch(state)
     state['history'] = (state['history'] + [{'role': 'user', 'content': text}, {'role': 'assistant', 'content': reply}])[-12:]
     state['events'] = (state['events'] + adapter.operations)[-80:]
+    mode = result_mode(state, adapter.operations, reply)
+    outcome = describe_outcome(row['state'], state, adapter.operations, reply, mode,
+                               has_choice_guard=bool(adapter.choice_questions))
     return PreparedTurn(state, reply, adapter.operations, row['epoch'], start_revision, text,
-                        requires_audio_verification(adapter.operations, text), result_mode(state, adapter.operations, reply))
+                        requires_audio_verification(adapter.operations, text), mode, outcome)
 
 
 async def commit_turn(tx, sid, bundle_id, prepared):
     result = {'reply': prepared.reply, 'state': hospitality_view(prepared.state, tx.engine),
               'events': prepared.operations, 'speech_mode': prepared.speech_mode}
+    if prepared.outcome is not None:
+        result['outcome'] = prepared.outcome.envelope(bundle_id, prepared.state['revision'])
     await asyncio.to_thread(tx.commit_bundle, sid, bundle_id, prepared.epoch, prepared.revision,
                             prepared.state, prepared.operations, prepared.text, result)
     return result
