@@ -25,9 +25,7 @@ export function createCompletionView(root=document){
    }
    orderId=receipt.id;
    const heading=el('header','receipt-heading');
-   const mark=el('span','receipt-mark',receipt.cancelled?'—':'✓');mark.setAttribute('aria-hidden','true');
    const title=el('h2','',receipt.cancelled?'الطلب ملغي':`طلبك ${receipt.id}`);title.id='completion-title';
-   const identity=el('p','receipt-number');identity.append('رقم الطلب ',el('bdi','',receipt.id));
    const intro=el('div','');intro.append(title);heading.append(intro);
    const items=el('div','receipt-items');
    for(const line of receipt.items){

@@ -10,7 +10,7 @@ import {setMicrophoneSilenced} from '../static/v2/microphone-mute.js';
 test('blocked autoplay still publishes mic; direct caller and AI samples drive the orb',async()=>{
  const binding={protocol:1,source_fingerprint:'a'.repeat(64),experience_version:'v3',conversation_mode:'model_led',voice:'ash',planner_model:'test-model',voice_model:'gpt-live-1'};
  const elements=new Map(),levels=[],order=[];let frame,instance,sample=0;
- const micTrack={enabled:true,readyState:'live'}; let remoteElement;
+ const micTrack={enabled:true,readyState:'live'}; let remoteElement,attachments=0;
  const element=id=>{if(!elements.has(id))elements.set(id,{hidden:true,style:{},setAttribute(){},addEventListener(){},append(){}});return elements.get(id);};
  const context={state:'running',resume:async()=>{},close:async()=>{},createMediaStreamSource:()=>({connect(){},disconnect(){}}),createAnalyser:()=>({fftSize:0,getFloatTimeDomainData:a=>a.fill(sample),disconnect(){}})};
  const oldStream=globalThis.MediaStream;globalThis.MediaStream=class{constructor(tracks){this.tracks=tracks;}};
@@ -36,7 +36,7 @@ test('blocked autoplay still publishes mic; direct caller and AI samples drive t
   instance.events.LocalTrackPublished({track:{kind:'audio',mediaStreamTrack:{}}});sample=.08;frame(100);
   assert.ok(levels.at(-1)>.5,'caller PCM moves orb even when SDK level is zero');
   instance.events.LocalTrackUnpublished({kind:'audio'});
-  const track={kind:'audio',mediaStreamTrack:{},attach:()=>remoteElement={play:async()=>{},remove(){},muted:false},detach:()=>[]};
+  const track={kind:'audio',mediaStreamTrack:{},attach:()=>{attachments++;return remoteElement={play:async()=>{},remove(){},muted:false};},detach:()=>[]};
   instance.events.TrackSubscribed(track);frame(150);
   assert.equal(levels.at(-1),0,'unverified worker cannot appear as audible');
   instance.events.DataReceived(new TextEncoder().encode(JSON.stringify({type:'ready',call_id:'test',worker_contract:binding})),{identity:'voice-worker'},null,'sawt');
@@ -55,7 +55,8 @@ test('blocked autoplay still publishes mic; direct caller and AI samples drive t
   sandbox.fetch=path=>path.endsWith('/end')?new Promise(resolve=>{finishEnd=()=>resolve({ok:true});}):originalFetch(path);
   const ending=element('end').onclick();
   assert.equal(remoteElement.muted,true,'hangup silences AI immediately even if server is stuck');
-  instance.events.TrackSubscribed(track);
+  const beforeAttachments=attachments;instance.events.TrackSubscribed(track);
+  assert.equal(attachments,beforeAttachments,'late subscription is ignored');
   assert.equal(remoteElement.muted,true,'late subscription cannot resurrect audio after hangup');
   finishEnd();await ending;
  }finally{globalThis.MediaStream=oldStream;}
