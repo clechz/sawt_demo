@@ -1,0 +1,67 @@
+name: Validate scoped model-led integration
+on:
+  push:
+    branches: [feat/model-led-conversation-20261013]
+    paths: [.model-led-transfer/part2.b64, .github/workflows/validate-model-led-integration.yml]
+permissions:
+  contents: write
+concurrency:
+  group: model-led-integration-validation
+  cancel-in-progress: false
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply checksum-verified application patch only
+        run: |
+          python - <<'PY'
+          import base64, hashlib, lzma, pathlib, subprocess
+          root = pathlib.Path('.model-led-transfer')
+          content = ''.join((root / f'part{i}.b64').read_text().strip() for i in range(3))
+          compressed = base64.b64decode(content, validate=True)
+          assert hashlib.sha256(compressed).hexdigest() == '59c0ca1a63cd685c8f1ac812119d194e6dec3613bed69bb915f0cae863e56836'
+          patch = lzma.decompress(compressed)
+          assert hashlib.sha256(patch).hexdigest() == 'c706d12b3bdd0b0035578150302d9033fa830cb391673784891ca945a65798db'
+          assert b'diff --git a/.github/' not in patch
+          path = pathlib.Path('/tmp/model-led-integration.patch')
+          path.write_bytes(patch)
+          subprocess.run(['git', 'apply', '--check', str(path)], check=True)
+          subprocess.run(['git', 'apply', '--index', str(path)], check=True)
+          subprocess.run(['git', 'diff', '--cached', '--check'], check=True)
+          PY
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -r requirements-v2.txt
+      - run: python -m pytest -q --junitxml=model-led-integration-tests.xml
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --experimental-default-type=module --test tests/playback.test.mjs tests/audio-meter.test.mjs tests/call-status.test.mjs tests/call-start.test.mjs tests/experience.test.mjs | tee model-led-js-tests.txt
+      - run: npm ci --prefix frontend && npm run build --prefix frontend
+      - name: Confirm supplied menu unchanged
+        run: |
+          echo '5d7411b0e2363fed35e7c42b4fc087594838461ad16c069bbae90cc82edc717a  data/restaurant-menu-complex.csv' | sha256sum --check
+      - name: Publish tested source to development branch only
+        run: |
+          git rm .model-led-transfer/part*.b64
+          git diff --cached --check
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'Implement scoped model-led choices and enforced API-worker-browser version binding'
+          git push origin HEAD:refs/heads/feat/model-led-conversation-20261013
+          git rev-parse HEAD > model-led-tested-commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: model-led-integration-validation
+          path: |
+            model-led-integration-tests.xml
+            model-led-js-tests.txt
+            model-led-tested-commit.txt
+          retention-days: 7
