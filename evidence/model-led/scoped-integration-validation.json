@@ -1,0 +1,34 @@
+{
+  "scope": "Model-led planner integration, scoped choice operations and API-worker-browser compatibility checks; not a live-call quality result",
+  "tested_application_commit": "75782c93fd09b9b3cd503b754ab73fa1945bfb3b",
+  "workflow_input_commit": "0873e09bb0837dd3d16300aae8beb61ffd107158",
+  "workflow_run_id": 38371520604,
+  "artifact_id": 11799635706,
+  "artifact_sha256": "6cc84d6d491e2d478edd6b3bc8166f6256daaea49febb4c49b7cb941ee442d7c",
+  "python_junit": {"total": 896, "passed": 895, "skipped": 1, "failures": 0, "errors": 0},
+  "javascript": {"total": 34, "passed": 34, "failures": 0},
+  "frontend_build": "passed",
+  "local_selected_python": {"passed": 426},
+  "unchanged_menu_sha256": "5d7411b0e2363fed35e7c42b4fc087594838461ad16c069bbae90cc82edc717a",
+  "implemented": [
+    "Model-led mode connected to V3 planner and acoustic replanning, bypassing legacy conversational shortcuts and forced next-question wording",
+    "Per-line, per-menu-group choice delegation and revocation with current-utterance evidence; selection consumes permission and explicit edits invalidate it",
+    "Saved per-call conversation mode requested explicitly by candidate browser",
+    "API expectation, locally computed worker source fingerprint, model/voice settings and browser readiness comparison",
+    "Wrong or missing worker readiness data does not unmute remote audio or initiate checkout playback",
+    "Voice-failure cleanup self-cancellation repair incorporated in candidate source",
+    "Opt-in real-provider text evaluation runner with isolated state and honest blocked reporting"
+  ],
+  "limitations": [
+    "Scripted-provider runtime tests do not prove real-model understanding of messy Saudi Arabic",
+    "Evidence-substring matching proves provenance, not correct semantic interpretation of delegation or negation",
+    "Ordinary explicit-choice draft tools remain model interpreted; scoped tools do not independently detect a model mislabeling a delegated choice as an explicit edit",
+    "Source fingerprint is a compatibility check over the listed source files, not cryptographic remote attestation or proof of every deployed dependency/configuration",
+    "PostgreSQL integration contract remains skipped without an isolated database URL",
+    "Real-provider text evaluation reported blocked: OPENAI_API_KEY unavailable in the local test environment; zero provider calls",
+    "Vercel get_project for the known project/team returned 404 in this session; this does not establish that the user's project is deleted",
+    "No main merge, production promotion, matching worker deployment, live call or received-audio test performed for this candidate",
+    "Support proposal browser-side completion acknowledgment, resumable calls and human listening evaluation remain release gates"
+  ],
+  "housekeeping": "Later removal of the completed one-off transport workflow and addition of this evidence file do not change the tested application code. Recheck final-head ordinary CI before release."
+}
