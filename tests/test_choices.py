@@ -110,6 +110,11 @@ def test_single_dish_fast_path_does_not_duplicate_an_existing_basket(setup):
 
 @pytest.mark.parametrize('utterance,planner_options,expected', [
     ('أبي شاورما دجاج بدون حار', {}, {'spice_level': ['not_spicy']}),
+    ('أبي شاورما دجاج بدون شطة', {}, {'spice_level': ['not_spicy']}),
+    ('أبي شاورما دجاج بلا شطة', {}, {'spice_level': ['not_spicy']}),
+    ('أبي شاورما دجاج شطة خفيفة', {}, {'spice_level': ['mild']}),
+    ('أبي شاورما دجاج شطة وسط', {}, {'spice_level': ['medium']}),
+    ('أبي شاورما دجاج شطة قوية', {}, {'spice_level': ['hot']}),
     ('I want chicken shawarma and not spicy', {'spice_level': ['hot']}, {'spice_level': ['not_spicy']}),
     ('أبي شاورما الدجاج ساندويتش صاج بدون حار', {},
      {'meal': ['sandwich'], 'bread': ['saj'], 'spice_level': ['not_spicy']}),
@@ -147,10 +152,10 @@ def test_shawarma_single_dish_recovery_does_not_guess_in_ambiguous_context(setup
     assert not state['basket'][0]['options'].get('spice_level')
 
 
-def test_negated_heat_does_not_authorize_hot(setup):
+def test_negated_heat_recovers_explicit_not_spicy_and_never_authorizes_hot(setup):
     engine,state=setup
     shawarma(engine,state,'وجبة مع صاج بدون حار',{'meal':['meal'],'bread':['saj'],'spice_level':['hot']})
-    assert state['basket'][0]['options']['spice_level']==[]
+    assert state['basket'][0]['options']['spice_level']==['not_spicy']
 
 def test_correction_clears_previously_valid_bread(setup):
     engine,state=setup
