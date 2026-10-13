@@ -1,0 +1,37 @@
+name: Model-led deployment preflight
+on:
+  push:
+    branches: [feat/model-led-conversation-20261013]
+    paths: [.github/workflows/model-led-deployment-preflight.yml]
+permissions:
+  contents: read
+jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Report credential presence only
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          LIVEKIT_URL: ${{ secrets.LIVEKIT_URL }}
+          LIVEKIT_API_KEY: ${{ secrets.LIVEKIT_API_KEY }}
+          LIVEKIT_API_SECRET: ${{ secrets.LIVEKIT_API_SECRET }}
+          SAWT_DEMO_PASSWORD: ${{ secrets.SAWT_DEMO_PASSWORD }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          python - <<'PY'
+          import json, os, pathlib
+          names = ('VERCEL_TOKEN', 'LIVEKIT_URL', 'LIVEKIT_API_KEY', 'LIVEKIT_API_SECRET', 'SAWT_DEMO_PASSWORD', 'OPENAI_API_KEY')
+          flags = {name: bool(os.environ.get(name, '').strip()) for name in names}
+          report = {'scope': 'GitHub repository secrets available to this preflight job only; not a claim about hosting environment secrets', 'present': flags, 'deploy_attempted': False, 'live_call_attempted': False}
+          destination = pathlib.Path('/tmp/deployment-preflight'); destination.mkdir()
+          (destination / 'preflight.json').write_text(json.dumps(report, indent=2))
+          for name, present in flags.items():
+              print(name + ': ' + ('configured' if present else 'not configured for this job'))
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: model-led-deployment-preflight
+          path: /tmp/deployment-preflight/preflight.json
+          retention-days: 1
+          if-no-files-found: error
