@@ -106,7 +106,7 @@ ALIASES = {
     ('portion', 'large'): ['كبير', 'كبيرة', 'large'],
     ('portion', 'double'): ['دبل', 'double'],
     ('sweetness', 'half'): ['نص سكر', 'سكر نص', 'سكر نصف', 'نص السكر', 'نصف السكر', 'half sugar'],
-    ('spice_level', 'not_spicy'): ['مو حار', 'غير حار', 'بدون حار', 'not spicy', 'no spice'],
+    ('spice_level', 'not_spicy'): ['مو حار', 'غير حار', 'بدون حار', 'ما أبي حار', 'ما أبغى حار', 'لا تحط حار', 'بدون شطة', 'not spicy', 'no spice'],
     ('spice_level', 'mild'): ['خفيف', 'حار خفيف', 'mild'],
     ('spice_level', 'medium'): ['حار وسط', 'متوسط', 'medium'],
     ('spice_level', 'hot'): ['حار', 'حارة', 'hot', 'spicy'],
@@ -293,6 +293,53 @@ def stated_beverage_options(item, utterance):
     return options
 
 
+def explicit_single_shawarma_choices(menu, item, utterance):
+    """Recover clearly stated choices when the planner omits or changes them.
+
+    Only one explicitly named shawarma is eligible. Questions, quoted text,
+    alternatives, conditional requests and other dishes stay with the planner.
+    This never selects a default: each option must occur in the caller's words.
+    """
+    if item['id'] not in ('sandwiches_07', 'sandwiches_08'):
+        return {}
+    if any(mark in utterance for mark in ('?', '؟', '"', '«', '»', '“', '”')):
+        return {}
+    text = normalize(utterance)
+    # "لو سمحت" is politeness, not a conditional instruction.
+    text = re.sub(r'(?<!\w)لو\s+سمحت(?!\w)', ' ', text)
+    if re.search(r'(?<!\w)(?:اذا|لو|بشرط|يمكن|ولا|او|هل|كم|سعر|الغ|cancel|if|maybe|perhaps|either|or|price)(?!\w)', text):
+        return {}
+    if re.search(r'^\s*(?:لا|ما)\s+(?:ابي|ابغي|اريد|عطني|اعطني|هات)(?!\w)', text):
+        return {}
+    if re.search(r'(?<!\w)(?:dont|don t|do not|no)\s+(?:want|order|add)(?!\w)', text):
+        return {}
+    dish = r'(?<!\w)(?:شاورما\s+(?:ال)?(?:دجاج|لحم)|(?:chicken|beef)\s+shawarma|shawarma\s+(?:chicken|beef))(?!\w)'
+    variants = re.findall(dish, text)
+    mentioned_ids = {'sandwiches_07' if 'دجاج' in name or 'chicken' in name else 'sandwiches_08'
+                     for name in variants}
+    if mentioned_ids != {item['id']}:
+        return {}
+    remaining = re.sub(dish, ' ', text)
+    # Do not attach an unscoped modifier to one item from a mixed order.
+    if re.search(r'(?<!\w)(?:و|مع)?(?:كرك|شاي|فول|تميس|بيتزا|عصير|قهوه|برجر|برغر|سلطه)(?!\w)', remaining):
+        return {}
+    for other in menu.items.values():
+        if other['id'] == item['id']:
+            continue
+        labels = (normalize(other['name']), normalize(other['name_en']))
+        if any(label and re.search(r'(?<!\w)' + re.escape(label) + r'(?!\w)', remaining) for label in labels):
+            return {}
+    result = {}
+    for gid in ('meal', 'bread', 'spice_level'):
+        group = item['groups'].get(gid)
+        if not group:
+            continue
+        stated = {oid for _, _, oid in matches(utterance, gid, group['options'])}
+        if len(stated) == 1:
+            result[gid] = next(iter(stated))
+    return result
+
+
 def checked_options(menu, item, args, utterance, previous=None):
     args = copy.deepcopy(args)
     selections = menu.canonical_options(item['id'], args.get('options', {}))
@@ -300,6 +347,7 @@ def checked_options(menu, item, args, utterance, previous=None):
         return args, []  # Domain validator reports malformed data.
     previous = previous or {}
     complete_beverage = stated_beverage_options(item, utterance)
+    stated_shawarma = explicit_single_shawarma_choices(menu, item, utterance)
     rejected = []
     # Include unavailable breads in recognition so brown can never become brioche.
     bread_catalog = bread_options(menu)
@@ -331,6 +379,9 @@ def checked_options(menu, item, args, utterance, previous=None):
                 'question': 'الخبز اللي طلبته مو متوفر لهذا الصنف. المتوفر: ' + '، '.join(o['name'] for o in group['options'].values()) + '. وش تختار؟'})
             continue
         chosen = selections.get(gid)
+        if gid in stated_shawarma:
+            # The caller's clear choice is authoritative, not the planner's guess.
+            selections[gid] = chosen = [stated_shawarma[gid]]
         if chosen is None and gid in complete_beverage:
             selections[gid]=chosen=complete_beverage[gid]
         if gid=='bread' and chosen is None:
