@@ -1,0 +1,31 @@
+{
+  "scope": "hosted Postgres and worker, real LiveKit/OpenAI, synthetic audio; no physical playback/accent score",
+  "cases": [
+    {
+      "scenario": "new_order",
+      "turns": [
+        {
+          "input": "بكم شاورما الدجاج ساندوتش؟",
+          "state_seconds": 2.55,
+          "first_audio_including_backchannel_seconds": 1.02,
+          "passed": true
+        },
+        {
+          "input": "عندي شكوى وأبي أكلم مسؤول.",
+          "state_seconds": 5.25,
+          "first_audio_including_backchannel_seconds": 1.06,
+          "passed": true
+        },
+        {
+          "input": "لا شكراً، ما أبي تحويل.",
+          "state_seconds": 1.92,
+          "first_audio_including_backchannel_seconds": 0.78,
+          "passed": true
+        }
+      ],
+      "passed": true,
+      "call_id": "e7e4af661499403981c92ab354311e94"
+    }
+  ],
+  "passed": true
+}

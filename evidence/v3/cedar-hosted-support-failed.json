@@ -1,0 +1,46 @@
+{
+  "scope": "hosted Postgres and worker, real LiveKit/OpenAI, synthetic audio; no physical playback/accent score",
+  "cases": [
+    {
+      "scenario": "new_order",
+      "turns": [
+        {
+          "input": "بكم شاورما الدجاج ساندوتش؟",
+          "state_seconds": 2.31,
+          "first_audio_including_backchannel_seconds": 1.75,
+          "passed": true
+        }
+      ],
+      "passed": false,
+      "call_id": "2d93d96a9ba64780b790809c922ada42",
+      "error": "TimeoutError: ",
+      "cause": "CancelledError"
+    },
+    {
+      "scenario": "missing_item",
+      "turns": [
+        {
+          "input": "طلبي وصل ناقص الشكشوكة، أبي استرجاع قيمتها.",
+          "state_seconds": 3.67,
+          "first_audio_including_backchannel_seconds": 1.61,
+          "passed": true
+        },
+        {
+          "input": "نعم أوافق على الاسترجاع.",
+          "state_seconds": 1.72,
+          "first_audio_including_backchannel_seconds": 1.69,
+          "passed": true
+        },
+        {
+          "input": "رجع قيمة نفس الشكشوكة مرة ثانية.",
+          "state_seconds": 2.3,
+          "first_audio_including_backchannel_seconds": 1.97,
+          "passed": true
+        }
+      ],
+      "passed": true,
+      "call_id": "fe4dea75939742aba3aa83a72ede64bb"
+    }
+  ],
+  "passed": false
+}

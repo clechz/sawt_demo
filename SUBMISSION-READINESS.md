@@ -2,6 +2,30 @@
 
 This is an evidence checklist, not a declaration that the hosted release is ready.
 
+## Hosted verification update — 13 October
+
+The live API and worker now pass the source compatibility check. A real synthetic
+Arabic call passed naming, priced readback, removal/quantity and branch/spice
+corrections, confirmation, and received success speech in 1.98 seconds. An
+independent Postgres read verified one durable order after closure.
+See [hosted order evidence](evidence/v3/cedar-hosted-order-ending.json).
+
+The support run passed refund confirmation and duplicate-refund protection but
+failed during speech generation for a staff-offer question. The worker now has
+an independently transcribed Cedar asset for that fixed question. Its no-network
+regressions passed, and the [complaint retest](evidence/v3/cedar-hosted-complaint-retest.json)
+passed all three turns. The [initial failed run](evidence/v3/cedar-hosted-support-failed.json)
+is retained. These are synthetic media tests, not native-speaker certification;
+order readback completion acknowledgments are timed simulations.
+
+Production Vercel deployment: `dpl_AyVmTSgRYguLrex4z772uGwEXo3Z`.
+Worker: `EgnxPJY9d9rM`. The worker's additional fixed-speech asset is not yet in
+the production web bundle; runtime contracts match and the hosted tests pass.
+An explicit Vercel production deploy still returned `api-deployments-free-per-day`
+with a 24-hour retry instruction. No quota workaround was attempted. Cloud Blob
+recording archival still fails, and not every challenge scenario has been retested
+on this hosted revision. No full submission-readiness claim is made.
+
 Publication update: the repository is public and access was checked without
 authentication. The user's 4 min 7 sec recording is being prepared as a separate
 email attachment at the user's request; the public video release was removed. Video content has
