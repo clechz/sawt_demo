@@ -3,7 +3,7 @@ import re
 import time
 from .domain import normalize, explicit_confirmation, RuleError
 from .choices import matches, ALIASES
-from .conversation import say
+from .conversation import say, spoken_option, SPICE_QUESTION_LABELS
 from .response_style import GROUPS
 
 
@@ -15,7 +15,10 @@ def question_targets(menu, state, text):
     for line in state['basket']:
         for gid, group in menu.get(line['item_id'])['groups'].items():
             keyword = re.sub(r'^ال', '', normalize(group['name']).split()[-1])
-            if group['required'] and not line['options'].get(gid) and keyword in normalized:
+            mentions = [keyword]
+            if gid == 'spice_level':
+                mentions.append('شطه')
+            if group['required'] and not line['options'].get(gid) and any(word in normalized for word in mentions):
                 result.append((line['line_id'], gid))
     return result
 
@@ -36,11 +39,17 @@ def ask(menu, state, line_id, group_id, option_id=None, utterance=''):
     if saved and (option_id is None or saved == [option_id]):
         raise RuleError('هذا الاختيار محفوظ بالفعل: ' + '، '.join(group['options'][x]['name'] for x in saved) + '. لا تسأل عنه مرة ثانية.')
     if option_id is not None:
-        question = say('choice_proposal',item=item['name'],group=group['name'],option=group['options'][option_id]['name'])
+        option = spoken_option(group_id, option_id, group['options'][option_id]['name'])
+        question = say('choice_proposal', item=item['name'], group=group['name'], option=option)
         if item['id'] == 'beverages_09' and group_id == 'ice' and option_id == 'none':
             question = say('karak_ice')
     else:
-        question = say('choice_question',item=item['name'],group=GROUPS.get(group_id,group['name']),options=' ولا '.join(x['name'] for x in group['options'].values()))
+        if group_id == 'spice_level':
+            labels = [SPICE_QUESTION_LABELS.get(oid, option['name']) for oid, option in group['options'].items()]
+            alternatives = '، '.join(labels[:-1]) + ('، ولا ' if len(labels) > 2 else ' ولا ') + labels[-1] if len(labels)>1 else labels[0]
+            question = 'والشطة؟ ' + alternatives + '؟'
+        else:
+            question = say('choice_question',item=item['name'],group=GROUPS.get(group_id,group['name']),options=' ولا '.join(x['name'] for x in group['options'].values()))
     if len(state['basket'])>1 and not (item['id']=='beverages_09' and group_id=='ice'):
         question = 'بالنسبة لـ' + item['name'] + '، ' + question
     if group_id == 'portion' and 'small' not in group['options'] and re.search(r'(?<!\w)(?:صغير|small)(?!\w)', normalize(utterance)):
@@ -84,6 +93,13 @@ def answer(menu, state, text):
         normalized = re.sub(r'^(?:خل|خلي|خله|خليه|خليها)\s+', '', normalized)
         if normalized == 'بدون' and 'none' in group['options']:
             chosen = 'none'
+        elif gid == 'spice_level':
+            # A short answer is safe only while answering the current spice question.
+            short = {'بدون': 'not_spicy', 'خفيفه': 'mild', 'خفيف': 'mild',
+                     'وسط': 'medium', 'قويه': 'hot'}
+            candidate = short.get(normalized)
+            if candidate in group['options']:
+                chosen = candidate
         else:
             for oid, option in group['options'].items():
                 labels = [option['name'], option['name_en']] + ALIASES.get((gid, oid), [])
@@ -91,7 +107,7 @@ def answer(menu, state, text):
                     chosen = oid
     if not chosen:
         return None
-    return ({'line_id': pending['line_id'], 'options': {gid: [chosen]}}, group['options'][chosen]['name'])
+    return ({'line_id': pending['line_id'], 'options': {gid: [chosen]}}, spoken_option(gid, chosen, group['options'][chosen]['name']))
 
 
 def next_question(menu, state):
