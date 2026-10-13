@@ -1,0 +1,74 @@
+name: Inspect SAWT live audio failure
+on:
+  push:
+    branches: [diagnostics/authenticated-call-check-20261013]
+    paths: [.github/workflows/inspect-livekit-runtime.yml]
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - name: Install checksum-pinned LiveKit diagnostic CLI
+        run: |
+          mkdir -p /tmp/sawt-cli
+          curl --fail --silent --show-error --location --max-time 60 https://github.com/livekit/livekit-cli/releases/download/v2.19.0/lk_2.19.0_linux_amd64.tar.gz -o /tmp/sawt-cli/lk.tar.gz
+          echo '601ce74299db7e538014426644ab23b2a1ba171c506967197a259c3cd762d418  /tmp/sawt-cli/lk.tar.gz' | sha256sum --check
+          tar -xzf /tmp/sawt-cli/lk.tar.gz -C /tmp/sawt-cli
+      - name: Read existing agent status and a bounded recent runtime log snapshot
+        env:
+          LIVEKIT_URL: ${{ secrets.LIVEKIT_URL }}
+          LIVEKIT_API_KEY: ${{ secrets.LIVEKIT_API_KEY }}
+          LIVEKIT_API_SECRET: ${{ secrets.LIVEKIT_API_SECRET }}
+        run: |
+          python3 - <<'PY'
+          import datetime, json, os, pathlib, re, subprocess
+          from urllib.parse import urlsplit
+          out=pathlib.Path('/tmp/sawt-runtime-diagnostic'); out.mkdir()
+          report={'checked_at':datetime.datetime.now(datetime.timezone.utc).isoformat(), 'scope':'Read-only status and newest worker-instance log snapshot; no calls, deployments or secret changes', 'complete_call_test':False}
+          names=('LIVEKIT_URL','LIVEKIT_API_KEY','LIVEKIT_API_SECRET')
+          if not all(os.environ.get(k,'').strip() for k in names):
+              report['blocked_at']='Missing LiveKit repository credentials'
+          elif urlsplit(os.environ['LIVEKIT_URL']).hostname != 'sawt-v2-1z4xpadl.livekit.cloud':
+              report['blocked_at']='Unexpected project host'
+          else:
+              def redact(text):
+                  text=re.sub(r'\x1b\[[0-9;]*m','',text)
+                  for k in names:
+                      if os.environ.get(k): text=text.replace(os.environ[k],'[redacted]')
+                  text=re.sub(r'\beyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+','[jwt redacted]',text)
+                  text=re.sub(r'\bsk-[A-Za-z0-9_-]+','[provider key redacted]',text)
+                  text=re.sub(r'(https?|wss?)://[^\s\"\)]+','[URL redacted]',text)
+                  text=re.sub(r'(?i)(\"?(?:api_key|api_secret|authorization|password|token|secret)\"?\s*[:=]\s*)(\"[^\"]*\"|[^\s,}]+)',r'\1[redacted]',text)
+                  return text
+              def run(args,seconds):
+                  try:
+                      p=subprocess.run(['/tmp/sawt-cli/lk',*args],stdout=subprocess.PIPE,stderr=subprocess.STDOUT,timeout=seconds)
+                      return p.returncode,p.stdout.decode('utf8','replace')
+                  except subprocess.TimeoutExpired as e:
+                      return 'bounded_tail_ended',(e.stdout or b'').decode('utf8','replace')
+              rc,text=run(['agent','status','--id','CA_SJBGJojRjxZK'],30)
+              report['status_exit']=rc;report['agent_status']=redact(text)[-12000:]
+              rc,text=run(['agent','logs','--id','CA_SJBGJojRjxZK'],35)
+              report['logs_exit']=rc
+              lines=redact(text).splitlines()
+              report['captured_log_lines']=len(lines)
+              hits=[i for i,l in enumerate(lines) if re.search(r'(?i)error|exception|traceback|mismatch|failed|warning|registered|started|closed|disconnect|no module|quota',l)]
+              selected=set()
+              for i in hits:
+                  selected.update(range(max(0,i-1),min(len(lines),i+12)))
+              report['diagnostic_lines']=[lines[i] for i in sorted(selected)][-180:]
+              report['log_limit']='Newest instance only, short recent snapshot plus 35-second tail; not all historical sessions.'
+          (out/'report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2))
+          print(json.dumps(report,ensure_ascii=False,indent=2))
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: sawt-live-runtime-diagnostic
+          path: /tmp/sawt-runtime-diagnostic/report.json
+          retention-days: 1
+          if-no-files-found: error
