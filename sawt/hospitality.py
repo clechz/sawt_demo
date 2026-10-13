@@ -66,7 +66,7 @@ def ensure_current_order(state, engine):
     order_id = state.get('order_id')
     if order_id and order_id not in h['orders']:
         view = engine.view(state)
-        h['orders'][order_id] = {'id': order_id, 'status': 'accepted', 'items': copy.deepcopy(view['basket']),
+        h['orders'][order_id] = {'id': order_id, 'status': 'accepted', 'customer_name': state.get('customer_name', ''), 'items': copy.deepcopy(view['basket']),
             'total_halalas': view['total'], 'paid_halalas': view['total'], 'refunded_halalas': 0,
             'eta_minutes': view['eta_minutes'], 'source': 'confirmed_simulation',
             'fulfillment': {key: copy.deepcopy(view.get(key)) for key in ('service', 'branch', 'location', 'delivery_fee')}}
@@ -111,7 +111,7 @@ class HospitalityEngine(StagedEngine):
             if action == 'confirm' and state.get('order_id'):
                 ensure_current_order(state, self.engine)
                 # No repeated developer disclaimer inside the disclosed simulation.
-                result['reply'] = 'تأكد طلبك. رقمه ' + spoken_order_number(state['order_id']) + '.'
+                result['reply'] = 'تأكد طلبك، يعطيك العافية.'
                 self.operations[-1]['result'] = copy.deepcopy(result)
             return result
         h = ensure_current_order(state, self.engine)

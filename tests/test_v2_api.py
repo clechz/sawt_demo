@@ -81,7 +81,7 @@ def test_hangup_invalidates_confirmation_and_forged_receipt(client):
 def test_blob_archive_failure_does_not_invalidate_completed_readback(client, monkeypatch, tmp_path):
     call=start(client).json(); sid=call['id']; headers={'Authorization':'Bearer '+call['token']}
     tx=app_v2.tx; state=tx.load(sid)['state']
-    for name,args in [('set_service',{'service':'pickup'}),('set_branch',{'branch_id':'ruh_narjis'}),
+    for name,args in [('set_customer_name',{'name':'عبدالله'}),('set_service',{'service':'pickup'}),('set_branch',{'branch_id':'ruh_narjis'}),
         ('add_item',{'item_id':'breakfast_01','quantity':1,'options':{'portion':['large'],'bread':['tamees']},'notes':''})]:
         app_v2.engine.act(state,name,args)
     tx.commit_bundle(sid,'seed',0,0,state,[])
@@ -151,6 +151,7 @@ def test_stream_preparation_binds_server_text_and_rejects_stale_capability(clien
         monkeypatch.setattr(app_v2.cloud_storage,'upload',suspended)
     call=start(client).json();sid=call['id'];headers={'Authorization':'Bearer '+call['token']}
     for index,(name,args) in enumerate([
+        ('set_customer_name',{'name':'عبدالله'}),
         ('set_service',{'service':'pickup'}),('set_branch',{'branch_id':'ruh_narjis'}),
         ('add_item',{'item_id':'breakfast_01','quantity':1,'options':{'portion':['large'],'bread':['tamees']},'notes':''}),
         ('checkout',{})]):

@@ -66,9 +66,10 @@ class Transactions:
         db.row_factory = sqlite3.Row
         return db
 
-    def create(self, enforce_limits=False, *, experience=None):
+    def create(self, enforce_limits=False, *, experience=None, require_customer_name=False):
         sid, token = uuid.uuid4().hex, secrets.token_urlsafe(32)
         initial = new_state()
+        initial["customer_name_required"] = require_customer_name
         if experience is not None:
             from .experience import validate_experience
             initial['experience'] = validate_experience(experience.get('voice'), experience.get('scenario', 'new_order'), experience.get('version', 'v3'), conversation_mode=experience.get('conversation_mode'))

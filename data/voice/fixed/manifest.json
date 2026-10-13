@@ -73,5 +73,20 @@
     "exact_normalized_match": true,
     "generation_attempts": 1,
     "verification_scope": "One independent transcription of the selected synthetic asset; not a human accent rating."
+  },
+  {
+    "key": "cedar_confirmed",
+    "text": "تأكد طلبك، يعطيك العافية.",
+    "voice": "cedar",
+    "model": "gpt-4o-mini-tts",
+    "format": "signed 16-bit little-endian, mono, 24000 Hz",
+    "synthetic": true,
+    "sha256": "7cdb15c0b8a6dac96296637f8b5ba4b2b8f73ad06ba02a22853845cfb7966ff3",
+    "bytes": 144000,
+    "seconds": 3.0,
+    "independent_transcription": "تأكد طلبك، يعطيك العافية.",
+    "exact_normalized_match": true,
+    "generation_attempts": 1,
+    "verification_scope": "Independent transcription of synthetic fixed success audio; not a native-listener rating."
   }
 ]

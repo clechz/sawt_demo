@@ -57,6 +57,8 @@ def collect_requirements(menu: MenuReader, state: Mapping[str, Any]) -> dict[str
                                     for oid, option in group['options'].items()],
             })
 
+    if snapshot.get('customer_name_required') and not snapshot.get('customer_name'):
+        result['fulfillment'].append({'field':'customer_name','question':'الطلب باسم مين؟'})
     service = snapshot.get('service')
     if not service:
         result['fulfillment'].append({'field': 'service', 'allowed_values': ['delivery', 'pickup']})

@@ -24,9 +24,35 @@ class Scripted:
         step=self.steps.pop(0)
         return step(messages) if callable(step) else step
 
-def tool(name,**args):
-    return {'id':name,'function':{'name':name,'arguments':json.dumps(args,ensure_ascii=False)}}
+def tool(tool_name,**args):
+    return {'id':tool_name,'function':{'name':tool_name,'arguments':json.dumps(args,ensure_ascii=False)}}
 def calls(*items): return {'content':None,'tool_calls':list(items)}
+
+@pytest.mark.asyncio
+async def test_name_claim_repairs_with_persisted_name_then_checkout(engine, tmp_path):
+    tx=Transactions(tmp_path/'names.db',engine)
+    sid,_=tx.create(require_customer_name=True)
+    row=tx.load(sid)
+    state=row['state']
+    engine.act(state,'set_service',{'service':'pickup'})
+    engine.act(state,'set_branch',{'branch_id':'ruh_narjis'})
+    item=engine.menu.get('breakfast_01')
+    options={gid:list(g['options'])[:g['min']] for gid,g in item['groups'].items() if g['min']}
+    engine.act(state,'add_item',{'item_id':item['id'],'quantity':1,'options':options,'notes':''})
+    planner=Scripted({'content':'الطلب باسم: عبدالله. تبيني أقول لك السعر؟'},
+        calls(tool('set_customer_name',name='عبدالله'),tool('checkout')))
+    prepared=await prepare_turn(engine,planner,row,'الطلب باسم عبدالله، اقرأ ملخص الطلب.',conversation_mode='model_led')
+    assert planner.calls==2
+    assert prepared.state['customer_name']=='عبدالله'
+    assert prepared.state['quote'] and not prepared.state['quote']['presented']
+    assert not prepared.state['order_id']
+    assert 'عبدالله' in prepared.reply
+
+def test_missing_name_question_is_not_a_saved_name_claim():
+    from sawt.reply_evidence import unsupported_claim
+    state=new_state()
+    assert unsupported_claim(state,state,'الطلب باسم مين؟') is None
+    assert unsupported_claim(state,state,'الطلب باسم: عبدالله')
 
 @pytest.mark.asyncio
 async def test_compound_draft_changes_and_next_question_in_one_round(engine):

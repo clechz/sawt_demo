@@ -204,3 +204,12 @@ def test_saudi_dessert_words_retrieve_real_desserts(menu, query):
     result = menu.search(query)
     assert result['items']
     assert all(item['category_id']=='desserts' for item in result['items'])
+
+
+def test_customer_name_required_blocks_checkout_and_correction_invalidates_quote(engine):
+    s=ready(engine);s['customer_name_required']=True
+    assert engine.act(s,'checkout',{}).get('error')
+    engine.act(s,'set_customer_name',{'name':'عبدالله'})
+    assert 'باسم عبدالله' in engine.act(s,'checkout',{})['reply']
+    engine.act(s,'set_customer_name',{'name':'محمد'})
+    assert s['quote'] is None and s['customer_name']=='محمد' and not s['order_id']

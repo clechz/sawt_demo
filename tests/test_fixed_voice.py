@@ -10,11 +10,11 @@ from sawt.v2_provider import V2Provider
 
 def test_fixed_assets_match_the_current_words_and_independent_transcription():
     rows=json.loads((ROOT/'manifest.json').read_text(encoding='utf8'))
-    assert {r['key'] for r in rows}=={'audio_check','unclear','goodbye_empty','goodbye_draft','goodbye_handoff'}
+    assert {r['key'] for r in rows}=={'audio_check','unclear','goodbye_empty','goodbye_draft','goodbye_handoff','cedar_confirmed'}
     for row in rows:
-        assert row['text']==say(row['key'])
+        assert row['text']==('تأكد طلبك، يعطيك العافية.' if row['key']=='cedar_confirmed' else say(row['key']))
         assert normalize(row['independent_transcription'])==normalize(row['text'])
-        data=fixed_pcm(row['text'],'marin',row['model'])
+        data=fixed_pcm(row['text'],row['voice'],row['model'])
         assert data and len(data)==row['bytes'] and len(data)%2==0
         assert hashlib.sha256(data).hexdigest()==row['sha256']
         assert len(data)/48000<6
@@ -44,3 +44,12 @@ def test_corrupt_cached_audio_is_rejected(tmp_path,monkeypatch):
     try:
         with pytest.raises(ValueError):assets()
     finally:assets.cache_clear()
+
+
+@pytest.mark.asyncio
+async def test_cedar_success_audio_requires_no_provider_request(monkeypatch):
+    monkeypatch.setattr('sawt.v2_provider.config',lambda:{'tts':'gpt-4o-mini-tts'})
+    provider=V2Provider(voice='cedar');provider.client=Mock(side_effect=AssertionError('No network'))
+    data=b''.join([chunk async for chunk in provider.speech_chunks('تأكد طلبك، يعطيك العافية.','pcm')])
+    assert data and len(data)/48000<6
+    provider.client.assert_not_called()

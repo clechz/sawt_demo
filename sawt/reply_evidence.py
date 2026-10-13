@@ -9,6 +9,8 @@ from .domain import normalize
 
 def unsupported_claim(before, after, reply):
     text = normalize(reply)
+    if not after.get('customer_name') and re.search(r'(?:الطلب|طلبك) باسم\s*[:：]?\s*(?!مين\b|من\b|ايش\b|وش\b)\S+', text):
+        return 'The customer name has not been saved. Use set_customer_name with the name supplied by the caller before claiming the order is under that name. If they requested the summary and all fields are complete, execute checkout next; do not ask permission to calculate the price.'
     if not after['basket'] and re.search(r'طلبك (?:فيه|يحتوي|عباره عن)|في (?:طلبك|السله)\s*[:：]', text):
         return 'The saved basket is empty. Do not describe requested dishes as an existing order. Save the clear requested items/options with tools, then summarize only saved state or ask one genuine clarification.'
     # Future offers and negative statements do not claim completed deletion.
@@ -21,7 +23,7 @@ def unsupported_claim(before, after, reply):
             for group, values in old[k]['options'].items()) for k in old.keys() & new.keys())
     if removed and not removed_value:
         return 'No item, option or note was removed. Do not claim removal. Execute the requested valid edit or ask what to remove; preserve all other items.'
-    edits = any(before.get(key) != after.get(key) for key in ('basket','service','branch','location','delivery_details'))
+    edits = any(before.get(key) != after.get(key) for key in ('basket','service','branch','location','delivery_details','customer_name'))
     changed_claim = re.search(r'\b(?:عدلت|غيرت|بدلت|خليت|زدت|ضفت|اضفت)\b|\bتم (?:تعديل|تغيير|اضافه|اختيار|حفظ|تسجيل)|\b(?:updated|added|changed)\b', text)
     if changed_claim and not edits:
         return 'No requested draft edit was saved this turn. Do not claim a change. Use the appropriate tool to make the requested edit, or ask a focused clarification. Current saved state is authoritative.'

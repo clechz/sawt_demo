@@ -2,7 +2,27 @@
 
 This is an evidence checklist, not a declaration that the hosted release is ready.
 
-## Latest retest: release gate failed
+## Latest local order-ending retest: passed; hosted release pending
+
+[Recorded test evidence](evidence/v3/cedar-order-ending.json): a synthetic Arabic
+caller used real LiveKit/OpenAI audio over trusted LAN HTTPS, without Chrome.
+The agent asked whose name the order was under, saved Abdullah, read the priced
+summary, applied removal/quantity and branch/spice corrections, waited for explicit
+confirmation, saved the 54 SAR order, and delivered the complete Cedar success
+phrase. Receiver audio was independently transcribed as “تأكد طلبك، يعطيك العافية.”
+First received success audio was 1.84 seconds after the approval input was sent.
+The actual saved order also passed receipt rendering/persistence checks in Node.
+950 Python tests passed (one optional Postgres skip), 65 Node tests passed, and
+the frontend production build passed.
+
+Limits: readback completion receipts were timed simulations; receipt rendering
+used a DOM fixture, not a physical browser/device check. This is one successful
+synthetic order journey, not proof of all accents/scenarios or hosted readiness.
+The harness emitted LiveKit FFI cleanup warnings after completing and closing
+the call; its process exited successfully. Matched cloud deployment remains
+blocked by the Vercel deployment quota; the submission video is still outstanding.
+
+## Earlier failures (retained for traceability)
 
 The newer integrated local call failed after treating a bread option as an extra
 dish and describing an unsaved basket. A following run exhausted three private

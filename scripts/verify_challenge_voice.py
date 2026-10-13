@@ -23,7 +23,7 @@ async def main():
     parser.add_argument('--ca-file', type=Path, help='Trusted local CA PEM for HTTPS verification')
     args=parser.parse_args()
     base=args.local_url.rstrip('/') if args.local else 'https://sawt-demo.vercel.app'
-    report={'target':base,'scope':'synthetic caller, real LiveKit audio and cloud state; timed simulated readback receipts; no human accent score','passed':False,'turns':[]}
+    report={'target':base,'scope':'synthetic caller, real LiveKit audio and persisted API state; timed simulated readback receipts; no human accent score','passed':False,'turns':[]}
     p=V2Provider(voice='cedar');call=None
     try:
         audio=[]
@@ -31,10 +31,16 @@ async def main():
             path=ROOT/'runtime'/('challenge-'+hashlib.sha256(text.encode()).hexdigest()[:16]+'.mp3')
             if not path.exists():path.write_bytes(await p.speak(text))
             audio.append(decode(path))
+        name_text='الطلب باسم عبدالله، اقرأ ملخص الطلب.'
+        name_path=ROOT/'runtime/challenge-customer-name.mp3'
+        if not name_path.exists():name_path.write_bytes(await p.speak(name_text))
+        name_audio=decode(name_path)
         password=None if args.local else (os.getenv('SAWT_DEMO_PASSWORD') or json.loads((ROOT/'runtime/private-demo.json').read_text(encoding='utf8'))['password'])
         async with httpx.AsyncClient(base_url=base,headers={'Origin':base,'X-Access-Code':os.getenv('SAWT_ACCESS_CODE','')},timeout=60,verify=ssl.create_default_context(cafile=str(args.ca_file)) if args.ca_file else True) as client:
             if not args.local:assert (await client.post('/login',data={'password':password})).status_code==303
             call=VoiceCall(client,{'experience_version':'v3','conversation_mode':'model_led','voice':'cedar','scenario':'new_order'})
+            received=[]
+            call.on_received_audio=lambda at,pcm: received.append((at,pcm))
             try:
                 await call.start(120)
                 saved=await call.state()
@@ -52,6 +58,27 @@ async def main():
                             assert not any(e['kind'] in ('delegation.failed','transcript.unverified') for e in events),'Voice request failed or needed clarification'
                             if any(e['kind']=='delegation.completed' for e in events):break
                             await asyncio.sleep(.2)
+                    if index==0 and not saved['state'].get('customer_name'):
+                        assert not saved['state']['quote'], 'Checkout bypassed required customer name'
+                        question=next(e['payload']['reply'] for e in reversed(events) if e['kind']=='delegation.completed')
+                        assert 'اسم' in question, 'Did not ask whose name the order is under'
+                        report['name_question']=question
+                        # Let the complete question reach the receiver before answering.
+                        async with asyncio.timeout(25):
+                            while True:
+                                snapshot=await call.state()
+                                if any(e['sequence']>floor and e['kind']=='voice.result_playout' and e['payload'].get('completed') for e in snapshot['events']):break
+                                await asyncio.sleep(.2)
+                        floor=call.cursor
+                        for i in range(0,len(name_audio),4800):await call.queue.put(name_audio[i:i+4800].ljust(4800,b'\0'))
+                        while not call.queue.empty():await asyncio.sleep(.1)
+                        await asyncio.sleep(.25);started=time.monotonic()
+                        async with asyncio.timeout(40):
+                            while True:
+                                saved=await call.state();events=[e for e in saved['events'] if e['sequence']>floor]
+                                if any(e['kind']=='delegation.completed' for e in events):break
+                                await asyncio.sleep(.2)
+                        assert saved['state']['customer_name']=='عبدالله'
                     state=saved['state'];elapsed=round(time.monotonic()-started,2)
                     row={'input':text,'state_seconds':elapsed,'reply':[e['payload']['reply'] for e in events if e['kind']=='delegation.completed'][-1]};report['turns'].append(row)
                     basket=state['basket']
@@ -83,6 +110,18 @@ async def main():
                         audible=next((at-started for at,rms in call.output if at>started and rms>.01),None)
                         assert audible is not None,'No audible confirmation'
                         row['first_received_audio_seconds']=round(audible,2)
+                        final_pcm=b''.join(pcm for at,pcm in received if at>started)
+                        final_wav=io.BytesIO()
+                        with wave.open(final_wav,'wb') as w:w.setnchannels(1);w.setsampwidth(2);w.setframerate(24000);w.writeframes(final_pcm)
+                        (ROOT/'runtime/received-success.wav').write_bytes(final_wav.getvalue())
+                        row['received_success_transcript']=await p.recognize(final_wav.getvalue())
+                        from sawt.domain import normalize
+                        assert 'تاكد طلبك' in normalize(row['received_success_transcript'])
+                        assert 'يعطيك العافيه' in normalize(row['received_success_transcript'])
+                        snapshot=await call.state()
+                        assert any(e['sequence']>floor and e['kind']=='voice.result_playout' and e['payload'].get('completed') for e in snapshot['events'])
+                        assert state['customer_name']=='عبدالله'
+                        assert state['hospitality']['orders'][state['order_id']]['customer_name']=='عبدالله'
                     row['passed']=True;print(json.dumps(row,ensure_ascii=False),flush=True)
                 report['passed']=True
             finally:await call.close()

@@ -6,7 +6,7 @@ export function receiptModel(state){
  const saved=state.hospitality?.orders?.[state.order_id];
  const order=saved?.id===state.order_id?saved:null;
  const fulfillment=order?.fulfillment||state;
- return {id:state.order_id,cancelled:order?.status==='cancelled',
+ return {customerName:order?.customer_name||state.customer_name||'',id:state.order_id,cancelled:order?.status==='cancelled',
   items:order?.items||state.basket||[],total:order?.total_halalas??state.total,
   service:fulfillment.service,branch:fulfillment.branch?.name||'',address:fulfillment.location?.address||'',
   deliveryFee:fulfillment.service==='delivery'?fulfillment.delivery_fee:0,
@@ -26,7 +26,7 @@ export function createCompletionView(root=document){
    orderId=receipt.id;
    const heading=el('header','receipt-heading');
    const title=el('h2','',receipt.cancelled?'الطلب ملغي':`طلبك ${receipt.id}`);title.id='completion-title';
-   const intro=el('div','');intro.append(title);heading.append(intro);
+   const intro=el('div','');intro.append(title);if(receipt.customerName)intro.append(el('p','receipt-options',`باسم ${receipt.customerName}`));heading.append(intro);
    const items=el('div','receipt-items');
    for(const line of receipt.items){
     const row=el('article','receipt-line');const description=el('div','');

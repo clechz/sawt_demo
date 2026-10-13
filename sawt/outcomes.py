@@ -14,7 +14,7 @@ OutcomeKind = Literal['information', 'order_edit', 'checkout', 'support', 'clari
 SpeechMode = Literal['live', 'exact', 'checkout']
 ORDER_FIELDS = ('basket', 'service', 'branch', 'location', 'delivery_details', 'order_id')
 ORDER_EDITS = frozenset({'add_item', 'update_item', 'replace_item', 'remove_item',
-    'set_service', 'set_branch', 'set_location', 'set_delivery_details'})
+    'set_customer_name', 'set_service', 'set_branch', 'set_location', 'set_delivery_details'})
 SUPPORT_ACTIONS = frozenset({'open_support_case', 'offer_resolution', 'accept_resolution',
     'decline_resolution', 'lookup_case', 'lookup_order'})
 

@@ -25,7 +25,7 @@ from .reply_evidence import unsupported_claim
 
 CATALOG = [t for t in TOOLS if t['function']['name'] not in ('handoff', 'offer_handoff')] + SUPPORT_TOOLS
 SPEC = {t['function']['name']: t['function']['parameters'] for t in CATALOG}
-ORDER_MUTATIONS = {'add_item', 'update_item', 'replace_item', 'remove_item', 'set_service', 'set_branch', 'set_location', 'set_delivery_details'}
+ORDER_MUTATIONS = {'set_customer_name', 'add_item', 'update_item', 'replace_item', 'remove_item', 'set_service', 'set_branch', 'set_location', 'set_delivery_details'}
 TERMINAL = {'finish_draft', 'ask_choice', 'checkout', 'confirm', 'cancel_draft'} | SUPPORT_TERMINAL
 
 PROMPT = '''You operate a Saudi restaurant voice simulation. All simulated effects must exist in the

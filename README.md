@@ -137,6 +137,19 @@ The caller sees an orb, a call action and order details. Debugging information s
 
 ## Tests and frontend build
 
+The call asks “الطلب باسم مين؟” before checkout and persists the supplied name.
+It reads the current priced summary, waits for explicit confirmation after playback,
+then saves the simulated order and says “تأكد طلبك، يعطيك العافية.” Cedar uses a
+verified fixed recording for that short success phrase, avoiding a fresh TTS request.
+The final receipt keeps the saved name, order ID, items/options, total and fulfillment
+after hangup. [Latest local voice evidence](evidence/v3/cedar-order-ending.json)
+and [verification limits](SUBMISSION-READINESS.md) distinguish local from hosted checks.
+
+With the local API/worker running and funded credentials configured, the paid
+no-browser end-to-end test can be run with
+`python scripts/verify_challenge_voice.py --local --local-url http://127.0.0.1:8766`.
+For trusted LAN HTTPS, supply its URL and `--ca-file runtime/tls/ca.pem`.
+
 From an activated virtual environment (`.\.venv\Scripts\Activate.ps1` or `source .venv/bin/activate`):
 
 ```bash

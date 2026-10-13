@@ -102,6 +102,8 @@ class VoiceCall:
    async for item in stream:
     values=array.array('h',item.frame.data.tobytes());rms=math.sqrt(sum(v*v for v in values)/max(1,len(values)))/32768
     self.output.append((time.monotonic(),rms))
+    receiver=getattr(self,'on_received_audio',None)
+    if receiver:receiver(time.monotonic(),item.frame.data.tobytes())
   finally:await stream.aclose()
  async def pump(self):
   while True:

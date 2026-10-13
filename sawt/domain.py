@@ -171,6 +171,7 @@ class Engine:
         lines = [self.menu.validate_line(line, state['branch']) for line in state['basket']]
         fee = branch['fee'] if branch and state['service'] == 'delivery' and state['location'] else 0
         issues = []
+        if state.get('customer_name_required') and not state.get('customer_name'): issues.append('الطلب باسم مين؟')
         if not state['service']: issues.append('حدد توصيل أو استلام.')
         if not branch: issues.append('حدد الفرع أو منطقة التوصيل.')
         if state['service'] == 'delivery' and not state['location']: issues.append('نحتاج عنوان التوصيل والمنطقة.')
@@ -179,7 +180,7 @@ class Engine:
             if line['available'] is False: issues.append(f"{line['name']} غير متوفر في الفرع المختار.")
             if line['missing']: issues.append(f"{line['name']}: اختر " + '، '.join(line['missing']))
         status = 'handoff' if state['handoff'] else 'completed' if state['order_id'] else 'collecting' if issues else 'awaiting_confirmation' if state['quote'] else 'ready_for_readback'
-        return {'revision': state['revision'], 'status': status, 'service': state['service'], 'location': state['location'],
+        return {'customer_name': state.get('customer_name', ''), 'revision': state['revision'], 'status': status, 'service': state['service'], 'location': state['location'],
                 'branch_id': state['branch'], 'branch': branch, 'basket': lines, 'subtotal': sum(x['line_total'] for x in lines),
                 'delivery_fee': fee, 'total': sum(x['line_total'] for x in lines) + fee,
                 'eta_minutes': branch['eta'] if branch and state['service'] == 'delivery' else 20 if branch else None,
@@ -200,7 +201,7 @@ class Engine:
             lines.append(f"{x['quantity']} من {x['name']}، " + '، '.join(spoken_names) + notes + f"، بسعر {money(x['line_total'])} ريال")
         fulfillment = ('التوصيل إلى ' + state['location']['city'] + '، حي ' + state['location']['zone'] + '، ' + state['location']['address'] + ' من ' if state['service']=='delivery' else 'استلام من ') + view['branch']['name'] + '.'
         fee_sentence = f"رسوم التوصيل {money(view['delivery_fee'])} ريال. " if state['service']=='delivery' else ''
-        return say('summary',items='؛ '.join(lines),fulfillment=fulfillment,fee_sentence=fee_sentence,total=money(view['total']),eta=view['eta_minutes'])
+        return (('الطلب باسم ' + state['customer_name'] + '. ') if state.get('customer_name') else '') + say('summary',items='؛ '.join(lines),fulfillment=fulfillment,fee_sentence=fee_sentence,total=money(view['total']),eta=view['eta_minutes'])
 
     def act(self, state, action, args, *, utterance='', can_confirm=False):
         if action == 'search_menu': return self.menu.search(args.get('query', ''), state['branch'], offset=max(0, int(args.get('offset', 0))))
@@ -296,6 +297,11 @@ class Engine:
             if state['service'] != 'pickup': raise RuleError('فرع التوصيل يتحدد من المنطقة. اختيار الفرع المباشر للاستلام فقط.')
             if args['branch_id'] not in BRANCHES: raise RuleError('الفرع غير موجود.')
             state['branch'] = args['branch_id']; self.touch(state)
+        elif action == 'set_customer_name':
+            name = args['name'].strip()
+            if not name or len(name)>80 or any(ord(c)<32 for c in name): raise RuleError('نحتاج اسم مختصر للطلب.')
+            state['customer_name'] = name
+            self.touch(state)
         elif action in ['add_item', 'update_item', 'replace_item']:
             if action == 'add_item':
                 if len(state['basket']) >= 30: raise RuleError('السلة كبيرة. نحتاج موظفاً لإكمال الطلب.')

@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
 import {receiptModel,createCompletionView} from '../static/v2/completion.js';
 const line={name:'مضغوط لحم',quantity:3,line_total:13500,option_names:['فردي','رز بسمتي'],notes:'بدون صوص'};
 const state=()=>({order_id:'S-123',basket:[line],service:'pickup',branch:{name:'النرجس'},location:null,total:13500,delivery_fee:0});
@@ -40,4 +41,27 @@ test('caller-controlled receipt strings remain text nodes, not injected HTML',()
  const root=rootFixture(),view=createCompletionView(root);const s=state();s.basket=[{...line,name:'<img src=x onerror=alert(1)>'}];
  view.render(s);const text=[];function walk(n){if(n.textContent)text.push(n.textContent);assert.equal(n.innerHTML,undefined);for(const c of n.children||[])if(typeof c==='object')walk(c);}
  walk(root.panel);assert.ok(text.includes('3 × <img src=x onerror=alert(1)>'));
+});
+
+test('saved customer name appears in receipt and survives changed draft and hangup',()=>{
+ const root=rootFixture(),view=createCompletionView(root),s=state();
+ s.customer_name='محمد';s.hospitality={orders:{'S-123':{id:'S-123',customer_name:'عبدالله',items:[line],total_halalas:13500}}};
+ assert.equal(receiptModel(s).customerName,'عبدالله');
+ view.render(s);view.render(null);
+ const text=[];function walk(n){if(n.textContent)text.push(n.textContent);for(const c of n.children||[])walk(c);}
+ walk(root.panel);assert.ok(text.includes('باسم عبدالله'));assert.equal(root.panel.hidden,false);
+});
+
+test('real Arabic call final state renders the confirmed receipt and keeps it after hangup',()=>{
+ const evidence=JSON.parse(readFileSync(new URL('../evidence/v3/cedar-order-ending.json',import.meta.url),'utf8'));
+ assert.equal(evidence.passed,true);
+ const s=evidence.final_state,receipt=receiptModel(s),root=rootFixture(),view=createCompletionView(root);
+ assert.equal(receipt.id,evidence.order_id);assert.equal(receipt.customerName,'عبدالله');
+ assert.equal(receipt.total,5400);assert.equal(receipt.items.length,1);assert.equal(receipt.items[0].quantity,3);
+ assert.equal(receipt.items[0].item_id,'sandwiches_07');assert.equal(receipt.service,'pickup');
+ assert.match(receipt.branch,/الروضة/);assert.deepEqual(receipt.items[0].options.spice_level,['hot']);
+ view.render(s);view.render(null);
+ const text=[];function walk(n){if(n.textContent)text.push(n.textContent);for(const c of n.children||[])walk(c);}
+ walk(root.panel);assert.ok(text.includes('باسم عبدالله'));assert.ok(text.includes('54 ر.س'));
+ assert.ok(text.some(x=>x.includes(evidence.order_id)));assert.equal(root.panel.hidden,false);
 });

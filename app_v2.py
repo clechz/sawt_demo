@@ -148,7 +148,7 @@ def create(request: Request, body: StartCall):
         settings = validate_experience(body.voice, body.scenario, body.experience_version, conversation_mode=body.conversation_mode)
     except ValueError as exc:
         raise HTTPException(422, str(exc))
-    sid, token = tx.create(enforce_limits=True, experience=settings)
+    sid, token = tx.create(enforce_limits=True, experience=settings, require_customer_name=True)
     required_worker = tx.load(sid)['state']['experience'].get('worker_contract')
     tx.event(sid, 'recording.consent', {'notice_version': '2026-10-11', 'retention_days': 7, 'storage': 'private_cloud' if cloud_storage.enabled() else 'local'})
     jwt = (api.AccessToken(os.environ['LIVEKIT_API_KEY'], os.environ['LIVEKIT_API_SECRET'])

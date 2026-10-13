@@ -1,5 +1,13 @@
 # SAWT challenge audit — 13 October 2026
 
+Latest local order ending passed with required customer name, corrected summary,
+explicit spoken consent, saved order, received Cedar success audio (1.84 seconds),
+and receipt rendering from the actual saved state. See
+[the evidence](evidence/v3/cedar-order-ending.json) and updated
+[verification limits](SUBMISSION-READINESS.md). Current offline checks: 950 Python
+passes / one optional skip, 65 Node passes, frontend build passed. Hosted deployment
+and human-device playback remain unverified for this revision.
+
 See [the seven submission gates](SUBMISSION-READINESS.md). The merged candidate
 passed 938 Python tests (one optional skip), 63 Node tests and the frontend build.
 A fresh README dependency install and uvicorn/page smoke also passed.

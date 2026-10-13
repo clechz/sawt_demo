@@ -12,6 +12,7 @@ def tool(name, description, properties=None, required=None):
 S = {'type': 'string'}
 OPTIONS = {'type': 'object', 'description': 'Map exact option_group_id to list of exact option_id. Omit unknown required choices and ask. Empty list removes optional selections.', 'additionalProperties': {'type': 'array', 'items': S}}
 TOOLS = [
+    tool('set_customer_name', 'Save or correct the caller-supplied name for this order. Never invent a name. Invalidates the old quote.', {'name': S}, ['name']),
     tool('list_categories', 'List ALL menu categories and item counts. Use for menu overview, what do you serve, or category questions; do not search for the word menu.'),
     tool('search_menu', 'Search Arabic/English menu, returns at most 5 items with exact IDs, groups, constraints and prices in HALALAS (100 = 1 SAR). Use concise food keywords. Paginate using offset.', {'query': S, 'offset': {'type': 'integer', 'minimum': 0}}, ['query']),
     tool('get_item', 'Get exact menu item and options. Always inspect before choosing options.', {'item_id': S}, ['item_id']),
