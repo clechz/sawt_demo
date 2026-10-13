@@ -11,12 +11,12 @@ from sawt.v2_provider import V2Provider
 ROOT=Path(__file__).resolve().parents[1]
 async def main():
     report={'scope':'real planner, synthetic text, persisted SQLite; playback simulated, not audio proof','cases':[],'passed':False}
-    provider=V2Provider(voice='ash');engine=Engine(Menu(ROOT/'data/restaurant-menu-complex.csv'))
+    provider=V2Provider(voice='cedar');engine=Engine(Menu(ROOT/'data/restaurant-menu-complex.csv'))
     try:
         with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as directory:
             tx=Transactions(Path(directory)/'calls.db',engine)
             async def case(name,scenario,steps):
-                sid,_=tx.create(experience=validate_experience('ash',scenario,conversation_mode='model_led'))
+                sid,_=tx.create(experience=validate_experience('cedar',scenario,conversation_mode='model_led'))
                 result={'name':name,'turns':[],'passed':False};report['cases'].append(result)
                 try:
                     for i,(text,check) in enumerate(steps):
@@ -46,13 +46,18 @@ async def main():
             ])
             await case('refund_missing_item','missing_item',[
                 ('طلبي S-DEMO7001 وصل ناقص الشكشوكة، أبي استرجاع قيمتها.',lambda s,v:bool(s['hospitality']['cases']) and bool(s['hospitality']['pending_resolution']) and not s['hospitality']['ledger']),
-                ('نعم',lambda s,v:len(s['hospitality']['ledger'])==1 and s['hospitality']['ledger'][0]['amount_halalas']==3000),
+                ('نعم أوافق على الاسترجاع',lambda s,v:len(s['hospitality']['ledger'])==1 and s['hospitality']['ledger'][0]['amount_halalas']==3000),
                 ('رجع قيمة نفس الشكشوكة مرة ثانية.',lambda s,v:len(s['hospitality']['ledger'])==1),
             ])
             await case('unknown_and_staff','new_order',[
                 ('وين طلبي S-UNKNOWN؟',lambda s,v:not s['hospitality']['orders'] and not s['basket']),
                 ('عندي شكوى أبي أكلم مسؤول.',lambda s,v:bool(s['hospitality']['cases']) and bool(s['hospitality']['pending_resolution'])),
                 ('لا شكراً',lambda s,v:not s['hospitality']['pending_resolution'] and not s['hospitality']['ledger']),
+            ])
+            await case('pizza_details_before_fulfillment','new_order',[
+                ('أبغى بيتزا دجاج باربكيو كبير وعجينة كلاسيكية وخليها حار.',lambda s,v:len(s['basket'])==1 and s['basket'][0]['item_id']=='pizza_flatbread_03' and s['basket'][0]['options']['size']==['large'] and s['basket'][0]['options']['crust']==['classic'] and s['basket'][0]['options']['spice_level']==['hot'] and s['service'] is None),
+                ('استلام من فرع الملقا بالرياض.',lambda s,v:s['service']=='pickup' and s['branch']=='ruh_malqa' and s['basket'][0]['options']['size']==['large']),
+                ('لا خل الحجم وسط والباقي زي ما هو.',lambda s,v:s['basket'][0]['options']['size']==['medium'] and s['basket'][0]['options']['crust']==['classic'] and s['basket'][0]['options']['spice_level']==['hot']),
             ])
             report['passed']=all(c['passed'] for c in report['cases'])
     finally:

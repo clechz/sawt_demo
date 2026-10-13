@@ -121,3 +121,21 @@ async def test_explicit_staff_request_requires_persisted_case_without_losing_dra
     state=tx.load(sid)['state']
     assert state['basket']==before and len(state['hospitality']['cases'])==1
     assert state['hospitality']['pending_resolution']['kind']=='staff_review'
+
+
+def test_native_suffix_does_not_discard_uncommitted_order():
+    fragments=['أبي اثنين شاورما دجاج', ' صاج بدون حار', ' وواحد شاورما لحم', ' صاج حار', ' اقرأ ملخص الطلب']
+    assert delegated_start(fragments,0,'اقرأ ملخص الطلب')==0
+    assert delegated_start(fragments,0,'صاج حار اقرأ ملخص الطلب')==0
+    assert delegated_start(fragments,2,'اقرأ ملخص الطلب')==2
+
+
+def test_claim_guards_require_saved_selection_and_resolved_support():
+    from sawt.reply_evidence import unsupported_claim
+    before={'basket':[]}
+    assert unsupported_claim(before,before,'تم اختيار بيتزا دجاج كبير')
+    pending={'basket':[],'hospitality':{'pending_resolution':{'id':'pending'},'ledger':[]}}
+    assert unsupported_claim(pending,pending,'تم تسجيل موافقتك على استرجاع قيمة الصنف')
+    from sawt.hospitality import resolution_confirmation
+    assert not resolution_confirmation('نعم أوافق على الاسترجاع','staff_review')
+    assert resolution_confirmation('نعم أوافق على التحويل','staff_review')

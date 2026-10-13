@@ -1,0 +1,97 @@
+{
+  "target": "http://127.0.0.1:8773",
+  "scope": "Synthetic caller PCM through LiveKit/OpenAI; local API, worker and SQLite. Readback MP3 independently transcribed; playback receipts simulated with real duration. Not physical browser playback or human accent judgment.",
+  "passed": true,
+  "turns": [
+    {
+      "input": "أبي اثنين شاورما دجاج ساندوتش صاج بدون حار، وواحد شاورما لحم ساندوتش صاج حار. استلام من فرع النرجس بالرياض. اقرأ ملخص الطلب.",
+      "state_seconds": 4.55,
+      "reply": "طلبك: 2 من شاورما دجاج، ساندويتش فقط، صاج، بدون شطة، بسعر 36.00 ريال؛ 1 من شاورما لحم، ساندويتش فقط، صاج، شطة قوية، بسعر 22.00 ريال. استلام من فرع النرجس بالرياض. المجموع 58.00 ريال، والوقت المتوقع 20 دقيقة. نأكد الطلب؟",
+      "readback_download_seconds": 4.53,
+      "readback_duration": 27.72,
+      "received_readback": "طلبك: اثنان من شاورما دجاج، ساندويتش فقط، خبز صاج بدون شطة، بسعر ستة وثلاثين ريال. واحد من شاورما لحم، ساندويتش فقط، خبز صاج، شطة قوية، بسعر اثنين وعشرين ريال. استلام من فرع النرجس بالرياض. المجموع ثمانية وخمسين ريال، والوقت المتوقع عشرين دقيقة. نؤكد الطلب.",
+      "passed": true
+    },
+    {
+      "input": "احذف شاورما اللحم وخلي الدجاج ثلاثة بدل اثنين. اقرأ ملخص الطلب.",
+      "state_seconds": 3.58,
+      "reply": "طلبك: 3 من شاورما دجاج، ساندويتش فقط، صاج، بدون شطة، بسعر 54.00 ريال. استلام من فرع النرجس بالرياض. المجموع 54.00 ريال، والوقت المتوقع 20 دقيقة. نأكد الطلب؟",
+      "readback_download_seconds": 11.49,
+      "readback_duration": 21.17,
+      "received_readback": "طلبك: ثلاثة من شاورما دجاج، ساندويتش فقط، خبز صاج بدون شطة، بسعر أربعة وخمسين ريال، استلام من فرع النرجس بالرياض، المجموع أربعة وخمسين ريال، والوقت المتوقع عشرين دقيقة، نأكد الطلب.",
+      "passed": true
+    },
+    {
+      "input": "غير الاستلام إلى فرع الروضة بجدة وخلي الدجاج حار. اقرأ ملخص الطلب من جديد.",
+      "state_seconds": 4.08,
+      "reply": "طلبك: 3 من شاورما دجاج، ساندويتش فقط، صاج، شطة قوية، بسعر 54.00 ريال. استلام من فرع الروضة بجدة. المجموع 54.00 ريال، والوقت المتوقع 20 دقيقة. نأكد الطلب؟",
+      "readback_download_seconds": 3.98,
+      "readback_duration": 18.26,
+      "received_readback": "طلبك ثلاثة من شاورما دجاج ساندويتش فقط خبز الصاج شطة قوية بسعر أربعة وخمسين ريال استلام من فرع الروضة بجدة المجموع أربعة وخمسين ريال نؤكد الطلب.",
+      "passed": true
+    },
+    {
+      "input": "نعم اعتمد الطلب.",
+      "state_seconds": 1.17,
+      "reply": "تأكد طلبك. رقمه إس، 7، 7، B، 1، 8، 5، 6، E، C، 7، 4، 2.",
+      "first_received_audio_seconds": 2.05,
+      "passed": true
+    }
+  ],
+  "worker_contract": {
+    "conversation_mode": "model_led",
+    "experience_version": "v3",
+    "planner_model": "gpt-4.1",
+    "protocol": 1,
+    "source_fingerprint": "b8f72b766c4bbde278686f35dd33f9a06bcfec0ec48725054357c8caec9ec4a6",
+    "voice": "ash",
+    "voice_model": "gpt-live-1"
+  },
+  "call_id": "ec9ff49055ab459382d76aa8fd5a70ac",
+  "order_id": "S-77B1856EC742",
+  "final_order": {
+    "order_id": "S-77B1856EC742",
+    "basket": [
+      {
+        "item_id": "sandwiches_07",
+        "line_id": "b55c76a6",
+        "notes": "",
+        "options": {
+          "bread": [
+            "saj"
+          ],
+          "meal": [
+            "sandwich"
+          ],
+          "spice_level": [
+            "hot"
+          ]
+        },
+        "quantity": 3,
+        "name": "شاورما دجاج",
+        "option_names": [
+          "ساندويتش فقط",
+          "صاج",
+          "حار"
+        ],
+        "unit_price": 1800,
+        "line_total": 5400,
+        "missing": [],
+        "available": true
+      }
+    ],
+    "total": 5400,
+    "service": "pickup",
+    "branch_id": "jed_rawdah"
+  },
+  "earlier_attempts": [
+    {
+      "passed": false,
+      "reason": "Native suffix discarded the uncommitted order; fixed by consuming only after commit."
+    },
+    {
+      "passed": false,
+      "reason": "False quantity disagreement: اثنين vs اثنان; fixed equivalent dual forms."
+    }
+  ]
+}

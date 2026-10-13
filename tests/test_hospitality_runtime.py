@@ -92,9 +92,9 @@ def test_critical_confirmation_must_survive_actual_transcript(heard):
 def test_verification_is_risk_specific(action,text,expected):
     assert requires_audio_verification([{'tool':action,'args':{}}],text)==expected
 
-def test_native_open_turn_discards_old_social_caption_context():
+def test_native_hint_cannot_discard_unconsumed_caption_context():
     fragments=['هلا والله',' كيفك',' أبي شكشوكة',' كبير تميس']
-    assert delegated_start(fragments,0,'أبي شكشوكة كبير تميس')==2
+    assert delegated_start(fragments,0,'أبي شكشوكة كبير تميس')==0
     assert delegated_start(fragments,0,'unmatched')==0
     assert delegated_start(fragments,3,'كبير تميس')==3
 
@@ -127,3 +127,21 @@ def test_unknown_policy_does_not_invent_allergens(engine):
     state=new_state();state['hospitality']=new_hospitality(engine)
     value=HospitalityEngine(engine,state).act(state,'restaurant_info',{'topic':'allergens'})
     assert value['source']=='menu_has_no_allergen_data' and 'ما أقدر أضمن' in value['answer']
+
+
+@pytest.mark.asyncio
+async def test_spoken_refund_approval_changes_ledger(engine):
+    from sawt.hospitality import resolution_confirmation
+    from sawt.domain import explicit_confirmation
+    state=new_state();state['hospitality']=new_hospitality(engine,'missing_item')
+    adapter=HospitalityEngine(engine,state)
+    case=adapter.act(state,'open_support_case',{'category':'missing_item','details':'ناقص','order_id':'S-DEMO7001','line_id':'seed-line-1'})['case']
+    adapter.act(state,'offer_resolution',{'case_id':case['id'],'resolution':'refund_item'})
+    state['hospitality']['pending_resolution']['presented']=True
+    text='نعم أوافق على الاسترجاع'
+    assert resolution_confirmation(text) and not explicit_confirmation(text)
+    assert not resolution_confirmation(text+' بس غير المبلغ')
+    prepared=await prepare_turn(engine,Scripted(),{'state':state,'epoch':0},text,conversation_mode='model_led')
+    assert len(prepared.state['hospitality']['ledger'])==1
+    assert prepared.state['hospitality']['ledger'][0]['amount_halalas']==3000
+    assert prepared.requires_verification

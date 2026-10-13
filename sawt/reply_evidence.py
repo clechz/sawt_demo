@@ -20,7 +20,10 @@ def unsupported_claim(before, after, reply):
     if removed and not removed_value:
         return 'No item, option or note was removed. Do not claim removal. Execute the requested valid edit or ask what to remove; preserve all other items.'
     edits = any(before.get(key) != after.get(key) for key in ('basket','service','branch','location','delivery_details'))
-    changed_claim = re.search(r'\b(?:عدلت|غيرت|بدلت|خليت|زدت|ضفت|اضفت)\b|\bتم (?:تعديل|تغيير|اضافه)|\b(?:updated|added|changed)\b', text)
+    changed_claim = re.search(r'\b(?:عدلت|غيرت|بدلت|خليت|زدت|ضفت|اضفت)\b|\bتم (?:تعديل|تغيير|اضافه|اختيار|حفظ|تسجيل)|\b(?:updated|added|changed)\b', text)
     if changed_claim and not edits:
         return 'No requested draft edit was saved this turn. Do not claim a change. Use the appropriate tool to make the requested edit, or ask a focused clarification. Current saved state is authoritative.'
+    h=after.get('hospitality', {})
+    if h.get('pending_resolution') and re.search(r'تم (?:تسجيل موافقتك|اعتماد|استرجاع|ارجاع)|رجعنا|اعتمدنا', text):
+        return 'The support proposal is still pending, so no resolution was completed. Use accept_resolution only after heard proposal and explicit consent; otherwise clarify. Do not claim approval/refund from words alone.'
     return None

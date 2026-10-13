@@ -1,5 +1,29 @@
 # SAWT challenge audit — 13 October 2026
 
+## Continuing local voice verification
+
+The user selected **Cedar** after the Ash run. Local real-audio testing found and
+fixed native delegation dropping uncommitted caption prefixes, false quantity
+disagreement for اثنين/اثنان, support approval without a ledger mutation, and
+support replies never delegated by the voice model. Pending proposal replies now
+have a bounded dispatch fallback; domain consent checks remain mandatory.
+The new greeting identifies مطعم صوت; follow-ups ask one missing choice at a time.
+New complaints must produce an actual supported resolution offer.
+
+The full regression run passed 929 Python tests (one optional skip) and 63 Node
+checks; subsequent support-offer guard changes passed 71 focused regressions.
+Sixteen real-model persisted-state turns passed, including the recent pizza
+issue. The earlier Ash local ordering call passed all four turns; its report is
+[evidence/v3/local-order-voice.json](evidence/v3/local-order-voice.json). Cedar
+ordering/support calls are being rerun; do not infer a pass from the prepared
+scripts. Timings containing listening acknowledgements are labeled accordingly.
+
+Hosted rollout and the final demonstration video are still pending. The hourly
+thread follow-up checks quota recovery and coordinates matching API/worker
+releases. Nothing here certifies all challenge scenarios or human accent quality.
+
+The release section below describes the previously pushed candidate.
+
 ## Release decision
 
 Candidate application commit: `f9f00ecb2cbe0f2267e1893cdf109b946c05c2df`.

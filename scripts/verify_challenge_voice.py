@@ -1,5 +1,5 @@
-"""Paid cloud V3/Ash call: actual PCM, saved state and timed exact readbacks. No Chrome."""
-import asyncio,hashlib,io,json,sys,time,wave
+"""Paid V3/Cedar call: actual PCM, saved state and timed exact readbacks. No Chrome."""
+import argparse,asyncio,hashlib,io,json,sys,time,wave
 from pathlib import Path
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
 import httpx
@@ -17,23 +17,27 @@ TEXTS=[
  'نعم اعتمد الطلب.',
 ]
 async def main():
-    report={'scope':'synthetic caller, real LiveKit audio and cloud state; timed simulated readback receipts; no human accent score','passed':False,'turns':[]}
-    p=V2Provider(voice='ash');call=None
+    parser=argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--local', action='store_true', help='Use isolated loopback API on port 8773, without hosted login')
+    args=parser.parse_args()
+    base='http://127.0.0.1:8773' if args.local else 'https://sawt-demo.vercel.app'
+    report={'target':base,'scope':'synthetic caller, real LiveKit audio and cloud state; timed simulated readback receipts; no human accent score','passed':False,'turns':[]}
+    p=V2Provider(voice='cedar');call=None
     try:
         audio=[]
         for text in TEXTS:
             path=ROOT/'runtime'/('challenge-'+hashlib.sha256(text.encode()).hexdigest()[:16]+'.mp3')
             if not path.exists():path.write_bytes(await p.speak(text))
             audio.append(decode(path))
-        password=json.loads((ROOT/'runtime/private-demo.json').read_text())['password']
-        async with httpx.AsyncClient(base_url='https://sawt-demo.vercel.app',headers={'Origin':'https://sawt-demo.vercel.app'},timeout=60) as client:
-            assert (await client.post('/login',data={'password':password})).status_code==303
-            call=VoiceCall(client,{'experience_version':'v3','conversation_mode':'model_led','voice':'ash','scenario':'new_order'})
+        password=None if args.local else json.loads((ROOT/'runtime/private-demo.json').read_text())['password']
+        async with httpx.AsyncClient(base_url=base,headers={'Origin':base},timeout=60) as client:
+            if not args.local:assert (await client.post('/login',data={'password':password})).status_code==303
+            call=VoiceCall(client,{'experience_version':'v3','conversation_mode':'model_led','voice':'cedar','scenario':'new_order'})
             try:
                 await call.start(120)
                 saved=await call.state()
                 binding=next(e['payload']['worker_contract'] for e in saved['events'] if e['kind']=='voice.connected')
-                check_worker_contract(worker_contract(validate_experience('ash',conversation_mode='model_led')),binding)
+                check_worker_contract(worker_contract(validate_experience('cedar',conversation_mode='model_led')),binding)
                 report['worker_contract']=binding;report['call_id']=call.call['id']
                 for index,text in enumerate(TEXTS):
                     floor=call.cursor
@@ -58,6 +62,8 @@ async def main():
                         r=await client.post(endpoint+'/readback',headers=call.auth);r.raise_for_status();receipt=r.json()
                         t=time.monotonic();r=await client.get(receipt['url']);r.raise_for_status();duration=audio_duration(r.content)
                         row['readback_download_seconds']=round(time.monotonic()-t,2);row['readback_duration']=round(duration,2)
+                        snapshot=await call.state()
+                        row['tts_first_byte_ms']=next((e['payload'].get('tts_first_byte_ms') for e in reversed(snapshot['events']) if e['kind']=='readback.first_byte'),None)
                         path=ROOT/'runtime'/f'challenge-readback-{index}.mp3';path.write_bytes(r.content)
                         pcm=decode(path);buf=io.BytesIO()
                         with wave.open(buf,'wb') as w:w.setnchannels(1);w.setsampwidth(2);w.setframerate(24000);w.writeframes(pcm)
@@ -79,7 +85,7 @@ async def main():
                 report['passed']=True
             finally:await call.close()
     except Exception as e:
-        report['error']=str(e)[:300];print(json.dumps({'error':report['error']},ensure_ascii=False),flush=True)
+        report['error']=type(e).__name__+': '+str(e)[:300];print(json.dumps({'error':report['error']},ensure_ascii=False),flush=True)
     finally:
         await p.aclose();(ROOT/'runtime/challenge-voice.json').write_text(json.dumps(report,ensure_ascii=False,indent=2),encoding='utf8')
     assert report['passed'],'Cloud voice gate failed; inspect runtime/challenge-voice.json'

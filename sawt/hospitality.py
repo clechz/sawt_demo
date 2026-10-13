@@ -6,7 +6,20 @@ world around it; it does not turn missing menu data into invented ingredients.
 from __future__ import annotations
 import copy
 import uuid
-from .domain import RuleError, money, explicit_confirmation
+from .domain import RuleError, money, explicit_confirmation, normalize
+
+def resolution_confirmation(text, kind=None):
+    if explicit_confirmation(text):
+        return True
+    phrases = {
+        'نعم أوافق على الاسترجاع': {'refund_item', 'cancel_order'},
+        'أوافق على الاسترجاع': {'refund_item', 'cancel_order'},
+        'نعم أوافق على التعويض': {'refund_item', 'replace_item'},
+        'نعم أوافق على التحويل': {'staff_review'},
+    }
+    return any(normalize(text)==normalize(value) and (kind is None or kind in kinds)
+               for value,kinds in phrases.items())
+
 from .transactions import StagedEngine
 from .conversation import spoken_order_number
 from .experience import profile
@@ -182,7 +195,7 @@ class HospitalityEngine(StagedEngine):
             if (not proposal or not self.initial_proposal or proposal['id'] != args['proposal_id']
                     or proposal['id'] != self.initial_proposal['id'] or not proposal['presented']
                     or proposal['revision'] != state['revision'] or self.support_changed
-                    or not explicit_confirmation(utterance)):
+                    or not resolution_confirmation(utterance, proposal['kind'])):
                 raise RuleError('نراجع الحل معك أول، وبعدها نحتاج موافقتك.')
             case = next(c for c in h['cases'] if c['id'] == proposal['case_id'])
             order = h['orders'].get(case['order_id']); kind = proposal['kind']; amount = proposal['amount_halalas']

@@ -10,7 +10,7 @@ export function selectedExperience(voice,scenario,consent){
  if(!VOICES.has(voice)||!Object.hasOwn(BRIEFS,scenario))throw new Error('اختيار غير متاح.');
  return {voice,scenario,recording_consent:consent===true,experience_version:'v3',conversation_mode:'model_led'};
 }
-// Ash remains fixed; no previous voice preference can override it.
+// Cedar remains fixed; no previous voice preference can override it.
 // A deliberate start acknowledges the recording notice beside the button.
 // Merely loading the page or reading its settings grants nothing.
 export function createExperienceControls(root){
@@ -18,7 +18,7 @@ export function createExperienceControls(root){
  if(!notice?.textContent?.trim())throw new Error('Recording notice is missing');
  let busy=false;
  return {
-  value:({startRequested=false}={})=>selectedExperience('ash','new_order',startRequested===true&&!busy),
+  value:({startRequested=false}={})=>selectedExperience('cedar','new_order',startRequested===true&&!busy),
   setBusy:value=>{busy=value===true;}
  };
 }

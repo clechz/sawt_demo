@@ -9,6 +9,7 @@ from __future__ import annotations
 import asyncio
 import time
 import uuid
+from types import SimpleNamespace
 from .experience import voice_instructions, profile
 from .conversation_policy import conversation_mode, release_for
 from .release_contract import worker_contract
@@ -41,16 +42,12 @@ def context_chunks(text, max_bytes=460):
 
 
 def delegated_start(fragments, consumed, pending_transcript):
-    """Locate native current-turn text in captured captions without inventing it.
+    """Only committed consumption may discard speech.
 
-    Older small talk need not be re-transcribed or fall outside the 45s PCM ring.
-    If the native hint cannot be aligned, retain the unconsumed request.
+    Native pending_transcript can be a suffix, even inside one continuous
+    request. Matching that suffix is not evidence earlier fragments were handled.
+    Keep all uncommitted captions; bounded audio verification may clarify safely.
     """
-    hint = normalize(pending_transcript or '')
-    if hint:
-        for start in range(len(fragments)-1, consumed-1, -1):
-            if normalize(''.join(fragments[start:])) == hint:
-                return start
     return consumed
 
 
@@ -68,6 +65,8 @@ def make_voice_class(base):
             self.resume_on_input = False
             self.delegation_start = 0
             self.latest_final_transcript = ''
+            self.awaiting_resolution = False
+            self.resolution_dispatch = None
 
         async def announce_ready(self):
             from .v2_runtime import tx
@@ -111,9 +110,21 @@ def make_voice_class(base):
             if event.is_final:
                 self.latest_final_transcript = event.transcript
                 self.audit('transcript.user', {'text': event.transcript, 'item_id': event.item_id})
+                # Replies to a persisted support proposal must reach its state
+                # machine, even if the voice model treats 'no thanks' as social.
+                # This schedules interpretation; it never grants consent itself.
+                if self.awaiting_resolution:
+                    if self.resolution_dispatch and not self.resolution_dispatch.done():
+                        self.resolution_dispatch.cancel()
+                    self.resolution_dispatch = self.spawn(self.dispatch_resolution_reply())
             # Deliberately no route!='social' blanket mute, and no caption-final
             # fallback treating every social phrase as a business request.
             # GPT-Live's delegation_created event starts the backend work.
+
+        async def dispatch_resolution_reply(self):
+            await asyncio.sleep(.35)
+            if self.awaiting_resolution and not self.ending and len(self.fragments)>self.consumed:
+                self.on_delegation(SimpleNamespace(id=None, pending_transcript=''))
 
         def on_delegation(self, delegation):
             # Native delegation carries the current open caption in supported
@@ -121,7 +132,7 @@ def make_voice_class(base):
             # when a new delegation includes a correction to the same request.
             if not self.pending or self.pending.done():
                 # A finalized caption can be only the last fragment (e.g. "حارة")
-                # of an unconsumed request. Only a native turn hint may trim it.
+                # of an unconsumed request. Native hints can also be partial; preserve uncommitted speech.
                 hint = getattr(delegation, 'pending_transcript', '')
                 self.delegation_start = delegated_start(self.fragments, self.consumed, hint)
             super().on_delegation(delegation)
@@ -247,6 +258,7 @@ def make_voice_class(base):
                         for chunk in context_chunks('Saved result; caller may be correcting it. Do not speak the obsolete answer: ' + result['reply']):
                             self.duplex_session.append_thinking(chunk, delegation_id=delegation_id)
                         return
+                    self.awaiting_resolution = bool(prepared.state.get('hospitality', {}).get('pending_resolution'))
                     quote = prepared.state.get('quote')
                     if result['speech_mode'] == 'checkout' and quote:
                         self.reading = self.checkout_context = self.output_held = True
@@ -283,8 +295,8 @@ def make_voice_class(base):
             except (asyncio.CancelledError, Conflict):
                 self.audit('delegation.superseded', {'delegation_id': delegation_id})
                 self.processed = ''
-            except AudioWindowError:
-                self.audit('transcript.unverified', {'reason': 'unclear_critical_audio'})
+            except AudioWindowError as exc:
+                self.audit('transcript.unverified', {'reason': 'unclear_critical_audio', 'detail': str(exc)})
                 await recover('الجزء الأخير ما وضح لي، تعيده؟')
             except RuleError as exc:
                 await recover(str(exc))

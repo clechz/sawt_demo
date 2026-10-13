@@ -15,10 +15,10 @@ function controlsFixture(){
  const root={getElementById:id=>id==='recording-notice'?notice:null};
  return createExperienceControls(root);
 }
-test('Ash starts in one action with the disclosed recording and no checkbox',()=>{
+test('Cedar starts in one action with the disclosed recording and no checkbox',()=>{
  const controls=controlsFixture();
- assert.deepEqual(controls.value(),{voice:'ash',scenario:'new_order',recording_consent:false,experience_version:'v3',conversation_mode:'model_led'});
- assert.deepEqual(controls.value({startRequested:true}),{voice:'ash',scenario:'new_order',recording_consent:true,experience_version:'v3',conversation_mode:'model_led'});
+ assert.deepEqual(controls.value(),{voice:'cedar',scenario:'new_order',recording_consent:false,experience_version:'v3',conversation_mode:'model_led'});
+ assert.deepEqual(controls.value({startRequested:true}),{voice:'cedar',scenario:'new_order',recording_consent:true,experience_version:'v3',conversation_mode:'model_led'});
  assert.equal(controls.value({startRequested:false}).recording_consent,false);
  assert.equal(controls.value({startRequested:'true'}).recording_consent,false);
  assert.equal(controls.value().recording_consent,false,'start acknowledgment is not a sticky setting');

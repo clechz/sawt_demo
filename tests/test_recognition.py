@@ -319,3 +319,11 @@ def test_streaming_reply_rechecks_new_input_after_interrupting_old_audio():
     session.interrupt.assert_awaited_once_with(force=True)
     session.say.assert_not_called()
     assert closed==[True]
+
+
+@pytest.mark.parametrize('word',['اثنان','اثنتان'])
+def test_dual_arabic_number_is_same_quantity(word):
+    check_recognition('اثنين شاورما',word+' شاورما')
+    check_recognition(word+' شاورما','اثنين شاورما')
+    with pytest.raises(AudioWindowError):
+        check_recognition(word+' شاورما','ثلاثة شاورما')

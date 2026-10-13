@@ -1,6 +1,6 @@
 # Sawt — Saudi Arabic restaurant voice agent
 
-> **Current source:** V3 hospitality with fixed Ash voice, stateful ordering/support and a persistent confirmed receipt. See [current audit](CHALLENGE-AUDIT.md) before reviewing hosted behavior.
+> **Current source:** V3 hospitality with fixed Cedar voice, stateful ordering/support and a persistent confirmed receipt. See [current audit](CHALLENGE-AUDIT.md) before reviewing hosted behavior.
 
 A simple call screen over a stateful ordering system. Speak naturally, give details in any order, change your mind after the total, or ask for information without placing an order. The model interprets the conversation; validated Python tools own prices, availability, saved changes and confirmation.
 
@@ -21,7 +21,7 @@ A simple call screen over a stateful ordering system. Speak naturally, give deta
 
 ## Release audit — 2026-10-13
 
-Application changes: `f9f00ecb2cbe0f2267e1893cdf109b946c05c2df`. [CI passed](https://github.com/clechz/sawt_demo/actions/runs/38392581865). The current UI uses V3, model-led conversation, fixed Ash voice. API clients that omit the experience still select V2.
+Application changes: `f9f00ecb2cbe0f2267e1893cdf109b946c05c2df`. [CI passed](https://github.com/clechz/sawt_demo/actions/runs/38392581865). The current UI uses V3, model-led conversation, fixed Cedar voice. API clients that omit the experience still select V2.
 
 **Not ready for final submission recording.** The candidate passed offline and real-provider text/state checks, but Vercel rejected production deployment with `api-deployments-free-per-day` (more than 100 deployments). The new LiveKit worker was rolled back to `TKcMfpvSprXd` to stay matched to the existing website. Latest source is on main; it is not the hosted release. Saved recording access returned HTTP 403, so the recent human call was diagnosed from persisted events/transcripts, not a fresh audio listen.
 
@@ -67,7 +67,7 @@ LIVEKIT_API_KEY=your-project-api-key
 LIVEKIT_API_SECRET=your-project-api-secret
 ```
 
-The V31 candidate keeps GPT-Live for listening/timing and social replies, and uses streamed TTS for the exact validated restaurant reply. Both use Marin by default.
+The V3 UI explicitly selects Cedar for GPT-Live conversation and exact validated readbacks. API clients omitting an experience retain the V2 compatibility path.
 
 Keep the model defaults in `.env.example` unless your account requires an explicitly validated alternative. `SAWT_VOICE=marin` controls the V2 live voice, exact readback and recovery voice together. `TTS_VOICE` is the legacy V1 setting. Changing `LLM_MODEL` changes the tool planner, not the GPT-Live voice model.
 
@@ -151,7 +151,7 @@ Paid provider checks (no Chrome automation):
 python scripts/v2_interaction_eval.py
 python scripts/v2_release_replay.py
 # Full deployed voice suite, sequential calls, stops at first failed gate:
-python scripts/v2_cloud_suite.py --release conversation-v31
+python scripts/verify_challenge_voice.py
 # Requires the API and voice worker running on localhost:8766:
 python scripts/v2_recognition_replay.py --edges
 ```

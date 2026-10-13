@@ -29,3 +29,22 @@ def test_context_splitting_never_silently_loses_arabic_facts():
  chunks=list(context_chunks(text))
  assert ' '.join(chunks)==text
  assert all(len(chunk.encode())<=460 for chunk in chunks)
+
+
+import pytest
+@pytest.mark.asyncio
+async def test_support_answer_dispatches_without_native_event():
+ import asyncio
+ class PendingBase(Base):
+  def __init__(self,*a,**k):
+   super().__init__(*a,**k);self.fragments=['لا شكرا'];self.consumed=0;self.pending=None;self.dispatched=[]
+  def spawn(self,coro):return asyncio.create_task(coro)
+  def on_delegation(self,d):self.dispatched.append(d)
+ voice=make_voice_class(PendingBase)('id',None,{'voice':'cedar'})
+ voice.awaiting_resolution=True
+ voice.on_transcript(SimpleNamespace(item_id='1',is_final=True,transcript='لا شكرا'))
+ await voice.resolution_dispatch
+ assert len(voice.dispatched)==1
+ voice.consumed=1
+ await voice.dispatch_resolution_reply()
+ assert len(voice.dispatched)==1

@@ -16,6 +16,7 @@ async def send(call,pcm):
 async def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--output',type=Path,default=ROOT/'runtime/cloud-interruptions.json')
+    parser.add_argument('--local',action='store_true',help='Use isolated V3/Cedar local API on port 8773')
     args=parser.parse_args();texts=['عطني بيتزا شاورما.','انتظر شوي لو سمحت.','خلي كبير.']
     provider=V2Provider();audio={}
     try:
@@ -24,13 +25,13 @@ async def main():
             if not path.exists():path.write_bytes(await provider.speak(text))
             audio[text]=decode(path)
     finally:await provider.aclose()
-    base='https://sawt-demo.vercel.app'
-    password=os.getenv('SAWT_DEMO_PASSWORD') or json.loads((ROOT/'runtime/private-demo.json').read_text())['password']
+    base='http://127.0.0.1:8773' if args.local else 'https://sawt-demo.vercel.app'
+    password=None if args.local else os.getenv('SAWT_DEMO_PASSWORD') or json.loads((ROOT/'runtime/private-demo.json').read_text())['password']
     report={'browser':'none','scope':'Interrupt verified assistant speech with explicit wait at three offsets; resume; disconnect safely. This is not packet-loss or native-speaker certification.','cases':[]}
     async with httpx.AsyncClient(base_url=base,headers={'Origin':base},timeout=45) as client:
-        assert (await client.post('/login',data={'password':password})).status_code==303
+        if not args.local:assert (await client.post('/login',data={'password':password})).status_code==303
         for offset in [.2,.8,1.5]:
-            call=VoiceCall(client);row={'offset_after_audio_seconds':offset,'passed':False};report['cases'].append(row)
+            call=VoiceCall(client,{'experience_version':'v3','conversation_mode':'model_led','voice':'cedar'} if args.local else None);row={'offset_after_audio_seconds':offset,'passed':False};report['cases'].append(row)
             try:
                 await call.start();row['call_id']=call.call['id']
                 initial=await call.state()
@@ -61,6 +62,7 @@ async def main():
                         saved=await call.state()
                         recent=[e for e in saved['events'] if e['sequence']>floor]
                         if any(e['kind']=='call.wait_requested' for e in recent):break
+                        if args.local and time.monotonic()-wait_input_end>2 and not any(at>wait_input_end+1 and rms>.01 for at,rms in call.output):break
                         assert not any(e['kind'] in ('delegation.failed','transcript.unverified') for e in recent),'Wait was not understood'
                         await asyncio.sleep(.2)
                 row['wait_state_seconds']=round(time.monotonic()-wait_input_end,2)

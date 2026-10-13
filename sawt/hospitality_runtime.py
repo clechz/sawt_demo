@@ -161,7 +161,9 @@ def verified_utterance(caption, verified, prepared):
     check_recognition(caption, verified)
     check_recognition(verified, caption)
     names = {op['tool'] for op in prepared.operations}
-    if names & {'confirm', 'accept_resolution'} and not (explicit_confirmation(caption) and explicit_confirmation(verified)):
+    from .hospitality import resolution_confirmation
+    check_acceptance = resolution_confirmation if 'accept_resolution' in names else explicit_confirmation
+    if names & {'confirm', 'accept_resolution'} and not (check_acceptance(caption) and check_acceptance(verified)):
         raise AudioWindowError('Explicit acceptance did not survive audio verification')
     return verified.strip()
 
@@ -188,7 +190,8 @@ async def prepare_turn(engine, provider, row, text, *, progress=None, conversati
         # Another conversational subject expires the invitation. A later yes
         # must not accept a quote from before an unrelated question.
         adapter.engine.touch(state)
-    if pending and explicit_confirmation(text):
+    from .hospitality import resolution_confirmation
+    if pending and resolution_confirmation(text, pending['kind']):
         if pending['presented'] and pending['revision'] == state['revision']:
             reply = adapter.act(state, 'accept_resolution', {'proposal_id': pending['id']}, utterance=text)['reply']
         else:
@@ -254,8 +257,14 @@ async def prepare_turn(engine, provider, row, text, *, progress=None, conversati
                 if requests_human(text) and not any(op['tool']=='open_support_case' for op in adapter.operations):
                     messages.append({'role':'system','content':'The caller explicitly requested support. Persist open_support_case now, reusing an existing matching case when present. A general staff request needs no order ID: its exact request is sufficient detail. Then offer staff_review. Do not claim a transfer or ask them to request support again.'})
                     continue
+                if not state.get('hospitality',{}).get('pending_resolution') and any(op['tool']=='open_support_case' for op in adapter.operations) and not any(op['tool'] in ('offer_resolution','accept_resolution') for op in adapter.operations):
+                    messages.append({'role':'system','content':'The complaint is recorded but the requested support work is incomplete. Use offer_resolution for the open case with the requested policy-eligible refund/replacement/cancellation, or staff_review when a human is requested or no direct resolution is available. Do not promise later work that is not running and do not claim the offer was accepted.'})
+                    continue
                 from .clarification import question_targets
                 targets = question_targets(engine.menu, state, candidate)
+                if len(set(targets)) > 1:
+                    messages.append({'role':'system','content':'Ask only ONE missing option group at a time. Keep already saved choices. Do not list questions about size, bread/rice, heat and fulfillment together.'})
+                    continue
                 if targets and not model_led:
                     messages.append({'role': 'system', 'content': 'Use ask_choice to persist that option question before asking it. Known line/group pairs: ' + encode(targets)})
                     continue
