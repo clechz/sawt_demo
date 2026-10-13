@@ -142,7 +142,7 @@ def test_delivery_branch_cannot_be_overridden(engine):
 def test_negated_handoff_deferred_to_model(text):
     assert not requests_human(text)
 
-@pytest.mark.parametrize('text',['أبي موظف','عندي شكوى','لو سمحت حولني','أبغى أكلم موظف'])
+@pytest.mark.parametrize('text',['أبي موظف','لو سمحت حولني','أبغى أكلم موظف'])
 def test_clear_handoff_shortcut(text):
     assert requests_human(text)
 

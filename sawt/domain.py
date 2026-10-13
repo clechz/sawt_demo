@@ -8,6 +8,7 @@ import uuid
 from decimal import Decimal
 from pathlib import Path
 from .conversation import say, spoken_order_number, requests_cancel, spoken_option
+from .support import info as support_info, file_case, case_status
 
 BRANCHES = {
     'ruh_olaya': {'name': 'فرع العليا بالرياض', 'city': 'الرياض', 'zones': ['العليا', 'السليمانية'], 'fee': 1200, 'eta': 35},
@@ -138,7 +139,7 @@ class Menu:
 
 def new_state():
     return {'revision': 0, 'service': None, 'location': None, 'branch': None, 'basket': [],
-            'quote': None, 'order_id': None, 'handoff': None, 'history': [], 'events': [], 'offer': 'not_offered', 'pending_choice': None, 'pending_handoff': None, 'delivery_details': {}}
+            'quote': None, 'order_id': None, 'handoff': None, 'history': [], 'events': [], 'offer': 'not_offered', 'pending_choice': None, 'pending_handoff': None, 'delivery_details': {}, 'support_cases': []}
 
 class Engine:
     def __init__(self, menu):
@@ -168,7 +169,8 @@ class Engine:
                 'delivery_fee': fee, 'total': sum(x['line_total'] for x in lines) + fee,
                 'eta_minutes': branch['eta'] if branch and state['service'] == 'delivery' else 20 if branch else None,
                 'issues': issues, 'quote': state['quote'], 'order_id': state['order_id'], 'handoff': state['handoff'],
-                'pending_choice': copy.deepcopy(state.get('pending_choice')), 'pending_handoff': copy.deepcopy(state.get('pending_handoff')), 'delivery_details': copy.deepcopy(state.get('delivery_details',{}))}
+                'pending_choice': copy.deepcopy(state.get('pending_choice')), 'pending_handoff': copy.deepcopy(state.get('pending_handoff')), 'delivery_details': copy.deepcopy(state.get('delivery_details',{})),
+                'support_cases': copy.deepcopy(state.get('support_cases', []))}
 
     def summary(self, state):
         view = self.view(state)
@@ -191,6 +193,24 @@ class Engine:
         if action == 'get_item': return self.menu.get(args['item_id'])
         if action == 'get_state': return self.view(state)
         if action == 'list_branches': return BRANCHES
+        if action == 'get_support_info':
+            try:
+                return support_info(args['topic'])
+            except (KeyError, ValueError) as exc:
+                raise RuleError('موضوع خدمة العملاء غير معروف.') from exc
+        if action == 'get_support_case_status':
+            return {'terminal': True, **case_status(state, args.get('case_id', ''))}
+        if action == 'file_support_case':
+            if state['handoff']:
+                raise RuleError('المكالمة انتهت بتذكرة تحويل. افتح مكالمة جديدة لإضافة بلاغ.')
+            try:
+                result = file_case(state, args['category'], args['description'],
+                                   args.get('order_reference', ''))
+            except (KeyError, ValueError) as exc:
+                raise RuleError(str(exc) if isinstance(exc, ValueError) else 'البلاغ ناقص.') from exc
+            if not result['duplicate']:
+                self.touch(state)  # A new support issue revokes an unheard checkout quote.
+            return {'terminal': True, **result}
         if action == 'handoff':
             offered = bool(state.get('pending_handoff'))
             state['handoff'] = state['handoff'] or {'ticket': 'H-' + uuid.uuid4().hex[:8].upper(), 'reason': str(args.get('reason', 'طلب موظف'))[:300]}
@@ -328,4 +348,4 @@ def requests_human(text):
     # A substring shortcut must never turn "ما أبي موظف" into a handoff.
     if set(text.split()) & {'ما', 'لا', 'مو', 'مش', 'مب', 'ماني', 'لست', 'ليس', 'بدون'}:
         return False
-    return any(re.search(r'(?<!\w)' + re.escape(normalize(x)) + r'(?!\w)', text) for x in ['أبي موظف', 'أبغى موظف', 'اكلم موظف', 'أكلم انسان', 'خدمة العملاء', 'عندي شكوى', 'ابي اشتكي', 'أبغى اشتكي', 'حولني'])
+    return any(re.search(r'(?<!\w)' + re.escape(normalize(x)) + r'(?!\w)', text) for x in ['أبي موظف', 'أبغى موظف', 'اكلم موظف', 'أكلم انسان', 'ابي اكلم خدمة العملاء', 'ابغى اكلم خدمة العملاء', 'حولني'])
