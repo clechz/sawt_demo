@@ -134,3 +134,44 @@ async def test_requested_readback_cannot_hide_a_failed_edit(setup,monkeypatch,tm
     result=await runtime.delegate(sid,'خلها اثنين واقرأ الطلب','failed',0,voice_provider=provider)
     assert not result['state']['quote'] and not result['state']['order_id']
     assert result['state']['basket'][0]['quantity']==1
+
+
+def test_shawarma_spice_question_and_spoken_readback_use_saudish_shatta():
+    from sawt.domain import Engine, Menu, new_state
+    from pathlib import Path
+    engine = Engine(Menu(Path(__file__).resolve().parents[1]/'data/restaurant-menu-complex.csv'))
+    state = new_state()
+    engine.act(state, 'add_item', {'item_id':'sandwiches_07', 'quantity':1, 'options':{}, 'notes':''})
+    question = next_question(engine.menu, state)
+    # The meal choice comes first; complete it, then bread, then spice.
+    line = state['basket'][0]
+    engine.act(state, 'update_item', {'line_id':line['line_id'], 'options':{'meal':['sandwich'],'bread':['saj']}})
+    question = next_question(engine.menu, state)
+    assert question == 'والشطة؟ بدون، خفيفة، وسط، ولا قوية؟'
+    assert 'الحار' not in question and 'درجة الحرارة' not in question
+    from sawt.clarification import answer
+    chosen = answer(engine.menu, state, 'بدون')
+    assert chosen is not None and chosen[0]['options'] == {'spice_level':['not_spicy']}
+    assert chosen[1] == 'بدون شطة'
+    engine.act(state, 'update_item', chosen[0])
+    engine.act(state, 'set_service', {'service':'pickup'})
+    engine.act(state, 'set_branch', {'branch_id':'ruh_narjis'})
+    summary = engine.summary(state)
+    assert 'بدون شطة' in summary
+    assert 'بدون حار' not in summary
+    assert 'درجة الحرارة' not in summary
+
+
+def test_shawarma_spice_short_correction_acknowledges_shatta():
+    from sawt.domain import Engine, Menu, new_state
+    from pathlib import Path
+    engine = Engine(Menu(Path(__file__).resolve().parents[1]/'data/restaurant-menu-complex.csv'))
+    state = new_state()
+    engine.act(state, 'add_item', {'item_id':'sandwiches_07', 'quantity':1,
+               'options':{'meal':['sandwich'], 'bread':['saj'], 'spice_level':['hot']}, 'notes':''})
+    before=copy.deepcopy(state)
+    line = state['basket'][0]
+    engine.act(state,'update_item',{'line_id':line['line_id'], 'options':{'spice_level':['not_spicy']}})
+    text=changes(engine.menu,before,state)
+    assert 'خليتها بدون شطة' in text
+    assert 'الحار' not in text

@@ -7,7 +7,7 @@ import re
 import uuid
 from decimal import Decimal
 from pathlib import Path
-from .conversation import say, spoken_order_number, requests_cancel
+from .conversation import say, spoken_order_number, requests_cancel, spoken_option
 
 BRANCHES = {
     'ruh_olaya': {'name': 'فرع العليا بالرياض', 'city': 'الرياض', 'zones': ['العليا', 'السليمانية'], 'fee': 1200, 'eta': 35},
@@ -175,7 +175,12 @@ class Engine:
         lines = []
         for x in view['basket']:
             notes = f"، ملاحظات: {x['notes']}" if x['notes'] else ''
-            lines.append(f"{x['quantity']} من {x['name']}، " + '، '.join(x['option_names']) + notes + f"، بسعر {money(x['line_total'])} ريال")
+            item = self.menu.get(x['item_id'])
+            # Speak natural option names; keep catalog data and validated totals intact.
+            spoken_names = [spoken_option(gid, oid, group['options'][oid]['name'])
+                            for gid, group in item['groups'].items()
+                            for oid in x['options'].get(gid, [])]
+            lines.append(f"{x['quantity']} من {x['name']}، " + '، '.join(spoken_names) + notes + f"، بسعر {money(x['line_total'])} ريال")
         fulfillment = ('التوصيل إلى ' + state['location']['city'] + '، حي ' + state['location']['zone'] + '، ' + state['location']['address'] + ' من ' if state['service']=='delivery' else 'استلام من ') + view['branch']['name'] + '.'
         fee_sentence = f"رسوم التوصيل {money(view['delivery_fee'])} ريال. " if state['service']=='delivery' else ''
         return say('summary',items='؛ '.join(lines),fulfillment=fulfillment,fee_sentence=fee_sentence,total=money(view['total']),eta=view['eta_minutes'])
