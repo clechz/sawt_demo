@@ -120,7 +120,9 @@ def make_voice_class(base):
             # LiveKit releases, not function arguments. Keep unfinished work
             # when a new delegation includes a correction to the same request.
             if not self.pending or self.pending.done():
-                hint = getattr(delegation, 'pending_transcript', '') or self.latest_final_transcript
+                # A finalized caption can be only the last fragment (e.g. "حارة")
+                # of an unconsumed request. Only a native turn hint may trim it.
+                hint = getattr(delegation, 'pending_transcript', '')
                 self.delegation_start = delegated_start(self.fragments, self.consumed, hint)
             super().on_delegation(delegation)
 

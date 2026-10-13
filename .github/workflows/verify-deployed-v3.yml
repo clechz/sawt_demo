@@ -14,7 +14,7 @@ jobs:
   verify:
     if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
-    timeout-minutes: 6
+    timeout-minutes: 12
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
@@ -38,9 +38,25 @@ jobs:
           SAWT_ACCESS_CODE: ${{ secrets.SAWT_ACCESS_CODE }}
           SAWT_VERIFY_COMMIT: ${{ github.event.workflow_run.head_sha || github.sha }}
         run: python scripts/verify_deployed_v3.py
+      - name: Verify removal, corrections, requote and confirmation through real voice
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          SAWT_DEMO_PASSWORD: ${{ secrets.SAWT_DEMO_PASSWORD }}
+          SAWT_ACCESS_CODE: ${{ secrets.SAWT_ACCESS_CODE }}
+        run: |
+          python - <<'PY'
+          import json, os, pathlib, sys
+          if not all(os.getenv(k) for k in ('OPENAI_API_KEY', 'SAWT_DEMO_PASSWORD')):
+              p = pathlib.Path('runtime/challenge-voice.json'); p.parent.mkdir(parents=True, exist_ok=True)
+              p.write_text(json.dumps({'passed': False, 'blocked': 'Existing Actions credentials unavailable for synthetic voice acceptance. No call attempted.'}))
+              sys.exit(2)
+          PY
+          python scripts/verify_challenge_voice.py
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: deployed-v3-verification
-          path: runtime/deployment-verification/report.json
+          path: |
+            runtime/deployment-verification/report.json
+            runtime/challenge-voice.json
           retention-days: 7

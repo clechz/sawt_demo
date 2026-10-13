@@ -19,6 +19,7 @@ SOURCE_FILES = (
     'sawt/domain.py', 'sawt/transactions.py', 'sawt/choices.py',
     'sawt/experience.py', 'sawt/hospitality.py', 'sawt/v2_provider.py',
     'sawt/provider.py', 'sawt/recognition.py', 'sawt/audio_gate.py',
+    'sawt/reply_evidence.py',
     'data/hospitality-profile.json', 'data/restaurant-menu-complex.csv',
 )
 FIELDS = ('protocol', 'source_fingerprint', 'experience_version', 'conversation_mode',
@@ -32,6 +33,10 @@ def source_fingerprint(root: Path = ROOT) -> str:
             data = (root / name).read_bytes()
         except OSError as exc:
             raise RuntimeError('Incomplete release package: ' + name) from exc
+        # Git on Windows and Linux may materialize identical source with
+        # different newlines. The immutable CSV stays byte-exact.
+        if not name.endswith('.csv'):
+            data = data.replace(b'\r\n', b'\n')
         digest.update(name.encode('utf8') + b'\0' + hashlib.sha256(data).digest())
     return digest.hexdigest()
 

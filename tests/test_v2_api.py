@@ -100,7 +100,7 @@ def test_blob_archive_failure_does_not_invalidate_completed_readback(client, mon
     receipt,quote=tx.current_receipt(sid,rid)
     assert receipt['duration']==1 and not quote['presented']
     events=tx.events(sid)
-    assert any(e['kind']=='readback.archive_failed' for e in events)
+    assert any(e['kind']=='recording.archive_failed' for e in events)
     assert not any(e['kind']=='readback.failed' for e in events)
     tx.playback(sid,rid,'started')
     with tx.connect() as db:
@@ -144,7 +144,11 @@ def test_caller_page_has_no_diagnostics_or_chat(client):
     assert client.get('/recordings').status_code==200
 
 
-def test_stream_preparation_binds_server_text_and_rejects_stale_capability(client, monkeypatch, tmp_path):
+@pytest.mark.parametrize('archive_fails',[False,True])
+def test_stream_preparation_binds_server_text_and_rejects_stale_capability(client, monkeypatch, tmp_path, archive_fails):
+    if archive_fails:
+        def suspended(*args): raise RuntimeError('Storage suspended')
+        monkeypatch.setattr(app_v2.cloud_storage,'upload',suspended)
     call=start(client).json();sid=call['id'];headers={'Authorization':'Bearer '+call['token']}
     for index,(name,args) in enumerate([
         ('set_service',{'service':'pickup'}),('set_branch',{'branch_id':'ruh_narjis'}),
@@ -166,6 +170,8 @@ def test_stream_preparation_binds_server_text_and_rejects_stale_capability(clien
     assert texts==[app_v2.tx.load(sid)['state']['quote']['text']]
     assert client.get(prepared['url']).content==b'first-second'  # Cached reload, not a second paid generation.
     assert len(texts)==1
+    receipt,_=app_v2.tx.current_receipt(sid,prepared['receipt_id'])
+    assert receipt['duration']==8.0
     incomplete=client.post(f'/api/calls/{sid}/playback',headers=headers,json={'receipt_id':prepared['receipt_id'],'phase':'completed','position':8})
     assert incomplete.status_code==409 and incomplete.json()['code']=='readback_incomplete'
     app_v2.tx.interrupt(sid)

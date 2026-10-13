@@ -56,7 +56,7 @@ def ensure_current_order(state, engine):
         h['orders'][order_id] = {'id': order_id, 'status': 'accepted', 'items': copy.deepcopy(view['basket']),
             'total_halalas': view['total'], 'paid_halalas': view['total'], 'refunded_halalas': 0,
             'eta_minutes': view['eta_minutes'], 'source': 'confirmed_simulation',
-            'fulfillment': {key: copy.deepcopy(view[key]) for key in ('service', 'branch', 'location')}}
+            'fulfillment': {key: copy.deepcopy(view.get(key)) for key in ('service', 'branch', 'location', 'delivery_fee')}}
     return h
 
 

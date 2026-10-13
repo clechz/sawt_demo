@@ -1,0 +1,31 @@
+/* One saved receipt; order completion and call closure are independent states. */
+body[data-phase=connecting] .orb-control{animation:call-start .5s ease-out}
+@keyframes call-start{0%{transform:scale(1);opacity:1}45%{transform:scale(.95);opacity:.7}100%{transform:scale(1);opacity:1}}
+.completion-card{width:min(100%,420px);padding:24px;margin:22px 0 0;border:1px solid var(--line);border-radius:22px;background:#19171f;text-align:start;animation:receipt-in .38s ease-out}
+.receipt-heading{display:flex;align-items:center;gap:13px;margin-bottom:20px}
+.receipt-heading h2{margin:0;font-size:20px;line-height:1.65;font-weight:500}
+.receipt-mark{display:grid;place-items:center;width:36px;height:36px;flex:none;border-radius:50%;background:#a5cdb917;color:#a5cdb9;font-size:22px}
+.receipt-number{margin:3px 0 0;color:var(--muted);font-size:12px;overflow-wrap:anywhere}
+.receipt-line{display:flex;align-items:start;justify-content:space-between;gap:16px;padding:13px 0;border-bottom:1px solid var(--line)}
+.receipt-line:first-child{padding-top:0}.receipt-line p{margin:0}.receipt-item-name{font-size:14px;line-height:1.85;overflow-wrap:anywhere}
+.receipt-line .receipt-options{font-size:11px;line-height:1.8;color:var(--secondary);margin-top:3px;overflow-wrap:anywhere}
+.receipt-price{font-size:12px;line-height:2.15;white-space:nowrap;font-variant-numeric:tabular-nums}
+.receipt-fulfillment{font-size:12px;line-height:1.9;padding:16px 0;color:var(--secondary)}
+.receipt-fulfillment p{margin:0;overflow-wrap:anywhere}.receipt-address{color:var(--muted)}
+.receipt-total{display:flex;align-items:center;justify-content:space-between;gap:16px;font-size:14px;padding-top:14px;border-top:1px solid var(--line)}
+.receipt-total bdi{font-size:24px;font-variant-numeric:tabular-nums}
+.receipt-fee,.receipt-refund{margin:0 0 12px;font-size:11px;color:var(--muted);line-height:1.8}
+.receipt-refund{margin-top:12px}.completion-card[data-cancelled=true] .receipt-mark{color:var(--muted);background:#ffffff08}
+body.has-completion.active .orb-control{width:130px;margin-bottom:0}
+body.has-completion #order-button{display:none}
+body.has-completion[data-phase=ended] .orb-control{display:none}
+body.has-completion[data-phase=ended] .call-panel{justify-content:center;gap:0}
+body.has-completion .recording-notice,body.has-completion .simulation-disclosure{order:10;margin-top:12px;max-width:360px}
+body.has-completion .simulation-disclosure{margin-top:3px}
+.call-ended-note{font-size:12px;color:var(--muted);margin:14px 0 0;text-align:center}
+body[data-phase=ending] .controls{opacity:.35;pointer-events:none}
+body[data-phase=ending] #new-call,body.active #new-call{display:none}
+.new-call{margin-top:20px;background:transparent;color:var(--secondary)}
+@keyframes receipt-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@media(max-width:480px){.completion-card{padding:20px;margin-top:18px}.receipt-heading h2{font-size:18px}body.has-completion .call-panel{padding-top:12px;padding-bottom:16px}}
+@media(prefers-reduced-motion:reduce){.completion-card{animation:none}}

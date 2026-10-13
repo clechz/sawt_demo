@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import {readFileSync} from 'node:fs';
 import {PlaybackMeter,MicrophoneMeter} from '../static/v2/audio-meter.js';
+import {stopMediaNow,closeSavedCall} from '../static/v2/call-lifecycle.js';
 import {setMicrophoneSilenced} from '../static/v2/microphone-mute.js';
 
 test('blocked autoplay still publishes mic; direct caller and AI samples drive the orb',async()=>{
@@ -24,10 +25,10 @@ test('blocked autoplay still publishes mic; direct caller and AI samples drive t
   async disconnect(){}
  }
  const events=Object.fromEntries(['LocalTrackPublished','LocalTrackUnpublished','TrackSubscribed','TrackUnsubscribed','DataReceived','Reconnecting','Reconnected','Disconnected'].map(x=>[x,x]));
- const sandbox={validateCallBinding,validateReadyBinding,setMicrophoneSilenced,TextDecoder,createExperienceControls:()=>({value:()=>({recording_consent:true,experience_version:"v3",conversation_mode:"model_led",voice:"ash",scenario:"new_order"}),setBusy(){}}),renderSupport:()=>{},PlaybackMeter:Playback,MicrophoneMeter:Meter,ReadbackPlayer:class{cancel(){}},createOrderView:()=>()=>{},createCallStatus:()=>({reset(){},phase(){},audio(){}}),document:{getElementById:element,body:{dataset:{},classList:{add(){},remove(){}}},documentElement:{style:{setProperty(){}}}},window:{addEventListener(){},dispatchEvent:e=>levels.push(e.detail)},CustomEvent:class{constructor(type,options){this.detail=options.detail;}},location:{pathname:'/'},localStorage:{setItem(){}},LivekitClient:{Room,RoomEvent:events},fetch:async path=>{order.push('fetch');return{ok:true,json:async()=>path==='/api/calls'?{id:'test',token:'token',max_seconds:600,required_worker:binding}:{state:{}}};},setTimeout:()=>1,clearTimeout(){},setInterval:()=>1,clearInterval(){},requestAnimationFrame:fn=>{frame=fn;return 1;},cancelAnimationFrame(){},console};
+ const sandbox={createCompletionView:()=>({reset(){},render:()=>false}),stopMediaNow:()=>Promise.resolve(),animateHangup:()=>Promise.resolve(),closeSavedCall:()=>Promise.resolve(null),validateCallBinding,validateReadyBinding,setMicrophoneSilenced,TextDecoder,createExperienceControls:()=>({value:()=>({recording_consent:true,experience_version:"v3",conversation_mode:"model_led",voice:"ash",scenario:"new_order"}),setBusy(){}}),renderSupport:()=>{},PlaybackMeter:Playback,MicrophoneMeter:Meter,ReadbackPlayer:class{cancel(){}},createOrderView:()=>()=>{},createCallStatus:()=>({reset(){},phase(){},audio(){}}),document:{getElementById:element,body:{dataset:{},classList:{add(){},remove(){}}},documentElement:{style:{setProperty(){}}}},window:{addEventListener(){},dispatchEvent:e=>levels.push(e.detail)},CustomEvent:class{constructor(type,options){this.detail=options.detail;}},location:{pathname:'/'},localStorage:{setItem(){}},LivekitClient:{Room,RoomEvent:events},fetch:async path=>{order.push('fetch');return{ok:true,json:async()=>path==='/api/calls'?{id:'test',token:'token',max_seconds:600,required_worker:binding}:{state:{}}};},setTimeout:()=>1,clearTimeout(){},setInterval:()=>1,clearInterval(){},requestAnimationFrame:fn=>{frame=fn;return 1;},cancelAnimationFrame(){},console};
  try{
   const code=readFileSync(new URL('../static/v2/app.js',import.meta.url),'utf8').replace(/^import .*;\r?\n/gm,'');
-  sandbox.renderFinalReceipt=()=>{};
+  sandbox.stopMediaNow=stopMediaNow; sandbox.closeSavedCall=(call,code)=>closeSavedCall(call,code,sandbox.fetch);
   vm.runInNewContext(code,sandbox);await element('start').onclick();
   assert.ok(order.indexOf('unlock')<order.indexOf('fetch'),'speaker unlock precedes network request');
   assert.ok(order.includes('microphone'),'autoplay rejection must not abort microphone');

@@ -95,6 +95,9 @@ def check_recognition(caption, verified):
     from .conversation import requests_cancel
     if b and requests_cancel(caption) != requests_cancel(verified):
         raise AudioWindowError('Cancellation intent disagreement')
+    removal = r'\b(?:احذف|احذفه|احذفها|شيل|شيله|شيلها|شطب|اشطب|امسح|remove|delete)\b'
+    if b and bool(re.search(removal,a)) != bool(re.search(removal,b)):
+        raise AudioWindowError('Item removal intent disagreement')
     question=r'^(?:بكم|بيكم|كم|وش سعر|ايش سعر|how much|what is the price)\b'
     if re.search(question,a) and b and not re.search(question,b):
         raise AudioWindowError('Question intent disagreement')

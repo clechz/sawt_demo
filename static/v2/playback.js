@@ -1,6 +1,6 @@
 // One owner for exact readback audio, including stale async callbacks.
 export class ReadbackPlayer {
-  constructor({api, createAudio=()=>new Audio(), releaseAudio=()=>{}, mute, phase, failure, retry, setTimer=setTimeout, clearTimer=clearTimeout}) {
+  constructor({api, createAudio=()=>new Audio(), releaseAudio=()=>{}, mute, phase, failure, retry, setTimer=(...args)=>globalThis.setTimeout(...args), clearTimer=id=>globalThis.clearTimeout(id)}) {
     Object.assign(this,{api,createAudio,releaseAudio,mute,phase,failure,retry,setTimer,clearTimer});
     this.generation=0;
     this.audio=null;
