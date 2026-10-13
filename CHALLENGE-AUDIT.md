@@ -1,0 +1,130 @@
+# SAWT challenge audit — 13 October 2026
+
+## Release decision
+
+Candidate application commit: `f9f00ecb2cbe0f2267e1893cdf109b946c05c2df`.
+[Application CI succeeded](https://github.com/clechz/sawt_demo/actions/runs/38392581865).
+**Do not describe this candidate as deployed or submission-ready.**
+
+Vercel rejected the deployment with `api-deployments-free-per-day` (more than
+100). Production still serves deployment `dpl_C7ybuiR37xm2ZYHWYRi2Bmd5KTZg`.
+The independently triggered LiveKit deployment completed, but was rolled back
+to `TKcMfpvSprXd` because the web release could not advance. Worker deployment
+is now an explicit workflow dispatch: a source push must not independently
+replace production voice code while its API deployment is blocked.
+
+OpenAI funding is usable: the real planner completed the scenarios below.
+Historical recording retrieval returned HTTP 403. The recent human-call
+diagnosis uses persisted transcripts/events; no claim is made that the saved
+recording was heard again. Raw human transcripts and recordings remain private.
+
+## What failed and what changed
+
+- The recent call contained removal instructions that a secondary transcript
+  reduced to “الطلب”. The recognizer now rejects losing a removal verb.
+- A spoken claim that an item was removed did not match its saved basket.
+  A narrow reply-evidence guard requests tool repair or clarification before
+  speaking unsupported removal/edit claims. It does not mutate the order or
+  replace the model with a general intent classifier.
+- Delegation could keep only the last caption and lose earlier choices in a
+  fragmented request. It now retains unconsumed fragments unless a complete
+  native utterance supplies the boundary.
+- A real-model hot-option correction initially produced confirmation wording
+  without applying the edit. The repair gate requires mutations and a fresh
+  checkout/readback before asking for confirmation. Explicit staff requests
+  must also persist a support case rather than merely promise assistance.
+- Blob archival failure could invalidate an otherwise generated readback.
+  Duration/receipt validation now completes independently; archival runs in a
+  bounded background task. This does not waive full playback or confirmation.
+- The final receipt uses the saved order snapshot, including fulfillment,
+  rather than the mutable basket. It persists through hangup until a new call.
+- Start has a subtle animation; confirmation pulses once per new order ID.
+  Hangup stops local/remote audio immediately, then shrinks/fades the orb.
+  Reduced-motion preference and bounded cleanup are supported.
+- Ash, `تحدي عبدالله`, explicit recording notice without a checkbox, and the
+  simulation disclosure remain. Waiting instructions avoid unnecessary filler;
+  when actually needed, a short “معك” replaces formal waiting language. Native
+  pronunciation and subjective naturalness still need live listening.
+
+## Original challenge coverage
+
+This maps the supplied Notion challenge to implementation and regression
+evidence. Passing offline tests is not equivalent to passing every live accent
+or interruption scenario.
+
+| Requirement | Implementation and state-based verification |
+|---|---|
+| Original menu, categories, branches, availability and prices | Unchanged CSV; `tests/test_domain.py`, `test_catalog_context.py` |
+| Delivery, pickup, information-only, complaint | Domain + hospitality tools; `test_conversation_requirements.py`, `test_hospitality.py` |
+| Address/branch changes, fees and availability recalculation | `test_fulfillment_evidence.py`, `test_challenge_edit_persistence.py` |
+| Add, remove, quantity, options and notes, including after total | `test_challenge_edit_persistence.py` executes mutations against persisted state before/after quote; real-model nonlinear case below |
+| Early details, fragmented speech and corrections | `test_hospitality_voice.py`, `test_recognition.py`, new fragment/removal regressions |
+| Readback of items/options/fees/total; explicit confirmation | `test_transactions.py`, `test_v2_api.py`, `playback.test.mjs`; stale quote and early-playback rejection |
+| One mock order ID; retry/duplicate safety | Transaction tests and repeated real-model confirmation; saved order count remains one |
+| Refund, complaint, human request at any point | Hospitality/runtime tests; persisted case, proposal and ledger tests; real-model refund duplicate rejection and staff case |
+| Invalid tools, stale writes, interruptions, timeouts | `test_tool_batches.py`, `test_audio_gate.py`, `test_hospitality_runtime.py`, worker binding and playback tests |
+| Minimal call UI and final receipt | `completion.test.mjs`, `call-lifecycle.test.mjs`; in-app browser fixture checked start/confirmed/ended states |
+| STT → agent/tools → speech → playable audio | Implementation present; latest hosted real-audio acceptance remains blocked by rollout |
+| Open-model comparison, Arabic dialect metrics, versions/licenses/hardware | `EVALUATION.md` is the proposal; not a claim that proposed open models were trained or benchmarked here |
+| Architecture, context, operational product changes/wireframe | `DESIGN.md`, `V3-IMPLEMENTATION.md`, `PRODUCT.md` |
+| Reproducible setup and <10 minute demonstration | `README.md`, `DEMO.md`; final recording remains outstanding |
+
+## Evidence and reproducible checks
+
+Run from repository root after the README environment setup:
+
+```sh
+python -m pytest -q
+node --experimental-default-type=module --test tests/*.test.mjs
+npm ci --prefix frontend
+npm run build --prefix frontend
+```
+
+The Python suite passed **923 tests**, with one optional Postgres integration
+test skipped. The JavaScript suite passed **63 checks** and the frontend build
+passed. The skipped integration test is not counted as passed.
+
+Paid real-provider planner/state evaluation (synthetic text; isolated SQLite):
+
+```sh
+python scripts/eval_challenge_state.py
+```
+
+[Saved synthetic report](evidence/v3/challenge-planner.json): 13/13 turns passed
+across nonlinear ordering, missing-item refund and unknown-order/staff support.
+The order case removes beef after quote, changes chicken quantity to three,
+switches delivery to Jeddah pickup, changes spice, requotes at 54 SAR, confirms,
+and repeats confirmation without duplicating the order. Refund records 30 SAR
+once; repeat refund does not duplicate the ledger entry. Early failed runs
+remain in ignored local runtime evidence; the successful rerun does not erase
+the failures that motivated the repairs.
+
+These are real model calls with persisted state assertions. Their 0–3.27 second
+planner timings are **not** end-to-end voice latency. Playback is simulated in
+this evaluator. In-app browser QA used a labeled local UI fixture, not a real
+customer call. Chrome was not used.
+
+## Remaining release gates
+
+1. Wait for Vercel's quota reset or have the account owner change its plan.
+   Do not create alternate projects to circumvent the limit.
+2. Deploy the candidate web/API using the existing project, then dispatch the
+   LiveKit workflow from the same source. Verify both source contracts. Retain
+   the prior deployment/version for rollback if either component fails.
+3. Run `python scripts/verify_challenge_voice.py` only against the matched
+   release. It sends actual PCM through LiveKit, checks edits and totals,
+   downloads/transcribes readbacks and checks the committed order. It uses
+   timed simulated browser playback receipts, so it does not prove speaker
+   playback in a physical browser. Do not treat this prepared script as a pass.
+4. Complete real microphone/listening QA in the in-app browser, including
+   interruption during quote, late corrections, silence/reconnect and support.
+   Measure end-of-user-speech to first audible response; report distributions,
+   not only planner time. Subjective Saudi accent quality needs human judgment.
+5. Restore recording storage access if archived audio review is needed; keep
+   storage errors visible while ensuring they do not block valid checkout.
+6. Record the final demonstration against that verified release. Repository
+   access must be granted to reviewers because the repository is private; the
+   challenge does not specify that it must be public.
+
+No claim of zero recognition mistakes or production restaurant readiness is
+made. Orders, payments, refunds and staff actions remain explicitly simulated.

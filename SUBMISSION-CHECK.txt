@@ -1,3 +1,10 @@
+SAWT — 2026-10-13 release update
+BLOCKED: Vercel daily deployment quota; latest real-audio verification pending.
+Application commit: f9f00ec. CI passed. See CHALLENGE-AUDIT.md.
+Production worker restored to TKcMfpvSprXd. Do not claim candidate is live.
+
+HISTORICAL STATUS BELOW (superseded):
+
 SAWT — CURRENT SUBMISSION STATUS
 2026-10-12 | hosted V30; candidate V31 | No Chrome testing
 

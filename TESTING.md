@@ -1,3 +1,11 @@
+## Release audit — 2026-10-13
+
+Application changes: `f9f00ecb2cbe0f2267e1893cdf109b946c05c2df`. [CI passed](https://github.com/clechz/sawt_demo/actions/runs/38392581865). The current UI uses V3, model-led conversation, fixed Ash voice. API clients that omit the experience still select V2.
+
+**Not ready for final submission recording.** The candidate passed offline and real-provider text/state checks, but Vercel rejected production deployment with `api-deployments-free-per-day` (more than 100 deployments). The new LiveKit worker was rolled back to `TKcMfpvSprXd` to stay matched to the existing website. Latest source is on main; it is not the hosted release. Saved recording access returned HTTP 403, so the recent human call was diagnosed from persisted events/transcripts, not a fresh audio listen.
+
+See [CHALLENGE-AUDIT.md](CHALLENGE-AUDIT.md) for evidence, coverage, limitations and exact remaining release steps. Older V2/V30/V31 results below are historical and do not certify this candidate.
+
 # Requirement coverage and honest execution record
 
 For the latest release status, start with [VOICE-TESTS.md](VOICE-TESTS.md) and

@@ -1,10 +1,10 @@
 # Sawt — Saudi Arabic restaurant voice agent
 
-> **V3 hospitality candidate:** This development branch adds UI voice selection, native-delegation conversation handling and stateful simulated support. Read [V3-IMPLEMENTATION.md](V3-IMPLEMENTATION.md) for the code map, implemented behavior, limitations and release gates. V3 is not yet live-listening verified; the UI selects it explicitly, while API clients omitting the version keep V2. The original menu is unchanged.
+> **Current source:** V3 hospitality with fixed Ash voice, stateful ordering/support and a persistent confirmed receipt. See [current audit](CHALLENGE-AUDIT.md) before reviewing hosted behavior.
 
 A simple call screen over a stateful ordering system. Speak naturally, give details in any order, change your mind after the total, or ask for information without placing an order. The model interprets the conversation; validated Python tools own prices, availability, saved changes and confirmation.
 
-**Current version: V2** (`app_v2.py` + `voice_worker.py`). Orders, delivery zones and staff tickets are simulated. The supplied menu is unchanged: **144 dishes, 12 categories, 4 branches, 1,728 rows**.
+**Application entry points** (`app_v2.py` + `voice_worker.py`). Orders, delivery zones and staff tickets are simulated. The supplied menu is unchanged: **144 dishes, 12 categories, 4 branches, 1,728 rows**.
 
 ## Reviewer starting points
 
@@ -19,13 +19,13 @@ A simple call screen over a stateful ordering system. Speak naturally, give deta
 | What was tested, and what remains uncertain? | [TESTING.md](TESTING.md), [submission checks](SUBMISSION-CHECK.txt) |
 | What does the assistant say? | [37 reusable phrases and request map](CALL-EXPERIENCE.txt) |
 
-## Current validation status
+## Release audit — 2026-10-13
 
-The cloud is on V30. V31 is the next candidate, pushed with offline checks but
-not deployed or live-verified: OpenAI credit exhausted during the V30 suite.
-That run also exposed a wrong spoken question despite correct saved state.
-V31 speaks validated business replies directly and strengthens the audio test.
-See [current evidence](evidence/v2/submission-final.json) before recording.
+Application changes: `f9f00ecb2cbe0f2267e1893cdf109b946c05c2df`. [CI passed](https://github.com/clechz/sawt_demo/actions/runs/38392581865). The current UI uses V3, model-led conversation, fixed Ash voice. API clients that omit the experience still select V2.
+
+**Not ready for final submission recording.** The candidate passed offline and real-provider text/state checks, but Vercel rejected production deployment with `api-deployments-free-per-day` (more than 100 deployments). The new LiveKit worker was rolled back to `TKcMfpvSprXd` to stay matched to the existing website. Latest source is on main; it is not the hosted release. Saved recording access returned HTTP 403, so the recent human call was diagnosed from persisted events/transcripts, not a fresh audio listen.
+
+See [CHALLENGE-AUDIT.md](CHALLENGE-AUDIT.md) for evidence, coverage, limitations and exact remaining release steps. Older V2/V30/V31 results below are historical and do not certify this candidate.
 
 ## Hosted demo
 
@@ -37,7 +37,7 @@ See [cloud deployment and verification](CLOUD-DEPLOYMENT.md).
 
 The shared demo budget defaults to **120 call starts per hour and four concurrent calls**. Configure `SAWT_MAX_CALLS_PER_HOUR` and `SAWT_MAX_ACTIVE_CALLS` on the API host. A single database-backed check enforces both across processes; closed calls still count toward the hourly budget. Provider billing and provider quotas are separate.
 
-## Run V2 locally
+## Run locally (V3 UI; compatible V2 API)
 
 ### Requirements
 
