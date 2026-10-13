@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#101014"><title>تحدي صوت — عبدالله</title>
-  <link rel="stylesheet" href="/assets/ui/orb.css"><link rel="stylesheet" href="/assets/call.css"><link rel="stylesheet" href="/assets/experience.css">
+  <link rel="stylesheet" href="/assets/ui/orb.css"><link rel="stylesheet" href="/assets/call.css"><link rel="stylesheet" href="/assets/experience.css"><link rel="stylesheet" href="/assets/completion.css">
 </head>
 <body>
 <header class="brand"><img src="/assets/sawt-logo.svg" alt="صوت" width="105" height="38"><span class="brand-credit">تحدي عبدالله</span></header>
@@ -25,6 +25,9 @@
     <div id="error" role="alert" hidden></div>
     <button id="retry-audio" class="secondary" hidden>تشغيل الصوت / إعادة الملخص</button>
     <button id="order-button" class="order-button" aria-describedby="order-note" hidden><span>طلبك</span><span id="total"></span><i data-icon="chevron"></i></button>
+    <p id="call-ended-note" class="call-ended-note" role="status" hidden></p>
+    <section id="completion" class="completion-card" aria-labelledby="completion-title" aria-live="polite" hidden></section>
+    <button id="new-call" class="secondary new-call" aria-describedby="recording-notice" hidden>مكالمة جديدة</button>
     <p id="order-note" class="sr-only"></p>
     <form id="access" hidden><label for="code">رمز الدخول للتجربة</label><div><input id="code" type="password" autocomplete="off"><button type="submit" aria-describedby="recording-notice">متابعة</button></div></form>
   </section>

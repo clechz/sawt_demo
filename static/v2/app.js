@@ -1,19 +1,22 @@
+import {createCompletionView} from './completion.js';
+import {stopMediaNow,animateHangup,closeSavedCall} from './call-lifecycle.js';
 import {validateCallBinding,validateReadyBinding} from './worker-binding.js';
 import {createExperienceControls, renderSupport} from './experience-ui.js';
 import {ReadbackPlayer} from './playback.js';
 import {PlaybackMeter,MicrophoneMeter} from './audio-meter.js';
 import {createOrderView} from './order-view.js';
 import {createCallStatus} from './call-status.js';
-import {setMicrophoneSilenced} from './microphone-mute.js';
+import {setMicrophoneSilenced,syncMicrophoneMute} from './microphone-mute.js';
 const $=id=>document.getElementById(id);
 const renderOrder=createOrderView();
+const completion=createCompletionView(document);
 let call,room,poll,timer,clockTimer,frame,closing=false,muted=false,quoteSeen,accessCode='',refreshing=false,currentState;
 const audioElements=new Set();
 const playbackMeter=new PlaybackMeter();
 const microphoneMeter=new MicrophoneMeter();
 const remoteMeters=new Map();
 let lastMeterTime=0;
-let phase='idle',readbackMuted=false,workerVerified=false,workerReadyTimer;
+let phase='idle',readbackMuted=false,workerVerified=false,workerReadyTimer,micSequence=0,micBusy=false;
 const callStatus=createCallStatus((next,text)=>{phase=next;document.body.dataset.phase=next;$('call-phase').textContent=text;$('status').textContent=text;});
 function setPhase(next){callStatus.phase(next);}
 const error=text=>{$('error').textContent=text;$('error').hidden=!text;};
@@ -31,7 +34,7 @@ function render(state){
  renderSupport(document,state.hospitality);
  if(state.quote&&!state.quote.presented&&quoteSeen!==state.quote.token&&room&&workerVerified&&!closing){quoteSeen=state.quote.token;player.play(call.id);}
  if(!state.quote&&player.active){player.cancel();if(!closing)setPhase('processing');}
- if(state.order_id&&workerVerified&&!closing&&phase!=='ending')setPhase('completed');
+ completion.render(state);
 }
 async function refresh(){
  if(!call||closing||refreshing)return;
@@ -43,9 +46,10 @@ async function refresh(){
 function publishLevel(level){level=Number.isFinite(level)?Math.sqrt(Math.max(0,Math.min((level-.008)/.65,1))):0;document.documentElement.style.setProperty('--level',String(1+level*.15));document.documentElement.style.setProperty('--voice-energy',String(level));window.dispatchEvent(new CustomEvent('sawt:audio-level',{detail:level}));}
 function animate(time=0){if(!room)return;if(time-lastMeterTime>=25){const local=muted?0:Math.max(microphoneMeter.level(),room.localParticipant.audioLevel||0);let remote=0;if(!readbackMuted&&workerVerified){for(const meter of remoteMeters.values())remote=Math.max(remote,meter.level());for(const participant of room.remoteParticipants.values())remote=Math.max(remote,participant.audioLevel||0);}publishLevel(Math.max(local,remote,playbackMeter.level()));callStatus.audio(local,remote,muted,time);lastMeterTime=time;}frame=requestAnimationFrame(animate);}
 async function start(){
- if(room)return;
+ if(room||$('start').disabled)return;
+ completion.reset();$('new-call').hidden=true;$('call-ended-note').hidden=true;
  playbackMeter.prepare();microphoneMeter.prepare();lastMeterTime=0;
- workerVerified=false;clearTimeout(workerReadyTimer);
+ workerVerified=false;clearTimeout(workerReadyTimer);micSequence=0;micBusy=false;muted=false;$('mute').disabled=false;$('end').disabled=false;
  callStatus.reset();$('start').disabled=true;error('');setPhase('connecting');closing=false;quoteSeen=null;currentState=null;call=null;refreshing=false;
  $('order-button').hidden=true;$('order-note').textContent='';
  renderSupport(document,null);
@@ -62,7 +66,7 @@ async function start(){
   const response=await api('/api/calls',{method:'POST',body:JSON.stringify(experience)});call=await response.json();validateCallBinding(call,experience);localStorage.setItem('sawt-debug-call',JSON.stringify({id:call.id,token:call.token}));
   room.on(LivekitClient.RoomEvent.LocalTrackPublished,publication=>{if(publication.track?.kind==='audio')microphoneMeter.attachTrack(publication.track.mediaStreamTrack);});
   room.on(LivekitClient.RoomEvent.LocalTrackUnpublished,publication=>{if(publication.kind==='audio')microphoneMeter.detach();});
-  room.on(LivekitClient.RoomEvent.TrackSubscribed,track=>{if(track.kind==='audio'){const meter=new MicrophoneMeter(()=>microphoneMeter.context);meter.prepare();meter.attachTrack(track.mediaStreamTrack);remoteMeters.set(track,meter);const element=track.attach();element.autoplay=true;element.muted=readbackMuted||!workerVerified;audioElements.add(element);$('media').append(element);element.play().catch(()=>{error('المتصفح منع الصوت. اضغط تشغيل الصوت.');$('retry-audio').hidden=false;});}});
+  room.on(LivekitClient.RoomEvent.TrackSubscribed,track=>{if(room!==activeRoom||closing)return;if(track.kind==='audio'){const meter=new MicrophoneMeter(()=>microphoneMeter.context);meter.prepare();meter.attachTrack(track.mediaStreamTrack);remoteMeters.set(track,meter);const element=track.attach();element.autoplay=true;element.muted=readbackMuted||!workerVerified;audioElements.add(element);$('media').append(element);element.play().catch(()=>{error('المتصفح منع الصوت. اضغط تشغيل الصوت.');$('retry-audio').hidden=false;});}});
   room.on(LivekitClient.RoomEvent.TrackUnsubscribed,track=>{remoteMeters.get(track)?.detach();remoteMeters.delete(track);for(const element of track.detach()){audioElements.delete(element);element.remove();}});
   room.on(LivekitClient.RoomEvent.DataReceived,(bytes,participant,kind,topic)=>{
    if(room!==activeRoom||closing||topic!=='sawt'||participant?.identity===room?.localParticipant.identity)return;
@@ -71,7 +75,7 @@ async function start(){
      try{const binding=validateReadyBinding(call,event);workerVerified=true;clearTimeout(workerReadyTimer);
       audioElements.forEach(a=>a.muted=readbackMuted);
       // Keep diagnostic identity machine-readable, not visible UI clutter.
-      document.body.dataset.workerRelease=binding.source_fingerprint.slice(0,8);
+      document.body.dataset.workerRelease=binding.source_fingerprint.slice(0,8);document.body.dataset.voice=binding.voice;
       setPhase('listening');if(lab)$('send-fixture').disabled=false;
      }catch(e){error(e.message);void end();return;}
     }
@@ -88,7 +92,7 @@ async function start(){
    }catch{}
   });
   room.on(LivekitClient.RoomEvent.Reconnecting,()=>{if(room!==activeRoom||closing)return;player.cancel();quoteSeen=null;setPhase('reconnecting');});
-  room.on(LivekitClient.RoomEvent.Reconnected,()=>{if(room!==activeRoom||closing)return;setPhase(workerVerified?'listening':'connecting');refresh();});
+  room.on(LivekitClient.RoomEvent.Reconnected,()=>{if(room!==activeRoom||closing)return;setPhase(workerVerified?'listening':'connecting');setMicrophoneSilenced(activeRoom,muted);void syncMicrophoneMute(activeRoom.localParticipant,call.id,muted,++micSequence).catch(()=>{});refresh();});
   room.on(LivekitClient.RoomEvent.Disconnected,()=>{if(room===activeRoom&&!closing){error('انقطعت المكالمة. طلبك المحفوظ موجود في تفاصيل الطلب.');end();}});
   let connectTimeout;
   try{await Promise.race([room.connect(call.url,call.room_token),new Promise((_,reject)=>{connectTimeout=setTimeout(()=>reject(new Error('تعذر اتصال الصوت. جرّب Chrome أو Edge وتحقق من الشبكة.')),25000);})]);}finally{clearTimeout(connectTimeout);}
@@ -103,29 +107,48 @@ async function start(){
  }catch(e){const needsCode=e.status===401;await end();if(needsCode){$('access').hidden=false;$('status').textContent='أدخل رمز التجربة للبدء.';}else error(e.name==='NotAllowedError'?'نحتاج إذن الميكروفون للمكالمة. اسمح له من إعدادات المتصفح ثم حاول.':e.message);}
 }
 async function end(){
- if(lab)$('send-fixture').disabled=true;
  if(closing)return;closing=true;
+ const endedRoom=room,endedCall=call;room=null;
+ const hadMedia=!!endedRoom;
  clearTimeout(workerReadyTimer);workerVerified=false;
- clearInterval(poll);clearInterval(clockTimer);clearTimeout(timer);cancelAnimationFrame(frame);player.cancel();fixture?.pause();
- playbackMeter.close();microphoneMeter.close();for(const meter of remoteMeters.values())meter.detach();remoteMeters.clear();publishLevel(0);
- if(call)await api(`/api/calls/${call.id}/end`,{method:'POST'}).catch(()=>{});
- if(room){const old=room;room=null;await old.disconnect();}
- for(const element of audioElements)element.remove();audioElements.clear();
+ clearInterval(poll);clearInterval(clockTimer);clearTimeout(timer);cancelAnimationFrame(frame);
+ // No await before this: neither the API nor the animation can keep audio alive.
+ void stopMediaNow(endedRoom,audioElements,player,fixture);
+ for(const meter of [playbackMeter,microphoneMeter,...remoteMeters.values()]){try{meter.close();}catch{}}
+ remoteMeters.clear();publishLevel(0);
+ if(lab)$('send-fixture').disabled=true;
+ $('mute').disabled=true;$('end').disabled=true;
+ setPhase('ending');
+ void closeSavedCall(endedCall,accessCode).then(data=>{
+  if(data&&call?.id===endedCall?.id&&closing){render(data.state);showEndedReceipt();}
+ }).catch(()=>{if(call?.id===endedCall?.id&&closing)error('انتهت المكالمة. تعذّر تحديث آخر حالة للطلب.');});
+ if(hadMedia)await animateHangup(document);
  experienceControls.setBusy(false);
  $('controls').hidden=true;$('start').disabled=false;$('start-label').textContent='ابدأ المكالمة';document.body.classList.remove('active');setPhase('ended');
- muted=false;($('mute-label')||$('mute')).textContent='كتم الميكروفون';$('mute').title='كتم ميكروفوني فقط';$('mute').setAttribute('aria-pressed','false');
+ muted=false;micBusy=false;($('mute-label')||$('mute')).textContent='كتم الميكروفون';$('mute').title='كتم ميكروفوني فقط';$('mute').setAttribute('aria-pressed','false');
+ showEndedReceipt();
 }
-$('start').onclick=start;$('end').onclick=end;
-$('mute').onclick=()=>{if(!room||closing)return;const next=!muted;try{
- // Do not unpublish/stop the microphone: the AI must keep receiving a live silent track.
- setMicrophoneSilenced(room,next);muted=next;
- const label=muted?'تشغيل ميكروفوني':'كتم ميكروفوني';
- ($('mute-label')||$('mute')).textContent=label;$('mute').title=label;
- $('mute').setAttribute('aria-pressed',String(muted));
- error('');
- }catch(e){error(e.message||'تعذر تغيير الميكروفون. حاول مرة ثانية.');}};
+function showEndedReceipt(){
+ if(!closing)return;
+ const saved=completion.render(currentState);
+ $('new-call').hidden=!saved;
+ const note=$('call-ended-note');note.hidden=false;
+ note.textContent=saved?'انتهت المكالمة':currentState?.basket?.length?'انتهت المكالمة · الطلب ما تأكد':'انتهت المكالمة';
+}
+$('start').onclick=start;$('new-call').onclick=start;$('end').onclick=end;
+$('mute').onclick=async()=>{
+ if(!room||closing||micBusy)return;
+ const activeRoom=room,activeCall=call.id,next=!muted;micBusy=true;$('mute').disabled=true;
+ try{
+  setMicrophoneSilenced(activeRoom,next);muted=next;
+  const label=muted?'تشغيل ميكروفوني':'كتم ميكروفوني';
+  ($('mute-label')||$('mute')).textContent=label;$('mute').title=label;$('mute').setAttribute('aria-pressed',String(muted));
+  await syncMicrophoneMute(activeRoom.localParticipant,activeCall,muted,++micSequence);
+ }catch(e){if(room===activeRoom&&!closing)error(e.message||'تعذر مزامنة الميكروفون. حالة الكتم المحلية محفوظة.');}
+ finally{if(room===activeRoom&&!closing){micBusy=false;$('mute').disabled=false;}}
+};
 $('retry-audio').onclick=()=>{error('');playbackMeter.prepare();microphoneMeter.prepare();for(const meter of remoteMeters.values())meter.prepare();for(const audio of audioElements)void audio.play().catch(()=>{});if(workerVerified&&currentState?.quote&&!currentState.quote.presented)player.play(call.id);else room?.startAudio().then(()=>$('retry-audio').hidden=true).catch(e=>error(e.message));};
 $('order-button').onclick=()=>$('order').showModal();$('close-order').onclick=()=>$('order').close();
 for(const dialog of [$('order')])dialog.addEventListener('click',event=>{if(event.target!==dialog)return;const box=dialog.getBoundingClientRect();if(event.clientX<box.left||event.clientX>box.right||event.clientY<box.top||event.clientY>box.bottom)dialog.close();});
 $('access').onsubmit=e=>{e.preventDefault();accessCode=$('code').value;start();};
-window.addEventListener('pagehide',()=>{player.cancel();playbackMeter.close();microphoneMeter.close();room?.disconnect();});
+window.addEventListener('pagehide',()=>{void stopMediaNow(room,audioElements,player,fixture);try{playbackMeter.close();microphoneMeter.close();}catch{};});

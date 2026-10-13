@@ -19,3 +19,8 @@ export function setMicrophoneSilenced(room, silenced){
  if(!changed)throw new Error('الميكروفون غير متصل. حاول مرة ثانية.');
  return changed;
 }
+
+// This is a control packet, never an instruction in the conversation context.
+export async function syncMicrophoneMute(participant,callId,muted,sequence){
+ await participant.publishData(new TextEncoder().encode(JSON.stringify({call_id:callId,muted,sequence})),{reliable:true,topic:'sawt-mic'});
+}
