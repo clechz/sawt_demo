@@ -10,6 +10,7 @@ import asyncio
 import time
 import uuid
 from .experience import voice_instructions, profile
+from .conversation_policy import conversation_mode, release_for
 from .hospitality_runtime import prepare_turn, commit_turn, mark_proposal_presented, verified_utterance
 from .recognition import AudioWindowError
 from .transactions import Conflict
@@ -59,6 +60,7 @@ def make_voice_class(base):
         def __init__(self, sid, room, experience):
             super().__init__(sid, room, voice=experience['voice'], instructions=voice_instructions())
             self.experience = experience
+            self.conversation_mode = conversation_mode()
             self.explicit_playing = False
             self.input_generation = 0
             self.playback_interrupted = False
@@ -78,10 +80,12 @@ def make_voice_class(base):
             self.duplex_session.append_commentary(profile()['greeting'])
             self.duplex_session.append_thinking('This is an explicitly disclosed restaurant simulation. Use the actual simulated records; do not repeatedly announce the demo limitation.')
             await asyncio.to_thread(tx.event, self.sid, 'voice.connected', {
-                'transport': 'livekit', 'model': 'gpt-live-1', 'release': 'hospitality-v3-candidate',
+                'transport': 'livekit', 'model': 'gpt-live-1', 'release': release_for(self.conversation_mode),
+                'conversation_mode': self.conversation_mode,
                 'voice': self.experience['voice'], 'recognition_policy': 'critical-actions',
                 'scenario': self.experience['scenario']})
-            await self.send('ready')
+            await self.send('ready', conversation_mode=self.conversation_mode,
+                            worker_release=release_for(self.conversation_mode))
 
         def on_provider_event(self, event):
             if event.get('type') == 'session.input_transcript.delta':
@@ -203,7 +207,8 @@ def make_voice_class(base):
                             raise Conflict('Superseded progress')
                         await self.send('processing', stage=stage, epoch=row['epoch'])
                     try:
-                        prepared = await asyncio.wait_for(prepare_turn(engine, self.provider, row, text, progress=progress), 30)
+                        prepared = await asyncio.wait_for(prepare_turn(engine, self.provider, row, text, progress=progress,
+                            conversation_mode=self.conversation_mode), 30)
                     except Conflict:
                         if generation != self.input_generation:
                             continue
@@ -220,7 +225,8 @@ def make_voice_class(base):
                         if normalize(verified) != normalize(text):
                             # Discard the caption-based staged plan. A checked
                             # transcript authorizes only the plan derived from it.
-                            prepared = await asyncio.wait_for(prepare_turn(engine, self.provider, row, verified, progress=progress), 30)
+                            prepared = await asyncio.wait_for(prepare_turn(engine, self.provider, row, verified, progress=progress,
+                                conversation_mode=self.conversation_mode), 30)
                             prepared.text = text  # keep the original input replay key
                         self.audit('delegation.acoustic_check', {'verified': True, 'replanned': normalize(verified) != normalize(text)})
                     if generation != self.input_generation:
