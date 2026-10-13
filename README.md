@@ -8,9 +8,8 @@ A simple call screen over a stateful ordering system. Speak naturally, give deta
 
 ## Reviewer starting points
 
-[Recorded application demo — 4 min 7 sec](https://github.com/clechz/sawt_demo/releases/tag/submission-demo-2026-10-13)
-(MP4 download; no sign-in required). The recording is provided as captured; full
-coverage of the challenge's spoken explanation requirements has not been verified.
+The recorded application demo is provided separately with the submission email.
+Full coverage of the challenge's spoken explanation requirements has not been verified.
 
 | Question | Read |
 |---|---|
