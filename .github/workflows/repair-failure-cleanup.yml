@@ -14,7 +14,7 @@ jobs:
       - name: Apply narrowly scoped source repair
         run: |
           python - <<'PY'
-          import hashlib
+          import ast, hashlib
           from pathlib import Path
           path = Path('voice_worker.py')
           original = path.read_bytes()
@@ -22,28 +22,25 @@ jobs:
           source = original.decode('utf8')
           start = source.index('    async def close_failed_voice(self, message=None):')
           end = source.index('\n    def on_transcript', start)
-          replacement = '''    async def close_failed_voice(self, message=None):
-              # This may run inside the task that just received a provider error.
-              # Cancelling that same task aborts cleanup at the next await.
-              if (self.pending and self.pending is not asyncio.current_task()
-                      and not self.pending.done()):
-                  self.pending.cancel()
-              try:
-                  await asyncio.to_thread(tx.interrupt, self.sid, close=True)
-                  if self.room.isconnected():
-                      await self.send('error', fatal=True, code='credit_balance_exhausted' if message==CALLS_UNAVAILABLE else 'voice_unavailable', message=message or say('voice_error'))
-              finally:
-                  # A database, data-channel or media error must not leave a ghost call.
-                  try:
-                      await self.media_session.aclose()
-                  finally:
-                      await self.room.disconnect()
-          '''
-          # The embedded method uses four-space class indentation.
-          lines = replacement.splitlines()
-          replacement = lines[0] + '\n' + '\n'.join(line[2:] if line.startswith('  ') else line for line in lines[1:]) + '\n'
+          replacement = '\n'.join([
+              '    async def close_failed_voice(self, message=None):',
+              '        # Do not cancel the task that is performing failure cleanup.',
+              '        if (self.pending and self.pending is not asyncio.current_task()',
+              '                and not self.pending.done()):',
+              '            self.pending.cancel()',
+              '        try:',
+              '            await asyncio.to_thread(tx.interrupt, self.sid, close=True)',
+              '            if self.room.isconnected():',
+              "                await self.send('error', fatal=True, code='credit_balance_exhausted' if message==CALLS_UNAVAILABLE else 'voice_unavailable', message=message or say('voice_error'))",
+              '        finally:',
+              '            # Cleanup must still run if persistence, sending or media fails.',
+              '            try:',
+              '                await self.media_session.aclose()',
+              '            finally:',
+              '                await self.room.disconnect()',
+              '',
+          ])
           path.write_text(source[:start] + replacement + source[end:], encoding='utf8')
-          import ast
           ast.parse(path.read_text())
           PY
           git diff --check
