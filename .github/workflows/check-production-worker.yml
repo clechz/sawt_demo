@@ -1,0 +1,42 @@
+name: Check production model-led worker
+on:
+  push:
+    branches: [diagnostics/authenticated-call-check-20261013]
+    paths: [.github/workflows/check-production-worker.yml]
+permissions:
+  contents: read
+concurrency:
+  group: sawt-production-startup-probe
+  cancel-in-progress: false
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: 3442e711a93b4343090b0f3b3732712a4685b9a8
+          path: deployed-source
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install matching application dependencies
+        run: python -m pip install -r deployed-source/requirements-v2.txt
+      - name: Check real production login, assets, API-worker binding and returned audio
+        working-directory: deployed-source
+        env:
+          PYTHONPATH: .
+          SAWT_DEMO_PASSWORD: ${{ secrets.SAWT_DEMO_PASSWORD }}
+          SAWT_ACCESS_CODE: ${{ secrets.SAWT_ACCESS_CODE }}
+        run: python ../scripts/check_production_startup.py
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: production-model-led-startup
+          path: /tmp/sawt-production-startup/
+          retention-days: 1
+          if-no-files-found: error
