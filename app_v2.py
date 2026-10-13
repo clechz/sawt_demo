@@ -51,6 +51,7 @@ class StartCall(BaseModel):
     voice: Literal['cedar', 'ash', 'marin'] | None = None
     scenario: Literal['new_order', 'late_delivery', 'missing_item', 'wrong_item'] = 'new_order'
     experience_version: Literal['v2', 'v3'] = 'v2'
+    conversation_mode: Literal['legacy', 'model_led'] | None = None
 
 
 @app.middleware('http')
@@ -143,10 +144,11 @@ def create(request: Request, body: StartCall):
     if body.recording_consent is not True:
         raise HTTPException(400, 'يلزم الموافقة على تسجيل المكالمة قبل البدء.')
     try:
-        settings = validate_experience(body.voice, body.scenario, body.experience_version)
+        settings = validate_experience(body.voice, body.scenario, body.experience_version, conversation_mode=body.conversation_mode)
     except ValueError as exc:
         raise HTTPException(422, str(exc))
     sid, token = tx.create(enforce_limits=True, experience=settings)
+    required_worker = tx.load(sid)['state']['experience'].get('worker_contract')
     tx.event(sid, 'recording.consent', {'notice_version': '2026-10-11', 'retention_days': 7, 'storage': 'private_cloud' if cloud_storage.enabled() else 'local'})
     jwt = (api.AccessToken(os.environ['LIVEKIT_API_KEY'], os.environ['LIVEKIT_API_SECRET'])
            .with_identity('caller-' + sid).with_ttl(timedelta(minutes=11))
@@ -154,7 +156,8 @@ def create(request: Request, body: StartCall):
            .with_room_config(api.RoomConfiguration(agents=[api.RoomAgentDispatch(agent_name=os.getenv('SAWT_AGENT_NAME','sawt-v2'), metadata=sid)]))
            .to_jwt())
     return {'id': sid, 'token': token, 'room_token': jwt, 'url': os.environ['LIVEKIT_URL'], 'max_seconds': MAX_SECONDS,
-            'voice': settings['voice'], 'experience_version': settings['version'], 'scenario': settings['scenario']}
+            'voice': settings['voice'], 'experience_version': settings['version'], 'scenario': settings['scenario'], 'conversation_mode': settings['conversation_mode'],
+            'required_worker': required_worker}
 
 
 @app.get('/api/calls/{sid}')

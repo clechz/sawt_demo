@@ -8,7 +8,7 @@ const BRIEFS = {
 };
 export function selectedExperience(voice,scenario,consent){
  if(!VOICES.has(voice)||!Object.hasOwn(BRIEFS,scenario))throw new Error('اختيار غير متاح.');
- return {voice,scenario,recording_consent:consent===true,experience_version:'v3'};
+ return {voice,scenario,recording_consent:consent===true,experience_version:'v3',conversation_mode:'model_led'};
 }
 export function createExperienceControls(root){
  const voice=root.getElementById('voice-choice'),scenario=root.getElementById('scenario-choice');

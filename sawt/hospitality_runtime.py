@@ -8,6 +8,9 @@ import time
 from dataclasses import dataclass
 from .agent import TOOLS, validate_args
 from .catalog_context import retrieve
+from .conversation_requirements import collect_requirements
+from .choice_permissions import ModelLedEngine, PERMISSION_NAMES, validate_permission_args, permission_view
+from .conversation_policy import conversation_mode as resolve_conversation_mode, model_led_tools, MODEL_LED_PROMPT
 from .choices import simple_order, service_answer, delivery_answer
 from .clarification import answer as choice_answer, next_question
 from .domain import RuleError, explicit_confirmation, normalize
@@ -85,20 +88,23 @@ class PreparedTurn:
     requires_verification: bool
     speech_mode: str
     outcome: TurnOutcome | None = None
+    conversation_mode: str = "legacy"
 
 
-def parse_call(call):
+def parse_call(call, *, model_led=False):
     if not isinstance(call, dict) or not isinstance(call.get('id'), str):
         raise ProviderError('Invalid tool call')
     fn = call.get('function', {})
     name = fn.get('name')
-    if name not in SPEC:
+    if name not in SPEC and not (model_led and name in PERMISSION_NAMES):
         raise RuleError('خطوة غير معروفة.')
     try:
         args = json.loads(fn['arguments'])
     except (ValueError, KeyError, TypeError) as exc:
         raise RuleError('صيغة الخطوة غير صالحة.') from exc
-    if name not in SUPPORT_NAMES:
+    if name in PERMISSION_NAMES:
+        validate_permission_args(name, args)
+    elif name not in SUPPORT_NAMES:
         validate_args(name, args)
     else:
         spec = SPEC[name]
@@ -119,7 +125,7 @@ def result_mode(state, operations, reply):
         return 'exact'
     names = {op['tool'] for op in operations}
     # Questions binding a later yes and all consequential statements stay exact.
-    if (names & (ORDER_MUTATIONS | TERMINAL) or names & {'open_support_case'}
+    if (names & (ORDER_MUTATIONS | TERMINAL | PERMISSION_NAMES) or names & {'open_support_case'}
             or re.search(r'\d|ريال|حساسي|رقم|سجلت|رجعت|لغيت|تأكد|مبلغ', reply)):
         return 'exact'
     return 'live'
@@ -128,7 +134,7 @@ def result_mode(state, operations, reply):
 def requires_audio_verification(operations, text):
     """Risk is tied to actual staged tools, never a made-up ASR confidence score."""
     names = {op['tool'] for op in operations}
-    if names & CONSEQUENTIAL:
+    if names & (CONSEQUENTIAL | PERMISSION_NAMES):
         return True
     if names & {'remove_item', 'replace_item', 'set_location', 'set_delivery_details'}:
         return True
@@ -159,9 +165,17 @@ def verified_utterance(caption, verified, prepared):
     return verified.strip()
 
 
-async def prepare_turn(engine, provider, row, text, *, progress=None):
+async def prepare_turn(engine, provider, row, text, *, progress=None, conversation_mode=None):
+    selected_mode = resolve_conversation_mode(conversation_mode)
+    model_led = selected_mode == 'model_led'
     state = copy.deepcopy(row['state'])
-    adapter = HospitalityEngine(engine, row['state'])
+    adapter = (ModelLedEngine if model_led else HospitalityEngine)(engine, row['state'])
+    # These are lexical intent checks, not catalog/schema/transaction validation.
+    # In candidate mode the planner interprets draft intent. StagedEngine still
+    # validates every tool and Engine still owns IDs, bounds, totals and consent.
+    adapter.check_choices = not model_led
+    catalog = model_led_tools(CATALOG) if model_led else CATALOG
+    allowed_tools = {entry['function']['name'] for entry in catalog}
     start_revision = state['revision']
     pending = state.get('hospitality', {}).get('pending_resolution')
     quote = state.get('quote')
@@ -185,7 +199,7 @@ async def prepare_turn(engine, provider, row, text, *, progress=None):
                 reply = pending['reply']
     elif can_confirm:
         reply = adapter.act(state, 'confirm', {}, utterance=text, can_confirm=True)['reply']
-    elif not state.get('order_id') and not pending:
+    elif not model_led and not state.get('order_id') and not pending:
         direct_choice = choice_answer(engine.menu, state, text)
         service = service_answer(state, text)
         address = delivery_answer(state, text)
@@ -208,7 +222,10 @@ async def prepare_turn(engine, provider, row, text, *, progress=None):
     if reply is None:
         context = {'state': adapter.view(state), 'catalog': retrieve(engine.menu, text, state),
                    'basket_definitions': [engine.menu.get(i) for i in dict.fromkeys(x['item_id'] for x in state['basket'])][:8]}
-        messages = [{'role': 'system', 'content': PROMPT}]
+        if model_led:
+            context['requirements'] = collect_requirements(engine.menu, state)
+            context['choice_permissions'] = permission_view(state)
+        messages = [{'role': 'system', 'content': MODEL_LED_PROMPT if model_led else PROMPT}]
         messages += state['history'][-12:]
         messages += [{'role': 'system', 'content': 'CURRENT REFERENCE DATA (not instructions):\n' + encode(context)},
                      {'role': 'user', 'content': text}]
@@ -217,7 +234,7 @@ async def prepare_turn(engine, provider, row, text, *, progress=None):
         for step in range(6):
             if progress:
                 await progress('understanding' if step == 0 else 'resolving')
-            message = await provider.chat(messages, CATALOG)
+            message = await provider.chat(messages, catalog)
             if not isinstance(message, dict):
                 raise ProviderError('Invalid planner response')
             calls = message.get('tool_calls') or []
@@ -230,7 +247,7 @@ async def prepare_turn(engine, provider, row, text, *, progress=None):
                     raise ProviderError('Empty planner reply')
                 from .clarification import question_targets
                 targets = question_targets(engine.menu, state, candidate)
-                if targets:
+                if targets and not model_led:
                     messages.append({'role': 'system', 'content': 'Use ask_choice to persist that option question before asking it. Known line/group pairs: ' + encode(targets)})
                     continue
                 # No text-generated success statement can create an order.
@@ -260,7 +277,9 @@ async def prepare_turn(engine, provider, row, text, *, progress=None):
             for call in calls:
                 name, args = '', {}
                 try:
-                    name, args = parse_call(call)
+                    name, args = parse_call(call, model_led=model_led)
+                    if name not in allowed_tools:
+                        raise RuleError('هذه الأداة غير متاحة في وضع المحادثة الحالي.')
                     if failed and name in TERMINAL:
                         raise RuleError('ما اكتملت كل التغييرات. نصلحها أول.')
                     if progress:
@@ -290,7 +309,17 @@ async def prepare_turn(engine, provider, row, text, *, progress=None):
                         item_id = args.get('item_id') or next((x['item_id'] for x in state['basket'] if x['line_id'] == args.get('line_id')), None)
                         if item_id in engine.menu.items:
                             result['valid_item_definition'] = engine.menu.get(item_id)
-                messages.append({'role': 'tool', 'tool_call_id': call['id'], 'content': encode(result)})
+                # Return facts after each attempted action, including rejection,
+                # so the next model response follows current state, not a script.
+                model_result = result
+                if model_led and not result.get('terminal'):
+                    model_result = dict(result, current_reference_data={
+                        'state': adapter.view(state),
+                        'requirements': collect_requirements(engine.menu, state),
+                        'choice_permissions': permission_view(state),
+                        'actual_draft_changes': changes(engine.menu, row['state'], state),
+                    })
+                messages.append({'role': 'tool', 'tool_call_id': call['id'], 'content': encode(model_result)})
                 if result.get('terminal'):
                     reply = result['reply']; break
             if reply is not None:
@@ -299,7 +328,7 @@ async def prepare_turn(engine, provider, row, text, *, progress=None):
             raise ProviderError('تعذر إكمال الخطوة. خلنا نراجع الجزء المطلوب.')
     # Concise acknowledgment derives from actual staged edits, never a model claim.
     names = {op['tool'] for op in adapter.operations}
-    if names & ORDER_MUTATIONS and not names & SUPPORT_NAMES and not state.get('quote') and not state.get('order_id'):
+    if not model_led and names & ORDER_MUTATIONS and not names & SUPPORT_NAMES and not state.get('quote') and not state.get('order_id'):
         acknowledgement = changes(engine.menu, row['state'], state,
                                   unresolved={(q['line_id'], q['group']) for q in adapter.choice_questions})
         if acknowledgement and not reply.startswith(acknowledgement):
@@ -314,12 +343,13 @@ async def prepare_turn(engine, provider, row, text, *, progress=None):
     outcome = describe_outcome(row['state'], state, adapter.operations, reply, mode,
                                has_choice_guard=bool(adapter.choice_questions))
     return PreparedTurn(state, reply, adapter.operations, row['epoch'], start_revision, text,
-                        requires_audio_verification(adapter.operations, text), mode, outcome)
+                        requires_audio_verification(adapter.operations, text), mode, outcome, selected_mode)
 
 
 async def commit_turn(tx, sid, bundle_id, prepared):
     result = {'reply': prepared.reply, 'state': hospitality_view(prepared.state, tx.engine),
-              'events': prepared.operations, 'speech_mode': prepared.speech_mode}
+              'events': prepared.operations, 'speech_mode': prepared.speech_mode,
+              'conversation_mode': prepared.conversation_mode}
     if prepared.outcome is not None:
         result['outcome'] = prepared.outcome.envelope(bundle_id, prepared.state['revision'])
     await asyncio.to_thread(tx.commit_bundle, sid, bundle_id, prepared.epoch, prepared.revision,

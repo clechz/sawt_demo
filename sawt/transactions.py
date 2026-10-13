@@ -71,9 +71,11 @@ class Transactions:
         initial = new_state()
         if experience is not None:
             from .experience import validate_experience
-            initial['experience'] = validate_experience(experience.get('voice'), experience.get('scenario', 'new_order'), experience.get('version', 'v3'))
+            initial['experience'] = validate_experience(experience.get('voice'), experience.get('scenario', 'new_order'), experience.get('version', 'v3'), conversation_mode=experience.get('conversation_mode'))
             if initial['experience']['version'] == 'v3':
                 from .hospitality import new_hospitality
+                from .release_contract import worker_contract
+                initial['experience']['worker_contract'] = worker_contract(initial['experience'])
                 initial['hospitality'] = new_hospitality(self.engine, initial['experience']['scenario'])
         with self.connect() as db:
             db.execute('BEGIN IMMEDIATE')

@@ -1,0 +1,25 @@
+name: Model-led integration source
+on:
+  push:
+    branches: [feat/model-led-conversation-20261013]
+    paths: [.github/workflows/model-led-review-source.yml]
+permissions:
+  contents: read
+jobs:
+  source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          git archive --format=tar --prefix=sawt_demo/ HEAD > model-led-source.tar
+          git rev-parse HEAD > model-led-source-commit.txt
+          sha256sum model-led-source.tar > model-led-source.sha256
+      - uses: actions/upload-artifact@v4
+        with:
+          name: model-led-integration-source
+          path: |
+            model-led-source.tar
+            model-led-source-commit.txt
+            model-led-source.sha256
+          retention-days: 1

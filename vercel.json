@@ -1,9 +1,29 @@
 {
   "version": 2,
-  "builds": [{"src": "api/index.py", "use": "@vercel/python", "config": {
-    "includeFiles": ["sawt/**", "data/**", "static/v2/**", "app_v2.py", "private_demo.py"],
-    "maxDuration": 300
-  }}],
-  "routes": [{"src": "/(.*)", "dest": "api/index.py"}],
-  "regions": ["iad1"]
+  "builds": [
+    {
+      "src": "api/index.py",
+      "use": "@vercel/python",
+      "config": {
+        "includeFiles": [
+          "sawt/**",
+          "data/**",
+          "static/v2/**",
+          "app_v2.py",
+          "private_demo.py",
+          "voice_worker.py"
+        ],
+        "maxDuration": 300
+      }
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "api/index.py"
+    }
+  ],
+  "regions": [
+    "iad1"
+  ]
 }

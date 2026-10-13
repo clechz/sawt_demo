@@ -206,15 +206,19 @@ class RestaurantVoice(Agent):
         await self.send('input', epoch=epoch)
 
     async def close_failed_voice(self, message=None):
-        if self.pending and not self.pending.done():
+        # The failure handler may itself be the pending task. Do not cancel it.
+        if (self.pending and self.pending is not asyncio.current_task()
+                and not self.pending.done()):
             self.pending.cancel()
-        await asyncio.to_thread(tx.interrupt, self.sid, close=True)
         try:
+            await asyncio.to_thread(tx.interrupt, self.sid, close=True)
             if self.room.isconnected():
                 await self.send('error', fatal=True, code='credit_balance_exhausted' if message==CALLS_UNAVAILABLE else 'voice_unavailable', message=message or say('voice_error'))
         finally:
-            await self.media_session.aclose()
-            await self.room.disconnect()
+            try:
+                await self.media_session.aclose()
+            finally:
+                await self.room.disconnect()
 
     def on_transcript(self, event):
         if getattr(self,'ending',False):return
@@ -607,6 +611,22 @@ async def entrypoint(ctx: JobContext):
     session = AgentSession()
     from sawt.experience import call_experience
     experience = call_experience((await asyncio.to_thread(tx.load, sid))['state'])
+    if experience['version'] == 'v3' and experience.get('worker_contract'):
+        from sawt.release_contract import worker_contract, check_worker_contract
+        try:
+            check_worker_contract(experience['worker_contract'], worker_contract(experience))
+        except (ValueError, RuntimeError):
+            await asyncio.to_thread(tx.event, sid, 'voice.version_mismatch', {})
+            await asyncio.to_thread(tx.interrupt, sid, close=True)
+            try:
+                await ctx.connect()
+                await ctx.room.local_participant.publish_data(json.dumps({
+                    'type': 'error', 'fatal': True, 'code': 'worker_version_mismatch',
+                    'message': 'نسخة الوكيل الصوتي ما تطابق نسخة الموقع. يلزم تحديث الوكيل قبل المكالمة.'
+                }).encode(), reliable=True, topic='sawt')
+            finally:
+                ctx.shutdown(reason='Worker release mismatch')
+            return
     if experience['version'] == 'v3':
         from sawt.hospitality_voice import make_voice_class
         HospitalityVoice = make_voice_class(RestaurantVoice)
