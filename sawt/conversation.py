@@ -6,6 +6,28 @@ from pathlib import Path
 COPY = json.loads((Path(__file__).resolve().parents[1] / 'data/conversation-copy.json').read_text(encoding='utf8'))
 
 
+# These are spoken labels only. The provided menu, identifiers, and prices
+# remain authoritative and untouched by a change in Saudi phrasing.
+SPICE_SPOKEN = {
+    'not_spicy': 'بدون شطة',
+    'mild': 'شطة خفيفة',
+    'medium': 'شطة وسط',
+    'hot': 'شطة قوية',
+}
+SPICE_QUESTION_LABELS = {
+    'not_spicy': 'بدون',
+    'mild': 'خفيفة',
+    'medium': 'وسط',
+    'hot': 'قوية',
+}
+
+
+def spoken_option(group_id, option_id, menu_label):
+    if group_id == 'spice_level':
+        return SPICE_SPOKEN.get(option_id, menu_label)
+    return menu_label
+
+
 def say(key, **values):
     return COPY[key].format(**values)
 
