@@ -1,6 +1,8 @@
 // One owner for exact readback audio, including stale async callbacks.
 export class ReadbackPlayer {
-  constructor({api, createAudio=()=>new Audio(), releaseAudio=()=>{}, mute, phase, failure, retry, setTimer=setTimeout, clearTimer=clearTimeout}) {
+  constructor({api, createAudio=()=>new Audio(), releaseAudio=()=>{}, mute, phase, failure, retry, setTimer=(fn,ms)=>globalThis.setTimeout(fn,ms), clearTimer=id=>globalThis.clearTimeout(id)}) {
+    // Browser timer functions require their native receiver; do not store and
+    // invoke Window methods with this player as their receiver.
     Object.assign(this,{api,createAudio,releaseAudio,mute,phase,failure,retry,setTimer,clearTimer});
     this.generation=0;
     this.audio=null;
@@ -56,8 +58,8 @@ export class ReadbackPlayer {
         if(!current())return;
         this.clearTimer(this.stallTimer);
         if(started)return;
-        this.phase('readback');
         started=this.api(`/api/calls/${callId}/playback`,{method:'POST',body:JSON.stringify({receipt_id:receipt.receipt_id,phase:'started'})});
+        this.phase('readback');
         started.catch(fail);
       };
       audio.onended=async()=>{
