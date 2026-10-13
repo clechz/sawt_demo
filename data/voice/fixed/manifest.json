@@ -88,5 +88,18 @@
     "exact_normalized_match": true,
     "generation_attempts": 1,
     "verification_scope": "Independent transcription of synthetic fixed success audio; not a native-listener rating."
+  },
+  {
+    "key": "cedar_staff_offer",
+    "text": "أرفع التفاصيل للمسؤول يراجعها؟",
+    "voice": "cedar",
+    "model": "gpt-4o-mini-tts",
+    "format": "signed 16-bit little-endian, mono, 24000 Hz",
+    "synthetic": true,
+    "sha256": "cf93d9b4cf4fb98e8aeaf6804bc354a6df1cdb9a08eeacf729488a73037546fe",
+    "bytes": 170400,
+    "seconds": 3.55,
+    "independent_transcription": "ارفع التفاصيل للمسؤول يراجعها?",
+    "exact_normalized_match": true
   }
 ]
