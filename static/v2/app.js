@@ -4,6 +4,7 @@ import {ReadbackPlayer} from './playback.js';
 import {PlaybackMeter,MicrophoneMeter} from './audio-meter.js';
 import {createOrderView} from './order-view.js';
 import {createCallStatus} from './call-status.js';
+import {setMicrophoneSilenced} from './microphone-mute.js';
 const $=id=>document.getElementById(id);
 const renderOrder=createOrderView();
 let call,room,poll,timer,clockTimer,frame,closing=false,muted=false,quoteSeen,accessCode='',refreshing=false,currentState;
@@ -45,7 +46,6 @@ async function start(){
  if(room)return;
  playbackMeter.prepare();microphoneMeter.prepare();lastMeterTime=0;
  workerVerified=false;clearTimeout(workerReadyTimer);
- const versionLabel=$('worker-version');if(versionLabel){versionLabel.hidden=true;versionLabel.textContent='';}
  callStatus.reset();$('start').disabled=true;error('');setPhase('connecting');closing=false;quoteSeen=null;currentState=null;call=null;refreshing=false;
  $('order-button').hidden=true;$('order-note').textContent='';
  renderSupport(document,null);
@@ -69,7 +69,8 @@ async function start(){
     if(event.type==='ready'){
      try{const binding=validateReadyBinding(call,event);workerVerified=true;clearTimeout(workerReadyTimer);
       audioElements.forEach(a=>a.muted=readbackMuted);
-      const label=$('worker-version');if(label){label.hidden=false;label.textContent=`${binding.conversation_mode} · ${binding.voice} · ${binding.source_fingerprint.slice(0,8)}`;}
+      // Keep diagnostic identity machine-readable, not visible UI clutter.
+      document.body.dataset.workerRelease=binding.source_fingerprint.slice(0,8);
       setPhase('listening');if(lab)$('send-fixture').disabled=false;
      }catch(e){error(e.message);void end();return;}
     }
@@ -111,10 +112,17 @@ async function end(){
  for(const element of audioElements)element.remove();audioElements.clear();
  experienceControls.setBusy(false);
  $('controls').hidden=true;$('start').disabled=false;$('start-label').textContent='ابدأ المكالمة';document.body.classList.remove('active');setPhase('ended');
- muted=false;($('mute-label')||$('mute')).textContent='كتم الميكروفون';$('mute').setAttribute('aria-pressed','false');
+ muted=false;($('mute-label')||$('mute')).textContent='كتم الميكروفون';$('mute').title='كتم ميكروفوني فقط';$('mute').setAttribute('aria-pressed','false');
 }
 $('start').onclick=start;$('end').onclick=end;
-$('mute').onclick=async()=>{if(!room)return;const next=!muted;try{if(lab){for(const publication of room.localParticipant.audioTrackPublications.values())next?await publication.mute():await publication.unmute();}else await room.localParticipant.setMicrophoneEnabled(!next);muted=next;($('mute-label')||$('mute')).textContent=muted?'تشغيل الميكروفون':'كتم الميكروفون';$('mute').setAttribute('aria-pressed',String(muted));}catch{error('تعذر تغيير الميكروفون. حاول مرة ثانية.');}};
+$('mute').onclick=()=>{if(!room||closing)return;const next=!muted;try{
+ // Do not unpublish/stop the microphone: the AI must keep receiving a live silent track.
+ setMicrophoneSilenced(room,next);muted=next;
+ const label=muted?'تشغيل ميكروفوني':'كتم ميكروفوني';
+ ($('mute-label')||$('mute')).textContent=label;$('mute').title=label;
+ $('mute').setAttribute('aria-pressed',String(muted));
+ error('');
+ }catch(e){error(e.message||'تعذر تغيير الميكروفون. حاول مرة ثانية.');}};
 $('retry-audio').onclick=()=>{error('');playbackMeter.prepare();microphoneMeter.prepare();for(const meter of remoteMeters.values())meter.prepare();for(const audio of audioElements)void audio.play().catch(()=>{});if(workerVerified&&currentState?.quote&&!currentState.quote.presented)player.play(call.id);else room?.startAudio().then(()=>$('retry-audio').hidden=true).catch(e=>error(e.message));};
 $('order-button').onclick=()=>$('order').showModal();$('close-order').onclick=()=>$('order').close();
 for(const dialog of [$('order')])dialog.addEventListener('click',event=>{if(event.target!==dialog)return;const box=dialog.getBoundingClientRect();if(event.clientX<box.left||event.clientX>box.right||event.clientY<box.top||event.clientY>box.bottom)dialog.close();});
