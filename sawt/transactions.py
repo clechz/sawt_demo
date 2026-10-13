@@ -66,8 +66,15 @@ class Transactions:
         db.row_factory = sqlite3.Row
         return db
 
-    def create(self, enforce_limits=False):
+    def create(self, enforce_limits=False, *, experience=None):
         sid, token = uuid.uuid4().hex, secrets.token_urlsafe(32)
+        initial = new_state()
+        if experience is not None:
+            from .experience import validate_experience
+            initial['experience'] = validate_experience(experience.get('voice'), experience.get('scenario', 'new_order'), experience.get('version', 'v3'))
+            if initial['experience']['version'] == 'v3':
+                from .hospitality import new_hospitality
+                initial['hospitality'] = new_hospitality(self.engine, initial['experience']['scenario'])
         with self.connect() as db:
             db.execute('BEGIN IMMEDIATE')
             if enforce_limits:
@@ -78,7 +85,7 @@ class Transactions:
                 if active >= max_active or hourly >= max_hourly:
                     raise Conflict(f'Call budget reached: at most {max_active} active calls and {max_hourly} starts/hour')
             db.execute('INSERT INTO calls(id,token_hash,state,created) VALUES(?,?,?,?)',
-                       (sid, hashlib.sha256(token.encode()).hexdigest(), encode(new_state()), time.time()))
+                       (sid, hashlib.sha256(token.encode()).hexdigest(), encode(initial), time.time()))
         return sid, token
 
     def load(self, sid, db=None):

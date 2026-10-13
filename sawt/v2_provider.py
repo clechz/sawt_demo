@@ -45,8 +45,9 @@ def speech_text(text):
 
 
 class V2Provider(OpenAIProvider):
-    def __init__(self, *, batch_tools=True):
+    def __init__(self, *, batch_tools=True, voice=None):
         self.supports_tool_batches = batch_tools
+        self.voice = voice or voice_name()
         self._client = None
         self._loop = None
 
@@ -105,7 +106,7 @@ class V2Provider(OpenAIProvider):
         cfg = config()
         if response_format=='pcm':
             from .fixed_voice import fixed_pcm
-            cached=fixed_pcm(text,voice_name(),cfg['tts'])
+            cached=fixed_pcm(text,self.voice,cfg['tts'])
             if cached is not None:
                 for offset in range(0,len(cached),4800):yield cached[offset:offset+4800]
                 return
@@ -118,7 +119,7 @@ class V2Provider(OpenAIProvider):
                 async with asyncio.timeout(3 if response_format=='pcm' else None) as startup:
                     async with self.client().stream('POST', 'https://api.openai.com/v1/audio/speech', headers=self.headers(),
                         timeout=httpx.Timeout(8,connect=5),
-                        json={'model': cfg['tts'], 'voice': voice_name(), 'input': speech_text(text),
+                        json={'model': cfg['tts'], 'voice': self.voice, 'input': speech_text(text),
                               'instructions': STYLE, 'response_format': response_format}) as response:
                         if response.status_code >= 400:await response.aread()
                         self.check(response)
@@ -155,7 +156,7 @@ class V2Provider(OpenAIProvider):
         body=text.rstrip()[:-len(question)].rstrip()
         async for chunk in self.speech_chunks(body,'pcm'):
             for packet in encoder.feed(chunk):yield packet
-        if voice_name()=='marin':
+        if self.voice=='marin':
             pcm=(Path(__file__).resolve().parents[1]/'data/voice/confirmation-marin.pcm').read_bytes()
         else:
             pcm=b''.join([chunk async for chunk in self.speech_chunks(question,'pcm')])

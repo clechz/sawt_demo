@@ -8,13 +8,14 @@ export function createOrderView(root=document){
  let previous='';
  return state=>{
   // Polling an unchanged basket should not replace focused or scrolling content.
-  const signature=JSON.stringify([state.basket,state.service,state.branch,state.location,state.subtotal,state.delivery_fee,state.total,state.order_id,state.handoff,state.issues,!!state.quote?.presented]);
+  const signature=JSON.stringify([state.basket,state.service,state.branch,state.location,state.subtotal,state.delivery_fee,state.total,state.order_id,state.handoff,state.hospitality?.orders?.[state.order_id]?.status,state.issues,!!state.quote?.presented]);
   if(signature===previous)return;previous=signature;
   const count=state.basket.reduce((sum,line)=>sum+line.quantity,0);
   const missing=state.basket.some(line=>line.missing.length);
   const confirmed=!!state.order_id;
   const reviewed=!!state.quote?.presented;
-  const badge=confirmed?'تم التأكيد':missing?'باقي تفاصيل':reviewed?'بانتظار تأكيدك':'مسودة';
+  const cancelled=state.hospitality?.orders?.[state.order_id]?.status==='cancelled';
+  const badge=cancelled?'تم الإلغاء':confirmed?'تم التأكيد':missing?'باقي تفاصيل':reviewed?'بانتظار تأكيدك':'مسودة';
   $('order-button').hidden=!count&&!confirmed;
   $('total').textContent=price(state.total);
   $('order-button').dataset.confirmed=String(confirmed);
@@ -45,8 +46,8 @@ export function createOrderView(root=document){
   $('order-delivery').textContent=price(state.delivery_fee);
   $('delivery-row').hidden=state.service!=='delivery';
   $('order-total').textContent=price(state.total);
-  $('order-status').textContent=confirmed?`رقم الطلب التجريبي ${state.order_id}`:state.handoff?'سُجّل طلب التواصل مع موظف كتذكرة تجريبية.':state.issues.join(' ');
+  $('order-status').textContent=confirmed?`${cancelled?'الطلب ملغي · ':''}${state.experience?.version==='v3'?'رقم الطلب':'رقم الطلب التجريبي'} ${state.order_id}`:state.handoff?'سُجّل طلب التواصل مع موظف كتذكرة تجريبية.':state.issues.join(' ');
   $('order-status').dataset.confirmed=String(confirmed);
-  $('order-note').textContent=confirmed?'طلبك التجريبي محفوظ':missing?'طلبك مسودة · باقي نختار بعض التفاصيل':count?'تقدر تشوف طلبك وتراجعه بأي وقت':'';
+  $('order-note').textContent=cancelled?'تم إلغاء طلبك':confirmed?'طلبك محفوظ':missing?'طلبك مسودة · باقي نختار بعض التفاصيل':count?'تقدر تشوف طلبك وتراجعه بأي وقت':'';
  };
 }
