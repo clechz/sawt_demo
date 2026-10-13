@@ -2,7 +2,7 @@ name: Apply and validate V3 candidate
 on:
   push:
     branches: [feat/v3-hospitality-voice]
-    paths: [.v3-patch/part4.b64]
+    paths: [.v3-patch/part4.b64, .github/workflows/apply-v3-candidate.yml]
 permissions:
   contents: write
 jobs:
@@ -38,9 +38,13 @@ jobs:
       - run: node --experimental-default-type=module --test tests/playback.test.mjs tests/audio-meter.test.mjs tests/call-status.test.mjs tests/call-start.test.mjs tests/experience.test.mjs
       - run: npm ci --prefix frontend
       - run: npm run build --prefix frontend
-      - name: Publish tested source to development branch only
+      - name: Publish tested application source to development branch only
         run: |
-          git rm .github/workflows/apply-v3-candidate.yml .v3-patch/part*.b64
+          # Workflow updates are handled separately through the authorized connector.
+          # This token publishes application source only; it needs no workflows permission.
+          git restore --source=HEAD --staged --worktree .github/workflows
+          git rm .v3-patch/part*.b64
+          git diff --cached --check
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git commit -m 'Implement V3 hospitality conversation, selectable voices and stateful simulated support'
