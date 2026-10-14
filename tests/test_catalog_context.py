@@ -51,3 +51,15 @@ async def test_exact_pizza_request_cannot_end_with_only_a_missing_size_question(
     state,reply=await Agent(engine,provider).turn(new_state(),'عطني بيتزا شاورما.')
     assert len(state['basket'])==1 and state['basket'][0]['item_id']=='pizza_flatbread_07'
     assert state['pending_choice']['group_id']=='size' and not state['order_id']
+
+
+def test_misheard_dish_is_retrieved_alongside_bread_without_mutating_order():
+    state=new_state()
+    state['history']=[{'role':'assistant','content':'تبي شاي أحمر أو كرك بدل العدني؟'}]
+    before=copy.deepcopy(state)
+    found=retrieve(engine.menu,'أبي شتشوكة كبير، تميس، وتوصيل',state)
+    suggestion=next(s for s in found['possible_mishearings'] if s['heard']=='شتشوكه')
+    assert suggestion['possible_name_word']=='شكشوكه'
+    assert 'breakfast_01' in {i['id'] for i in suggestion['items']}
+    assert state==before
+    assert 'possible_mishearings' not in retrieve(engine.menu,'أبي شكشوكة كبير تميس',new_state())

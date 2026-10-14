@@ -25,6 +25,21 @@ def retrieve(menu, text, state):
         matched=next((v for v in forms if v in vocabulary and v not in ignored),None)
         if matched and matched not in terms:terms.append(matched)
     result={}
+    # A single substituted character can hide a dish while its bread still
+    # matches. Supply possibilities as evidence, never rewrite caller intent.
+    suggestions=[]
+    for word in sorted(caller_words):
+        if len(word)<5 or word in vocabulary:
+            continue
+        near=[term for term in sorted(vocabulary)
+              if len(term)==len(word) and sum(a!=b for a,b in zip(term,word))==1]
+        if len(near)==1:
+            matches=menu.search(near[0],state['branch'],limit=3)
+            suggestions.append({'heard':word,'possible_name_word':near[0],
+                                'items':matches['items']})
+    if suggestions:
+        result['possible_mishearings']=suggestions[:3]
+        result['mishearing_warning']='Read-only spelling candidates, not selections. Interpret the whole request; clarify if uncertain. A following bread word can be an option of this dish, not a separate ordered item.'
     if terms:
         result['menu_candidates']=menu.search(' '.join(terms),state['branch'],limit=5)
         result['matched_words']=terms
