@@ -4,7 +4,7 @@ This is a narrow output guard, not an intent classifier. It never edits an order
 The planner can repair a rejected claim by executing a tool or clarifying.
 """
 import re
-from .domain import normalize
+from .domain import normalize, BRANCHES
 
 
 def unsupported_claim(before, after, reply):
@@ -38,4 +38,22 @@ def unsupported_claim(before, after, reply):
     h=after.get('hospitality', {})
     if h.get('pending_resolution') and re.search(r'تم (?:تسجيل موافقتك|اعتماد|استرجاع|ارجاع)|رجعنا|اعتمدنا', text):
         return 'The support proposal is still pending, so no resolution was completed. Use accept_resolution only after heard proposal and explicit consent; otherwise clarify. Do not claim approval/refund from words alone.'
+    return None
+
+
+def unpersisted_pickup_branch(text, state):
+    """Guard an explicit complete pickup selection, never infer a branch.
+
+    Questions, negations and ambiguous multi-branch requests stay with the
+    planner. This returns a repair instruction, not a state mutation.
+    """
+    normalized = normalize(text)
+    if any(mark in text for mark in ('?', '؟')) or re.search(r'\b(?:لا|مو|بدون|هل|كيف|وين|بكم|اذا)\b|ما ابي', normalized):
+        return None
+    matches = [bid for bid, branch in BRANCHES.items()
+               if 'استلام من ' + normalize(branch['name']) in normalized]
+    if len(matches) != 1 or state.get('order_id'):
+        return None
+    if state.get('service') != 'pickup' or state.get('branch') != matches[0]:
+        return 'The caller explicitly selected pickup from ' + matches[0] + '. Persist set_service(pickup) and set_branch for that supplied branch before asking for the customer name or another missing field. Name is required at checkout, not before saving fulfillment. If a tool rejects the selection, explain its actual validation error; do not claim or defer the change.'
     return None

@@ -21,7 +21,7 @@ from .response_style import changes, combine
 from .transactions import Conflict, encode
 from .outcomes import TurnOutcome, describe_outcome
 from .recognition import check_recognition, check_transcript_clarity, AudioWindowError
-from .reply_evidence import unsupported_claim
+from .reply_evidence import unsupported_claim, unpersisted_pickup_branch
 
 CATALOG = [t for t in TOOLS if t['function']['name'] not in ('handoff', 'offer_handoff')] + SUPPORT_TOOLS
 SPEC = {t['function']['name']: t['function']['parameters'] for t in CATALOG}
@@ -249,7 +249,7 @@ async def prepare_turn(engine, provider, row, text, *, progress=None, conversati
                 reply = None
                 if not isinstance(candidate, str) or not candidate.strip():
                     raise ProviderError('Empty planner reply')
-                unsupported = unsupported_claim(row['state'], state, candidate)
+                unsupported = unsupported_claim(row['state'], state, candidate) or unpersisted_pickup_branch(text, state)
                 if unsupported:
                     messages.append({'role': 'assistant', 'content': candidate})
                     messages.append({'role': 'system', 'content': unsupported})

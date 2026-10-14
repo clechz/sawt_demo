@@ -326,3 +326,26 @@ def test_unrelated_edit_does_not_validate_pickup_claim():
     before=new_state();before['service']='delivery'
     after=copy.deepcopy(before);after['customer_name']='عبدالله'
     assert unsupported_claim(before,after,'تم تحويل الطلب للاستلام من فرع النرجس بالرياض')
+
+
+@pytest.mark.asyncio
+async def test_missing_name_cannot_defer_explicit_pickup_branch(engine, tmp_path):
+    tx=Transactions(tmp_path/'calls.db',engine);sid,_=tx.create()
+    planner=Scripted(
+        calls(call('set_service',service='pickup')),
+        {'content':'باقي أحتاج اسمك وأحدد لك فرع النرجس بالرياض. ممكن تعطيني اسمك؟'},
+        calls(call('set_branch',branch_id='ruh_narjis')),
+        {'content':'الطلب باسم مين؟'})
+    p=await prepare_turn(engine,planner,tx.load(sid),'خلاص استلام من فرع النرجس بالرياض',conversation_mode='model_led')
+    await commit_turn(tx,sid,'branch-before-name',p)
+    saved=tx.load(sid)['state']
+    assert saved['service']=='pickup' and saved['branch']=='ruh_narjis'
+    assert not saved.get('customer_name') and not saved['order_id']
+
+
+@pytest.mark.parametrize('text',['ما أبي استلام من فرع النرجس بالرياض','هل فيه استلام من فرع النرجس بالرياض؟','لا استلام من فرع النرجس بالرياض','استلام من فرع النرجس بالرياض أو استلام من فرع الملقا بالرياض'])
+def test_pickup_guard_never_selects_negated_question_or_ambiguous_branch(text):
+    from sawt.reply_evidence import unpersisted_pickup_branch
+    state=new_state();before=copy.deepcopy(state)
+    assert unpersisted_pickup_branch(text,state) is None
+    assert state==before
