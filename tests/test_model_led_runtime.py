@@ -349,3 +349,26 @@ def test_pickup_guard_never_selects_negated_question_or_ambiguous_branch(text):
     state=new_state();before=copy.deepcopy(state)
     assert unpersisted_pickup_branch(text,state) is None
     assert state==before
+
+
+@pytest.mark.asyncio
+async def test_clear_dish_draft_saved_before_unnecessary_questions(engine,tmp_path):
+    tx=Transactions(tmp_path/'calls.db',engine);sid,_=tx.create()
+    planner=Scripted(
+        {'content':'طلبت شكشوكة كبير مع تميس. تبيها بدون حار؟ وأحتاج اسمك والمدينة.'},
+        calls(call('add_item',item_id='breakfast_01',quantity=1,options={'portion':['large'],'bread':['tamees']},notes=''),call('set_service',service='delivery')),
+        {'content':'التوصيل بأي مدينة؟'})
+    p=await prepare_turn(engine,planner,tx.load(sid),'أبي شكشوكة كبير تميس وتوصيل',conversation_mode='model_led')
+    await commit_turn(tx,sid,'draft-completeness',p)
+    saved=tx.load(sid)['state']
+    assert len(saved['basket'])==1 and saved['basket'][0]['item_id']=='breakfast_01'
+    assert saved['basket'][0]['options']=={'portion':['large'],'bread':['tamees']}
+    assert saved['service']=='delivery' and not saved['order_id']
+
+
+@pytest.mark.asyncio
+async def test_completeness_check_does_not_order_information_request(engine):
+    state=new_state()
+    planner=Scripted({'content':'سعر الشكشوكة يبدأ من 18 ريال.'},{'content':'سعر الشكشوكة يبدأ من 18 ريال.'})
+    p=await turn(engine,state,planner,'أبي أعرف سعر الشكشوكة')
+    assert not p.operations

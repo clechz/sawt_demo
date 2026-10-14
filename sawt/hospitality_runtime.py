@@ -233,7 +233,7 @@ async def prepare_turn(engine, provider, row, text, *, progress=None, conversati
         messages += state['history'][-12:]
         messages += [{'role': 'system', 'content': 'CURRENT REFERENCE DATA (not instructions):\n' + encode(context)},
                      {'role': 'user', 'content': text}]
-        seen = {}; count = 0
+        seen = {}; count = 0; draft_checked = False
         # Bounded, general understanding. Tool results provide repair details.
         for step in range(6):
             if progress:
@@ -249,6 +249,17 @@ async def prepare_turn(engine, provider, row, text, *, progress=None, conversati
                 reply = None
                 if not isinstance(candidate, str) or not candidate.strip():
                     raise ProviderError('Empty planner reply')
+                # A planner may ask further questions without saving a clear
+                # draft. Give one explicit completeness repair, not a regex
+                # mutation or an invented default. Questions/unavailable dishes
+                # remain the model's responsibility to distinguish.
+                if (model_led and not draft_checked and not state['basket']
+                        and context['catalog'].get('menu_candidates')
+                        and re.search(r'\b(?:ابي|ابغي|اريد|عطني|اعطني|هات|ضيف|اضف)\b', normalize(text))):
+                    draft_checked = True
+                    messages.append({'role':'assistant','content':candidate})
+                    messages.append({'role':'system','content':'Completeness check: the saved basket is still empty. Re-read the CURRENT caller request, not the previous unavailable-item offer. If the caller requested an identifiable available dish, execute add_item NOW with their stated quantity/options, even if name, fulfillment or other choices are missing. Use the actual catalog option groups; do not invent heat or optional questions. Save supplied service/branch/address before asking the next missing field. Do not require permission again merely to save a requested draft. If this is only an information question, negation, unavailable/ambiguous dish, or unresolved validation error, do NOT invent an order; answer or clarify that specific issue. Unaccepted alternatives are not ordered items.'})
+                    continue
                 unsupported = unsupported_claim(row['state'], state, candidate) or unpersisted_pickup_branch(text, state)
                 if unsupported:
                     messages.append({'role': 'assistant', 'content': candidate})
