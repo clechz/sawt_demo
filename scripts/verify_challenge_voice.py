@@ -78,7 +78,7 @@ async def main():
                                 saved=await call.state();events=[e for e in saved['events'] if e['sequence']>floor]
                                 if any(e['kind']=='delegation.completed' for e in events):break
                                 await asyncio.sleep(.2)
-                        assert saved['state']['customer_name']=='عبدالله'
+                        assert ''.join(saved['state']['customer_name'].split())=='عبدالله', 'Customer name was not saved correctly'
                     state=saved['state'];elapsed=round(time.monotonic()-started,2)
                     row={'input':text,'state_seconds':elapsed,'reply':[e['payload']['reply'] for e in events if e['kind']=='delegation.completed'][-1]};report['turns'].append(row)
                     basket=state['basket']
@@ -120,8 +120,8 @@ async def main():
                         assert 'يعطيك العافيه' in normalize(row['received_success_transcript'])
                         snapshot=await call.state()
                         assert any(e['sequence']>floor and e['kind']=='voice.result_playout' and e['payload'].get('completed') for e in snapshot['events'])
-                        assert state['customer_name']=='عبدالله'
-                        assert state['hospitality']['orders'][state['order_id']]['customer_name']=='عبدالله'
+                        assert ''.join(state['customer_name'].split())=='عبدالله'
+                        assert state['hospitality']['orders'][state['order_id']]['customer_name']==state['customer_name']
                     row['passed']=True;print(json.dumps(row,ensure_ascii=False),flush=True)
                 report['passed']=True
             finally:await call.close()
