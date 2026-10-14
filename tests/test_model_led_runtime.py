@@ -275,3 +275,29 @@ async def test_empty_basket_claim_repaired_into_saved_item_before_reply(engine, 
     assert saved['basket'][0]['options']['bread'] == ['saj']
     assert saved['order_id'] is None
     assert p.reply == 'استلام ولا توصيل؟'
+
+
+@pytest.mark.asyncio
+async def test_unaccepted_tea_alternative_does_not_replace_saved_new_dish(engine, tmp_path):
+    tx = Transactions(tmp_path / 'calls.db', engine)
+    sid, _ = tx.create()
+    row = tx.load(sid)
+    row['state']['history'] = [
+        {'role':'user', 'content':'أبي ثلاثة شاي عدني'},
+        {'role':'assistant', 'content':'ما عندنا عدني، تبي شاي أحمر أو كرك؟'}]
+    planner = Scripted(
+        {'content':'تم، أضيف لك شكشوكة حجم كبير مع خبز تميس. تبي شاي أحمر أو كرك؟'},
+        calls(call('add_item', item_id='breakfast_01', quantity=1,
+                   options={'portion':['large'], 'bread':['tamees']}, notes='')),
+        calls(call('set_service', service='delivery')),
+        {'content':'التوصيل بأي مدينة؟'})
+    p = await prepare_turn(engine, planner, row,
+        'أبي شكشوكة كبير تميس وتوصيل', conversation_mode='model_led')
+    await commit_turn(tx, sid, 'new-dish-after-unavailable', p)
+    saved = tx.load(sid)['state']
+    assert len(saved['basket']) == 1
+    assert saved['basket'][0]['item_id'] == 'breakfast_01'
+    assert saved['basket'][0]['options'] == {'portion':['large'], 'bread':['tamees']}
+    assert saved['service'] == 'delivery'
+    assert saved['order_id'] is None
+    assert p.reply == 'التوصيل بأي مدينة؟'

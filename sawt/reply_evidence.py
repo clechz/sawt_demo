@@ -25,6 +25,9 @@ def unsupported_claim(before, after, reply):
         return 'No item, option or note was removed. Do not claim removal. Execute the requested valid edit or ask what to remove; preserve all other items.'
     edits = any(before.get(key) != after.get(key) for key in ('basket','service','branch','location','delivery_details','customer_name'))
     changed_claim = re.search(r'\b(?:عدلت|غيرت|بدلت|خليت|زدت|ضفت|اضفت)\b|\bتم (?:تعديل|تغيير|اضافه|اختيار|حفظ|تسجيل)|\b(?:updated|added|changed)\b', text)
+    accepted_add = re.search(r'\b(?:تم|تمام|ابشر)[،, ]+(?:راح )?(?:اضيف|نضيف)\b', text)
+    if accepted_add and before['basket'] == after['basket']:
+        return 'The promised item addition was not saved. Save the requested available dish with add_item before acknowledging it. A fulfillment change alone is not an item addition. Unaccepted alternatives are not ordered items.'
     if changed_claim and not edits:
         return 'No requested draft edit was saved this turn. Do not claim a change. Use the appropriate tool to make the requested edit, or ask a focused clarification. Current saved state is authoritative.'
     h=after.get('hospitality', {})
