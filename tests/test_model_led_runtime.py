@@ -372,3 +372,49 @@ async def test_completeness_check_does_not_order_information_request(engine):
     planner=Scripted({'content':'سعر الشكشوكة يبدأ من 18 ريال.'},{'content':'سعر الشكشوكة يبدأ من 18 ريال.'})
     p=await turn(engine,state,planner,'أبي أعرف سعر الشكشوكة')
     assert not p.operations
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('old_address',[False,True])
+async def test_partial_unsupported_address_persisted_before_followup(engine,tmp_path,old_address):
+    tx=Transactions(tmp_path/'calls.db',engine);sid,_=tx.create()
+    row=tx.load(sid);state=row['state']
+    engine.act(state,'set_service',{'service':'delivery'})
+    if old_address:
+        engine.act(state,'set_delivery_details',{'city':'الرياض','zone':'النرجس','street':'عثمان','building':'12'})
+        state['quote']={'revision':state['revision'],'total':99,'presented':False}
+    with tx.connect() as db:
+        db.execute('UPDATE calls SET state=? WHERE id=?',(json.dumps(state,ensure_ascii=False),sid))
+    planner=Scripted(
+        {'content':'احتاج اسم الشارع والمبنى في حي الفيصلية بالدمام.'},
+        calls(call('set_delivery_details',city='الدمام',zone='الفيصلية')),
+        {'content':'الدمام خارج نطاق التوصيل. يناسبك الاستلام؟'})
+    p=await prepare_turn(engine,planner,row,'التوصيل للدمام حي الفيصلية',conversation_mode='model_led')
+    await commit_turn(tx,sid,'address-before-question',p)
+    saved=tx.load(sid)['state']
+    assert saved['delivery_details']=={'city':'الدمام','zone':'الفيصلية'}
+    assert saved['service']=='delivery'
+    assert not saved['location'] and not saved['branch'] and not saved['quote']
+    assert not saved['order_id']
+
+
+@pytest.mark.asyncio
+async def test_address_reminder_preserves_unrelated_question(engine):
+    state=new_state();engine.act(state,'set_service',{'service':'delivery'})
+    planner=Scripted({'content':'التوصيل يعتمد على المدينة والحي.'},
+                     {'content':'التوصيل يعتمد على المدينة والحي.'})
+    p=await turn(engine,state,planner,'كيف تحسبون رسوم التوصيل لكل حي؟')
+    assert not p.operations
+
+
+@pytest.mark.asyncio
+async def test_saved_partial_address_needs_no_redundant_planner_round(engine,tmp_path):
+    tx=Transactions(tmp_path/'calls.db',engine);sid,_=tx.create()
+    planner=Scripted(calls(call('set_delivery_details',city='الرياض',zone='النرجس')),
+                     {'content':'وش اسم الشارع؟'})
+    p=await prepare_turn(engine,planner,tx.load(sid),'التوصيل للرياض حي النرجس',conversation_mode='model_led')
+    await commit_turn(tx,sid,'partial-address',p)
+    saved=tx.load(sid)['state']
+    assert saved['delivery_details']=={'city':'الرياض','zone':'النرجس'}
+    assert saved['branch']=='ruh_narjis' and not saved['location']
+    assert len(planner.messages)==2

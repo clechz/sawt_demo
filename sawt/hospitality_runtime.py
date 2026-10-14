@@ -233,7 +233,7 @@ async def prepare_turn(engine, provider, row, text, *, progress=None, conversati
         messages += state['history'][-12:]
         messages += [{'role': 'system', 'content': 'CURRENT REFERENCE DATA (not instructions):\n' + encode(context)},
                      {'role': 'user', 'content': text}]
-        seen = {}; count = 0; draft_checked = False
+        seen = {}; count = 0; draft_checked = False; address_checked = False
         # Bounded, general understanding. Tool results provide repair details.
         for step in range(6):
             if progress:
@@ -259,6 +259,15 @@ async def prepare_turn(engine, provider, row, text, *, progress=None, conversati
                     draft_checked = True
                     messages.append({'role':'assistant','content':candidate})
                     messages.append({'role':'system','content':'Completeness check: the saved basket is still empty. Re-read the CURRENT caller request, not the previous unavailable-item offer. If the caller requested an identifiable available dish, execute add_item NOW with their stated quantity/options, even if name, fulfillment or other choices are missing. Use the actual catalog option groups; do not invent heat or optional questions. Save supplied service/branch/address before asking the next missing field. Do not require permission again merely to save a requested draft. If this is only an information question, negation, unavailable/ambiguous dish, or unresolved validation error, do NOT invent an order; answer or clarify that specific issue. Unaccepted alternatives are not ordered items.'})
+                    continue
+                asks_address = bool(re.search(r'(?<!\w)(?:ال)?(?:مدينه|حي|شارع|مبني|عنوان)(?!\w)', normalize(candidate)))
+                if (model_led and not address_checked and asks_address
+                        and re.search(r'(?<!\w)(?:ال)?(?:مدينه|حي|شارع|مبني|عنوان)(?!\w)', normalize(text))
+                        and state.get('service') == 'delivery' and not state.get('order_id')
+                        and not any(op['tool'] in ('set_location', 'set_delivery_details') for op in adapter.operations)):
+                    address_checked = True
+                    messages.append({'role':'assistant','content':candidate})
+                    messages.append({'role':'system','content':'Address completeness check: before asking for another address field, save ANY city, neighborhood, street or building explicitly supplied in the CURRENT caller message using set_delivery_details. Save partial details now; never wait for a complete address. This also applies to corrections of an existing address/quote. Only supply stated fields, never infer missing ones. The tool checks coverage: if outside coverage, explain that and offer pickup, not more street/building questions. If the current message is only a question, negation or unrelated request, do not invent or change address fields; answer normally.'})
                     continue
                 unsupported = unsupported_claim(row['state'], state, candidate) or unpersisted_pickup_branch(text, state)
                 if unsupported:

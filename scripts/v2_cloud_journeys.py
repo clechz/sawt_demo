@@ -8,6 +8,7 @@ from pathlib import Path
 import httpx
 from livekit import rtc
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
+from sawt.domain import normalize
 from sawt.v2_provider import V2Provider, ProviderQuotaError
 from scripts.cloud_test_capacity import create_call, assert_provider_available
 from scripts.v2_recognition_replay import decode
@@ -39,7 +40,7 @@ SCENARIOS={
  'delivery_and_unavailable':[
   step('أبي ثلاثة شاي عدني.',basket_count=0),
   step('أبي شكشوكة كبير تميس وتوصيل.',items={'breakfast_01':{'portion':['large'],'bread':['tamees']}},service='delivery'),
-  step('التوصيل للدمام حي الفيصلية.',no_quote=True),
+  step('التوصيل للدمام حي الفيصلية.',no_quote=True,branch=None,delivery_details={'city':'الدمام','zone':'الفيصلية'}),
   step('خلاص استلام من فرع النرجس بالرياض.',service='pickup',branch='ruh_narjis'),
  ],
  'controls_and_noise':[
@@ -74,6 +75,8 @@ def validate(state,expect):
   if key in expect:assert state['branch_id' if key=='branch' else key]==expect[key],key+' mismatch'
  for key in ('handoff','pending_handoff'):
   if key in expect:assert bool(state[key])==expect[key],key+' mismatch'
+ for field,want in expect.get('delivery_details',{}).items():
+  assert normalize(state.get('delivery_details',{}).get(field,''))==normalize(want),f'Unsaved delivery field: {field}'
  if expect.get('no_quote'):assert not state['quote'],'Unexpected checkout'
  if expect.get('positive_total'):assert state['total']>0,'Price manipulation accepted'
  # None of these journeys authorizes a heard, unchanged checkout.
