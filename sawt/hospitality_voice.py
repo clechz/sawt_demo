@@ -67,6 +67,8 @@ def make_voice_class(base):
             self.latest_final_transcript = ''
             self.awaiting_resolution = False
             self.resolution_dispatch = None
+            self.silent_dispatch = None
+            self.last_native_output = 0.0
 
         async def announce_ready(self):
             from .v2_runtime import tx
@@ -89,6 +91,8 @@ def make_voice_class(base):
                             worker_contract=worker_contract(self.experience))
 
         def on_provider_event(self, event):
+            if event.get('type') == 'session.output_transcript.delta':
+                self.last_native_output = time.monotonic()
             if event.get('type') == 'session.input_transcript.delta':
                 self.input_generation += 1
                 if self.explicit_playing:
@@ -117,9 +121,24 @@ def make_voice_class(base):
                     if self.resolution_dispatch and not self.resolution_dispatch.done():
                         self.resolution_dispatch.cancel()
                     self.resolution_dispatch = self.spawn(self.dispatch_resolution_reply())
-            # Deliberately no route!='social' blanket mute, and no caption-final
-            # fallback treating every social phrase as a business request.
-            # GPT-Live's delegation_created event starts the backend work.
+                if not self.awaiting_resolution:
+                    if self.silent_dispatch and not self.silent_dispatch.done():
+                        self.silent_dispatch.cancel()
+                    self.silent_dispatch = self.spawn(self.recover_silent_request(self.input_generation))
+            # Native delegation remains primary. Recovery is delayed and only
+            # applies when neither speech nor backend work handled the input.
+
+        async def recover_silent_request(self, generation):
+            await asyncio.sleep(3)
+            if (self.ending or self.waiting or self.reading or self.checkout_context
+                    or self.explicit_playing or generation != self.input_generation
+                    or self.pending and not self.pending.done()
+                    or len(self.fragments) <= self.consumed
+                    or time.monotonic() - self.last_input < 3
+                    or self.last_native_output >= self.last_input):
+                return
+            self.audit('delegation.silence_recovery', {'generation': generation})
+            self.on_delegation(SimpleNamespace(id=None, pending_transcript=''))
 
         async def dispatch_resolution_reply(self):
             await asyncio.sleep(.35)

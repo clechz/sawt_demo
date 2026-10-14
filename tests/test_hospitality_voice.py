@@ -6,6 +6,8 @@ class Gate:
  def set_enabled(self,v):self.calls.append(v)
 class Base:
  def __init__(self,sid,room,**kw):self.kw=kw;self.ending=False;self.audio_gate=Gate();self.events=[]
+ def spawn(self,coro):
+  coro.close();return None
  def audit(self,*a):self.events.append(a)
  def on_provider_event(self,event):self.events.append(event)
 
@@ -67,3 +69,28 @@ async def test_exhausted_private_replans_resume_unconsumed_request_only():
  voice.consumed=0;voice.ending=True
  await voice.resume_delegated_request()
  assert len(voice.dispatched)==1
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('blocked', ['none','speech','input','pending','waiting','reading','checkout','consumed','ending'])
+async def test_silent_recovery_only_delegates_unhandled_quiet_input(blocked, monkeypatch):
+ import time
+ from unittest.mock import AsyncMock
+ monkeypatch.setattr('sawt.hospitality_voice.asyncio.sleep', AsyncMock())
+ class RecoveryBase(Base):
+  def __init__(self,*a,**k):
+   super().__init__(*a,**k)
+   self.fragments=['أبي شاي'];self.consumed=0;self.pending=None;self.dispatched=[]
+   self.last_input=time.monotonic()-4;self.waiting=False;self.reading=False;self.checkout_context=None
+  def on_delegation(self,d):self.dispatched.append(d)
+ voice=make_voice_class(RecoveryBase)('id',None,{'voice':'cedar'})
+ if blocked=='speech':voice.last_native_output=time.monotonic()
+ if blocked=='input':voice.input_generation=1
+ if blocked=='pending':voice.pending=SimpleNamespace(done=lambda:False)
+ if blocked=='waiting':voice.waiting=True
+ if blocked=='reading':voice.reading=True
+ if blocked=='checkout':voice.checkout_context={'token':'pending'}
+ if blocked=='consumed':voice.consumed=1
+ if blocked=='ending':voice.ending=True
+ await voice.recover_silent_request(0)
+ assert len(voice.dispatched)==(1 if blocked=='none' else 0)
