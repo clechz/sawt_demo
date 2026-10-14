@@ -301,3 +301,28 @@ async def test_unaccepted_tea_alternative_does_not_replace_saved_new_dish(engine
     assert saved['service'] == 'delivery'
     assert saved['order_id'] is None
     assert p.reply == 'التوصيل بأي مدينة؟'
+
+
+@pytest.mark.asyncio
+async def test_pickup_claim_requires_persisted_service_and_branch(engine, tmp_path):
+    tx=Transactions(tmp_path/'calls.db',engine)
+    sid,_=tx.create()
+    row=tx.load(sid)
+    row['state']['service']='delivery'
+    planner=Scripted(
+        {'content':'تم تحويل الطلب للاستلام من فرع النرجس بالرياض. الطلب باسم مين؟'},
+        calls(call('set_service',service='pickup'),call('set_branch',branch_id='ruh_narjis')),
+        {'content':'الطلب باسم مين؟'})
+    p=await prepare_turn(engine,planner,row,'خلاص استلام من فرع النرجس بالرياض',conversation_mode='model_led')
+    await commit_turn(tx,sid,'pickup-repair',p)
+    saved=tx.load(sid)['state']
+    assert saved['service']=='pickup' and saved['branch']=='ruh_narjis'
+    assert not saved['order_id']
+    assert p.reply=='الطلب باسم مين؟'
+
+
+def test_unrelated_edit_does_not_validate_pickup_claim():
+    from sawt.reply_evidence import unsupported_claim
+    before=new_state();before['service']='delivery'
+    after=copy.deepcopy(before);after['customer_name']='عبدالله'
+    assert unsupported_claim(before,after,'تم تحويل الطلب للاستلام من فرع النرجس بالرياض')
