@@ -134,8 +134,13 @@ def make_voice_class(base):
                     or self.explicit_playing or generation != self.input_generation
                     or self.pending and not self.pending.done()
                     or len(self.fragments) <= self.consumed
-                    or time.monotonic() - self.last_input < 3
-                    or self.last_native_output >= self.last_input):
+                    or time.monotonic() - self.last_input < 3):
+                return
+            text = ''.join(self.fragments[self.consumed:]).strip()
+            # A spoken acknowledgment does not persist a business request.
+            # Let the planner interpret unhandled content; it still cannot
+            # bypass confirmation, validation, or transaction guards.
+            if self.last_native_output >= self.last_input and route_transcript(text) == 'social':
                 return
             self.audit('delegation.silence_recovery', {'generation': generation})
             self.on_delegation(SimpleNamespace(id=None, pending_transcript=''))

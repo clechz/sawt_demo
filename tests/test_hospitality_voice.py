@@ -72,7 +72,7 @@ async def test_exhausted_private_replans_resume_unconsumed_request_only():
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize('blocked', ['none','speech','input','pending','waiting','reading','checkout','consumed','ending'])
+@pytest.mark.parametrize('blocked', ['none','business_ack','speech','input','pending','waiting','reading','checkout','consumed','ending'])
 async def test_silent_recovery_only_delegates_unhandled_quiet_input(blocked, monkeypatch):
  import time
  from unittest.mock import AsyncMock
@@ -84,7 +84,9 @@ async def test_silent_recovery_only_delegates_unhandled_quiet_input(blocked, mon
    self.last_input=time.monotonic()-4;self.waiting=False;self.reading=False;self.checkout_context=None
   def on_delegation(self,d):self.dispatched.append(d)
  voice=make_voice_class(RecoveryBase)('id',None,{'voice':'cedar'})
- if blocked=='speech':voice.last_native_output=time.monotonic()
+ if blocked=='business_ack':voice.last_native_output=time.monotonic()
+ if blocked=='speech':
+  voice.last_native_output=time.monotonic();voice.fragments=['هلا']
  if blocked=='input':voice.input_generation=1
  if blocked=='pending':voice.pending=SimpleNamespace(done=lambda:False)
  if blocked=='waiting':voice.waiting=True
@@ -93,4 +95,4 @@ async def test_silent_recovery_only_delegates_unhandled_quiet_input(blocked, mon
  if blocked=='consumed':voice.consumed=1
  if blocked=='ending':voice.ending=True
  await voice.recover_silent_request(0)
- assert len(voice.dispatched)==(1 if blocked=='none' else 0)
+ assert len(voice.dispatched)==(1 if blocked in ('none','business_ack') else 0)
