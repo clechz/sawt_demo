@@ -24,7 +24,7 @@ def unsupported_claim(before, after, reply):
     if removed and not removed_value:
         return 'No item, option or note was removed. Do not claim removal. Execute the requested valid edit or ask what to remove; preserve all other items.'
     edits = any(before.get(key) != after.get(key) for key in ('basket','service','branch','location','delivery_details','customer_name'))
-    changed_claim = re.search(r'\b(?:عدلت|غيرت|بدلت|خليت|زدت|ضفت|اضفت)\b|\bتم (?:تعديل|تغيير|تحويل|نقل|اضافه|اختيار|حفظ|تسجيل)|\b(?:updated|added|changed)\b', text)
+    changed_claim = re.search(r'\b(?:عدلت|غيرت|بدلت|خليت|زدت|ضفت|اضفت|اخترت)\b|\bتم (?:تعديل|تغيير|تحويل|نقل|اضافه|اختيار|حفظ|تسجيل)|\b(?:updated|added|changed)\b', text)
     fulfillment_claim = re.search(r'(?:تم (?:تحويل|تغيير)|حولت|غيرت) (?:الطلب|طلبك)(?: الي| الى)? (?:ل)?(لاستلام|استلام|للتوصيل|توصيل)', text)
     if fulfillment_claim:
         desired = 'pickup' if 'استلام' in fulfillment_claim[1] else 'delivery'

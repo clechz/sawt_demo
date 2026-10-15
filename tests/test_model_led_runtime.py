@@ -441,3 +441,20 @@ async def test_empty_draft_followup_guard_cannot_order_questions_or_negations(en
                      {'content':'بيتزا الشاورما موجودة، وما أضفتها لطلبك.'})
     p=await turn(engine,new_state(),planner,text)
     assert not p.operations
+
+
+@pytest.mark.asyncio
+async def test_size_selection_claim_requires_saved_option(engine,tmp_path):
+    tx=Transactions(tmp_path/'calls.db',engine);sid,_=tx.create()
+    tx.execute(sid,'seed-pizza',0,0,'add_item',{'item_id':'pizza_flatbread_07','quantity':1,'options':{},'notes':''})
+    row=tx.load(sid);line=row['state']['basket'][0]['line_id']
+    planner=Scripted(
+        {'content':'تم، اخترت لك بيتزا شاورما كبيرة. أي نوع عجينة تفضل؟'},
+        calls(call('update_item',line_id=line,options={'size':['large']})),
+        {'content':'أي نوع عجينة تفضل؟'})
+    p=await prepare_turn(engine,planner,row,'خلي كبير',conversation_mode='model_led')
+    await commit_turn(tx,sid,'saved-size',p)
+    saved=tx.load(sid)['state']
+    assert len(saved['basket'])==1
+    assert saved['basket'][0]['options']=={'size':['large']}
+    assert not saved['order_id']
