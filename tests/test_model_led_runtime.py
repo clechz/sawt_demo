@@ -418,3 +418,26 @@ async def test_saved_partial_address_needs_no_redundant_planner_round(engine,tmp
     assert saved['delivery_details']=={'city':'الرياض','zone':'النرجس'}
     assert saved['branch']=='ruh_narjis' and not saved['location']
     assert len(planner.messages)==2
+
+
+@pytest.mark.asyncio
+async def test_partial_pizza_request_saved_before_crust_question(engine,tmp_path):
+    tx=Transactions(tmp_path/'calls.db',engine);sid,_=tx.create()
+    planner=Scripted(
+        {'content':'أي نوع عجينة تفضل لبيتزا الشاورما؟'},
+        calls(call('add_item',item_id='pizza_flatbread_07',quantity=1,options={},notes='')),
+        {'content':'وش الحجم اللي تبيه؟'})
+    p=await prepare_turn(engine,planner,tx.load(sid),'حطني بيتزا شاورما',conversation_mode='model_led')
+    await commit_turn(tx,sid,'pizza-draft',p)
+    saved=tx.load(sid)['state']
+    assert len(saved['basket'])==1 and saved['basket'][0]['item_id']=='pizza_flatbread_07'
+    assert saved['basket'][0]['options']=={} and not saved['order_id']
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('text',['عندكم بيتزا شاورما؟','لا تحط بيتزا شاورما'])
+async def test_empty_draft_followup_guard_cannot_order_questions_or_negations(engine,text):
+    planner=Scripted({'content':'عندنا بيتزا شاورما، تحب تعرف خياراتها؟'},
+                     {'content':'بيتزا الشاورما موجودة، وما أضفتها لطلبك.'})
+    p=await turn(engine,new_state(),planner,text)
+    assert not p.operations

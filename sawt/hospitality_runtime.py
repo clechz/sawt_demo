@@ -255,10 +255,11 @@ async def prepare_turn(engine, provider, row, text, *, progress=None, conversati
                 # remain the model's responsibility to distinguish.
                 if (model_led and not draft_checked and not state['basket']
                         and context['catalog'].get('menu_candidates')
-                        and re.search(r'\b(?:ابي|ابغي|اريد|عطني|اعطني|هات|ضيف|اضف)\b', normalize(text))):
+                        and (re.search(r'\b(?:ابي|ابغي|اريد|عطني|اعطني|هات|ضيف|اضف)\b', normalize(text))
+                             or '?' in candidate or '؟' in candidate)):
                     draft_checked = True
                     messages.append({'role':'assistant','content':candidate})
-                    messages.append({'role':'system','content':'Completeness check: the saved basket is still empty. Re-read the CURRENT caller request, not the previous unavailable-item offer. If the caller requested an identifiable available dish, execute add_item NOW with their stated quantity/options, even if name, fulfillment or other choices are missing. Use the actual catalog option groups; do not invent heat or optional questions. Save supplied service/branch/address before asking the next missing field. Do not require permission again merely to save a requested draft. If this is only an information question, negation, unavailable/ambiguous dish, or unresolved validation error, do NOT invent an order; answer or clarify that specific issue. Unaccepted alternatives are not ordered items.'})
+                    messages.append({'role':'system','content':'Completeness check: the saved basket is still empty. Re-read the CURRENT caller request, not the previous unavailable-item offer. If the caller requested an identifiable available dish, execute add_item NOW with their stated quantity/options, even if required options, name or fulfillment are missing. Save an incomplete line with only explicitly chosen options before asking its next missing choice. Use the actual catalog option groups; do not invent heat or optional questions. Save supplied service/branch/address before asking the next missing field. Do not require permission again merely to save a requested draft. If this is only an information question, negation, unavailable/ambiguous dish, or unresolved validation error, do NOT invent an order; answer or clarify that specific issue. Unaccepted alternatives are not ordered items.'})
                     continue
                 asks_address = bool(re.search(r'(?<!\w)(?:ال)?(?:مدينه|حي|شارع|مبني|عنوان)(?!\w)', normalize(candidate)))
                 if (model_led and not address_checked and asks_address
