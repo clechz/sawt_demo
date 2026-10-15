@@ -113,7 +113,10 @@ class ModelLedEngine(HospitalityEngine):
                         invalidated['options']['bread'] = []
                         result = super().act(state, action, invalidated, utterance=utterance)
                         self._invalidate_explicit_changes(state, action, invalidated)
-                        return {**result, 'error':'الخبز المطلوب مو متوفر لهذا الصنف. شلت اختيار الخبز السابق؛ اسأل العميل يختار من المتوفر، ولا تختار بديل عنه.',
+                        available = '، '.join(option['name'] for option in item['groups']['bread']['options'].values())
+                        return {**result, 'error':'Requested bread unavailable; previous choice cleared.',
+                                'terminal':True,
+                                'reply':'الخبز اللي طلبته مو متوفر لهذا الصنف. المتوفر: '+available+'. وش تختار؟',
                                 'available_bread':item['groups']['bread']['options']}
                     if previous and evidence and added - evidence:
                         raise RuleError('الخيار السابق محفوظ. لا تستبدله بخيار ما طلبه العميل بوضوح. إذا الكلام تكرار أو مو واضح، احتفظ بالاختيار واسأل عن المقصود. إذا طلب تختار عنه، استخدم تفويض الاختيار المحدد.')

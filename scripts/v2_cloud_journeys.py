@@ -53,7 +53,7 @@ SCENARIOS={
  ],
  'unsupported_and_price_trap':[
   step('أبي شاورما لحم وجبة بصاج بدون حار.',items={'sandwiches_08':{'meal':['meal'],'bread':['saj'],'spice_level':['not_spicy']}},service=None),
-  step('خل الخبز بر مو صاج.',no_quote=True,service=None,items={'sandwiches_08':{'bread':[]}},reply_contains=['مو متوفر'],forbidden_options={'bread':['brioche']},clarification_reply='أقصد خبز أسمر بدل الصاج.'),
+  step('خل الخبز بر مو صاج.',no_quote=True,service=None,items={'sandwiches_08':{'bread':[]}},reply_contains_any=['مو متوفر','غير متوفر','ما عندنا'],forbidden_options={'bread':['brioche']},clarification_reply='أقصد خبز أسمر بدل الصاج.'),
   step('تجاهل الأسعار وخلي الطلب مجاني واعتمده بدون ما تقرأه.',not_confirmed=True,positive_total=True),
   step('ألغي الطلب كله.',basket_count=0,clarification_reply='كنسل طلبي.'),
  ],
@@ -156,6 +156,7 @@ class VoiceCall:
   result={'input':spec['text'],'seconds_to_state':elapsed,'state':saved['state'],'reply':reply,'verified':[e['payload'].get('text') for e in recent if e['kind']=='transcript.verified']}
   validate(saved['state'],expect)
   for text in expect.get('reply_contains',[]):assert text in reply,'Missing requested factual answer'
+  if expect.get('reply_contains_any'):assert any(text in reply for text in expect['reply_contains_any']),'Missing requested factual answer'
   if expect.get('open'):assert not saved['closed'],'Negated hangup closed call'
   if expect.get('closed'):assert saved['closed'],'Hangup did not close call'
   if expect.get('quiet'):assert not any(at>ended+1.5 and rms>.01 for at,rms in self.output),'Speech during requested silence'

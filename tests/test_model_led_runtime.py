@@ -530,3 +530,5 @@ async def test_unavailable_brown_bread_cannot_be_substituted_with_brioche(engine
     assert saved['basket'][0]['options']=={'meal':['meal'],'bread':[],'spice_level':['not_spicy']}
     assert not saved['quote'] and not saved['order_id']
     assert p.requires_verification
+    assert 'مو متوفر' in p.reply and p.speech_mode=='exact'
+    assert len(planner.messages)==1  # Availability comes from the validated tool, not a generated claim.
