@@ -34,7 +34,7 @@ j.SCENARIOS['information_and_staff']=[
  j.step('بكم سندويش الشاورما؟',basket_count=0,reply_contains=['18','22']),
  j.step('هل تضمنون الأكل آمن لحساسية الفول السوداني؟',basket_count=0,reply_contains_any=['ما أقدر أضمن','ما اقدر اضمن','ما نقدر نضمن','ما عندي'],support_unaccepted=True),
  j.step('أبي أكلم موظف عندي شكوى.',basket_count=0,support_pending='staff_review',support_unaccepted=True),
- j.step('نعم ارفع التفاصيل للمسؤول.',basket_count=0,support_accepted=True),
+ j.step('نعم ارفع التفاصيل للمسؤول.',basket_count=0,support_accepted=True,clarification_reply='نعم أوافق على التحويل'),
 ]
 j.SCENARIOS['controls_and_noise'][0]['expect']['event']='voice.explicit_playback'
 
