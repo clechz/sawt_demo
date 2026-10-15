@@ -556,3 +556,29 @@ async def test_refusing_unapproved_confirmation_preserves_saved_state(engine):
 def test_confirmation_refusal_does_not_hide_other_claims(reply):
     from sawt.reply_evidence import unapproved_confirmation_claim
     assert unapproved_confirmation_claim(reply)
+
+
+@pytest.mark.asyncio
+async def test_price_question_does_not_trigger_draft_repair(engine):
+    planner=Scripted({'content':'ساندويتش الدجاج 18 ريال. تحتاج تفاصيل ثانية؟'})
+    p=await turn(engine,new_state(),planner,'بكم شاورما الدجاج ساندوتش؟')
+    assert not p.state['basket'] and not p.operations
+    assert len(planner.messages)==1
+
+
+@pytest.mark.asyncio
+async def test_price_question_rejects_planner_addition_and_persists_empty_basket(engine,tmp_path):
+    tx=Transactions(tmp_path/'price.db',engine);sid,_=tx.create()
+    planner=Scripted(calls(call('add_item',item_id='sandwiches_07',quantity=1,options={'meal':['sandwich']},notes='')),
+                     {'content':'ساندويتش شاورما الدجاج 18 ريال.'})
+    p=await prepare_turn(engine,planner,tx.load(sid),'بكم شاورما الدجاج ساندوت',conversation_mode='model_led')
+    await commit_turn(tx,sid,'price-only',p)
+    saved=tx.load(sid)['state']
+    assert not saved['basket'] and not saved['order_id'] and not saved['quote']
+    assert not p.operations
+
+
+@pytest.mark.parametrize('text',['بكم الشاورما وضيف لي اثنين','كم سعر الشاي وخليها كبير','أبي شاورما بكم سعرها'])
+def test_mixed_price_and_order_keeps_planner_authority(text):
+    from sawt.reply_evidence import price_only_question
+    assert not price_only_question(text)

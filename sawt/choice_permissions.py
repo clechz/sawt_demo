@@ -88,6 +88,9 @@ class ModelLedEngine(HospitalityEngine):
         return result
 
     def act(self, state, action, args, *, utterance='', can_confirm=False):
+        from .reply_evidence import price_only_question
+        if action in {'add_item', 'update_item', 'replace_item', 'remove_item', 'cancel_draft'} and price_only_question(utterance):
+            raise RuleError('هذا سؤال عن السعر فقط. جاوب من القائمة بدون إضافة أو تغيير الطلب.')
         if action not in PERMISSION_NAMES:
             if action == 'update_item' and isinstance(args.get('options'), dict):
                 # An explicit catalog choice cannot be overwritten with a

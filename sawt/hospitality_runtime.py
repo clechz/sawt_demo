@@ -21,7 +21,7 @@ from .response_style import changes, combine
 from .transactions import Conflict, encode
 from .outcomes import TurnOutcome, describe_outcome
 from .recognition import check_recognition, check_transcript_clarity, AudioWindowError
-from .reply_evidence import unsupported_claim, unpersisted_pickup_branch, unsaved_option_evidence, unapproved_confirmation_claim
+from .reply_evidence import unsupported_claim, unpersisted_pickup_branch, unsaved_option_evidence, unapproved_confirmation_claim, price_only_question
 
 CATALOG = [t for t in TOOLS if t['function']['name'] not in ('handoff', 'offer_handoff')] + SUPPORT_TOOLS
 SPEC = {t['function']['name']: t['function']['parameters'] for t in CATALOG}
@@ -257,7 +257,7 @@ async def prepare_turn(engine, provider, row, text, *, progress=None, conversati
                 # draft. Give one explicit completeness repair, not a regex
                 # mutation or an invented default. Questions/unavailable dishes
                 # remain the model's responsibility to distinguish.
-                if (model_led and not draft_checked and not state['basket']
+                if (model_led and not draft_checked and not price_only_question(text) and not state['basket']
                         and context['catalog'].get('menu_candidates')
                         and (re.search(r'\b(?:ابي|ابغي|اريد|عطني|اعطني|هات|ضيف|اضف)\b', normalize(text))
                              or '?' in candidate or '؟' in candidate)):

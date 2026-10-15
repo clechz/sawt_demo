@@ -95,3 +95,11 @@ def unapproved_confirmation_claim(reply):
             continue
         return True
     return False
+
+
+def price_only_question(text):
+    """Narrow read-only boundary; mixed ordering requests stay with the planner."""
+    text = normalize(text)
+    asks = re.search(r'^(?:بكم|كم سعر|كم قيمه|وش سعر|ايش سعر|how much)\b', text)
+    edits = re.search(r'\b(?:و)?(?:ابي|ابغي|اريد|عطني|اعطني|هات|ضيف|اضف|اطلب|خلي|خليها|عدل|غير|بدل|احذف|شيل|add|order|remove|change)\b', text)
+    return bool(asks and not edits)
