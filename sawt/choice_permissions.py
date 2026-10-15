@@ -68,7 +68,7 @@ def permission_view(state: dict) -> dict:
 
 
 class ModelLedEngine(HospitalityEngine):
-    """Same transactional backend; no language whitelist or canned questions."""
+    """Model-led planning with protected saved choices and scoped delegation."""
     def __init__(self, engine, initial):
         super().__init__(engine, initial)
         self.check_choices = False
@@ -89,6 +89,23 @@ class ModelLedEngine(HospitalityEngine):
 
     def act(self, state, action, args, *, utterance='', can_confirm=False):
         if action not in PERMISSION_NAMES:
+            if action == 'update_item' and isinstance(args.get('options'), dict):
+                # An explicit catalog choice cannot be overwritten with a
+                # different value. Paraphrases without a lexical match stay
+                # with the planner; this guard is not an intent classifier. Delegated selection
+                # has its separate permission-checked path below.
+                from .choices import matches
+                line = self._line(state, args.get('line_id'))
+                item = self.menu.get(line['item_id'])
+                selections = self.menu.canonical_options(item['id'], args['options'])
+                for gid, chosen in selections.items():
+                    previous = set(line['options'].get(gid, []))
+                    if not previous or not isinstance(chosen, list) or gid not in item['groups']:
+                        continue
+                    added = set(chosen) - previous
+                    evidence = {oid for _, _, oid in matches(utterance, gid, item['groups'][gid]['options'])}
+                    if evidence and added - evidence:
+                        raise RuleError('الخيار السابق محفوظ. لا تستبدله بخيار ما طلبه العميل بوضوح. إذا الكلام تكرار أو مو واضح، احتفظ بالاختيار واسأل عن المقصود. إذا طلب تختار عنه، استخدم تفويض الاختيار المحدد.')
             result = super().act(state, action, args, utterance=utterance, can_confirm=can_confirm)
             if not result.get('error') and not result.get('choice_guard'):
                 self._invalidate_explicit_changes(state, action, args)

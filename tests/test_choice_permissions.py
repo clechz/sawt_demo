@@ -69,7 +69,7 @@ def test_dish_identity_and_lifetime_bound_permissions(engine,operation):
 def test_explicit_override_wins_and_is_not_changed_later(engine):
     s,line=basket(engine);a=ModelLedEngine(engine,s);grant(a,s,line)
     select(a,s,line,{'rice':['original']})
-    a.act(s,'update_item',{'line_id':line,'options':{'rice':['white']}})
+    a.act(s,'update_item',{'line_id':line,'options':{'rice':['white']}},utterance='خلي الرز أبيض')
     with pytest.raises(RuleError):select(a,s,line,{'rice':['original']})
     assert s['basket'][0]['options']['rice']==['white']
 

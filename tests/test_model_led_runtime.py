@@ -488,3 +488,29 @@ def test_option_evidence_is_read_only_and_excludes_saved_or_negated(engine):
     assert not unsaved_option_evidence(engine.menu,state,'خلي كبير')
     assert not unsaved_option_evidence(engine.menu,state,'مو صغير')
     assert state==before
+
+
+@pytest.mark.asyncio
+async def test_unclear_repeat_cannot_overwrite_saved_stuffed_crust(engine,tmp_path):
+    tx=Transactions(tmp_path/'calls.db',engine);sid,_=tx.create()
+    tx.execute(sid,'seed',0,0,'add_item',{'item_id':'pizza_flatbread_07','quantity':1,'options':{'size':['large'],'crust':['stuffed']},'notes':''})
+    row=tx.load(sid);line=row['state']['basket'][0]['line_id']
+    planner=Scripted(calls(call('update_item',line_id=line,options={'crust':['classic']})),
+                     {'content':'المحفوظ محشوة جبن. تبغى تغيرها؟'})
+    p=await prepare_turn(engine,planner,row,'ماشي محشوب جبن',conversation_mode='model_led')
+    await commit_turn(tx,sid,'unclear-repeat',p)
+    saved=tx.load(sid)['state']
+    assert saved['basket'][0]['options']=={'size':['large'],'crust':['stuffed']}
+    assert not p.operations and not saved['order_id']
+
+
+@pytest.mark.asyncio
+async def test_explicit_crust_correction_still_persists(engine,tmp_path):
+    tx=Transactions(tmp_path/'calls.db',engine);sid,_=tx.create()
+    tx.execute(sid,'seed',0,0,'add_item',{'item_id':'pizza_flatbread_07','quantity':1,'options':{'size':['large'],'crust':['stuffed']},'notes':''})
+    row=tx.load(sid);line=row['state']['basket'][0]['line_id']
+    planner=Scripted(calls(call('update_item',line_id=line,options={'crust':['thin']})),
+                     {'content':'خليتها رقيقة.'})
+    p=await prepare_turn(engine,planner,row,'لا بدل المحشوة خليها رقيقة',conversation_mode='model_led')
+    await commit_turn(tx,sid,'explicit-correction',p)
+    assert tx.load(sid)['state']['basket'][0]['options']=={'size':['large'],'crust':['thin']}
