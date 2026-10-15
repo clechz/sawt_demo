@@ -94,17 +94,28 @@ class ModelLedEngine(HospitalityEngine):
                 # different value. Paraphrases without a lexical match stay
                 # with the planner; this guard is not an intent classifier. Delegated selection
                 # has its separate permission-checked path below.
-                from .choices import matches
+                from .choices import matches, bread_options
                 line = self._line(state, args.get('line_id'))
                 item = self.menu.get(line['item_id'])
                 selections = self.menu.canonical_options(item['id'], args['options'])
                 for gid, chosen in selections.items():
                     previous = set(line['options'].get(gid, []))
-                    if not previous or not isinstance(chosen, list) or gid not in item['groups']:
+                    if not isinstance(chosen, list) or gid not in item['groups']:
                         continue
                     added = set(chosen) - previous
-                    evidence = {oid for _, _, oid in matches(utterance, gid, item['groups'][gid]['options'])}
-                    if evidence and added - evidence:
+                    catalog = bread_options(self.menu) if gid == 'bread' else item['groups'][gid]['options']
+                    evidence = {oid for _, _, oid in matches(utterance, gid, catalog)}
+                    if gid == 'bread' and evidence - set(item['groups'][gid]['options']):
+                        # The caller rejected the previous bread and requested
+                        # an unavailable one. Keep the dish, invalidate its bread
+                        # and quote, and require a fresh supported selection.
+                        invalidated = copy.deepcopy(args)
+                        invalidated['options']['bread'] = []
+                        result = super().act(state, action, invalidated, utterance=utterance)
+                        self._invalidate_explicit_changes(state, action, invalidated)
+                        return {**result, 'error':'الخبز المطلوب مو متوفر لهذا الصنف. شلت اختيار الخبز السابق؛ اسأل العميل يختار من المتوفر، ولا تختار بديل عنه.',
+                                'available_bread':item['groups']['bread']['options']}
+                    if previous and evidence and added - evidence:
                         raise RuleError('الخيار السابق محفوظ. لا تستبدله بخيار ما طلبه العميل بوضوح. إذا الكلام تكرار أو مو واضح، احتفظ بالاختيار واسأل عن المقصود. إذا طلب تختار عنه، استخدم تفويض الاختيار المحدد.')
             result = super().act(state, action, args, utterance=utterance, can_confirm=can_confirm)
             if not result.get('error') and not result.get('choice_guard'):

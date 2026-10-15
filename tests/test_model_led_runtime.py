@@ -514,3 +514,19 @@ async def test_explicit_crust_correction_still_persists(engine,tmp_path):
     p=await prepare_turn(engine,planner,row,'لا بدل المحشوة خليها رقيقة',conversation_mode='model_led')
     await commit_turn(tx,sid,'explicit-correction',p)
     assert tx.load(sid)['state']['basket'][0]['options']=={'size':['large'],'crust':['thin']}
+
+
+@pytest.mark.asyncio
+async def test_unavailable_brown_bread_cannot_be_substituted_with_brioche(engine,tmp_path):
+    tx=Transactions(tmp_path/'calls.db',engine);sid,_=tx.create()
+    tx.execute(sid,'seed',0,0,'add_item',{'item_id':'sandwiches_08','quantity':1,'options':{'meal':['meal'],'bread':['saj'],'spice_level':['not_spicy']},'notes':''})
+    row=tx.load(sid);line=row['state']['basket'][0]['line_id']
+    planner=Scripted(calls(call('update_item',line_id=line,options={'bread':['brioche']})),
+                     calls(call('update_item',line_id=line,options={'bread':['brioche']})),
+                     {'content':'البر مو متوفر. تبيه صاج ولا بريوش؟'})
+    p=await prepare_turn(engine,planner,row,'خل الخبز بر مو صاج',conversation_mode='model_led')
+    await commit_turn(tx,sid,'unsupported-bread',p)
+    saved=tx.load(sid)['state']
+    assert saved['basket'][0]['options']=={'meal':['meal'],'bread':[],'spice_level':['not_spicy']}
+    assert not saved['quote'] and not saved['order_id']
+    assert p.requires_verification
