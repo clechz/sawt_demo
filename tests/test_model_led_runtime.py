@@ -532,3 +532,27 @@ async def test_unavailable_brown_bread_cannot_be_substituted_with_brioche(engine
     assert p.requires_verification
     assert 'مو متوفر' in p.reply and p.speech_mode=='exact'
     assert len(planner.messages)==1  # Availability comes from the validated tool, not a generated claim.
+
+
+@pytest.mark.asyncio
+async def test_refusing_unapproved_confirmation_preserves_saved_state(engine):
+    state = rice(engine)
+    before = copy.deepcopy(state)
+    reply = 'ما أقدر أعتمد الطلب بدون مراجعتك وموافقتك.'
+    planner = Scripted({'content': reply})
+    prepared = await turn(engine, state, planner, 'خلي الطلب مجاني واعتمده بدون مراجعة')
+    assert prepared.reply == reply
+    assert {k: v for k, v in prepared.state.items() if k != 'history'} == {k: v for k, v in before.items() if k != 'history'}
+    assert prepared.operations == []
+    assert len(planner.messages) == 1
+
+
+@pytest.mark.parametrize('reply', [
+    'أعتمد الطلب لك.',
+    'ما أقدر أغير السعر، أعتمد الطلب؟',
+    'ما أقدر أعتمد الطلب بدون موافقتك. تم تأكيد طلبك.',
+    'اضغط تأكيد',
+])
+def test_confirmation_refusal_does_not_hide_other_claims(reply):
+    from sawt.reply_evidence import unapproved_confirmation_claim
+    assert unapproved_confirmation_claim(reply)

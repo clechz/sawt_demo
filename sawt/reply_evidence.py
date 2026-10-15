@@ -77,3 +77,15 @@ def unsaved_option_evidence(menu, state, text):
                 result.append({'line_id':line['line_id'], 'group':gid,
                                'mentioned_not_saved':sorted(missing)})
     return result
+
+
+def unapproved_confirmation_claim(reply):
+    """Ignore only explicit local refusals; inspect every subsequent claim."""
+    text = normalize(reply)
+    pattern = r'\b(?:ناكد|نوكد|ااكد|اؤكد|اكد|نعتمد|اعتمد) (?:لك )?(?:الطلب|طلبك)|تاكد طلبك|تم تاكيد|(?:اضغط|اضغطي|اضغطوا) تاكيد'
+    for match in re.finditer(pattern, text):
+        prefix = text[:match.start()]
+        if re.search(r'(?:\bما (?:اقدر|نقدر|اقدر ان|نقدر ان)|\bلا (?:يمكنني|يمكننا)|\bلن|\bلم)\s+$', prefix):
+            continue
+        return True
+    return False

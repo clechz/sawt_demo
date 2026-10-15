@@ -21,7 +21,7 @@ from .response_style import changes, combine
 from .transactions import Conflict, encode
 from .outcomes import TurnOutcome, describe_outcome
 from .recognition import check_recognition, check_transcript_clarity, AudioWindowError
-from .reply_evidence import unsupported_claim, unpersisted_pickup_branch, unsaved_option_evidence
+from .reply_evidence import unsupported_claim, unpersisted_pickup_branch, unsaved_option_evidence, unapproved_confirmation_claim
 
 CATALOG = [t for t in TOOLS if t['function']['name'] not in ('handoff', 'offer_handoff')] + SUPPORT_TOOLS
 SPEC = {t['function']['name']: t['function']['parameters'] for t in CATALOG}
@@ -301,7 +301,7 @@ async def prepare_turn(engine, provider, row, text, *, progress=None, conversati
                     messages.append({'role': 'system', 'content': 'Use ask_choice to persist that option question before asking it. Known line/group pairs: ' + encode(targets)})
                     continue
                 # No text-generated success statement can create an order.
-                confirmation_claim = re.search(r'\b(?:ناكد|نوكد|ااكد|اؤكد|اكد|نعتمد|اعتمد) (?:لك )?(?:الطلب|طلبك)|تاكد طلبك|تم تاكيد|(?:اضغط|اضغطي|اضغطوا) تاكيد', normalize(candidate))
+                confirmation_claim = unapproved_confirmation_claim(candidate)
                 if not state.get('order_id') and confirmation_claim:
                     messages.append({'role': 'system', 'content': 'Do not ask for acceptance or invent a confirm button. First execute ALL edits in the current user request against the saved state, then use checkout for final confirmation. Otherwise ask the actual missing field.'})
                     continue
