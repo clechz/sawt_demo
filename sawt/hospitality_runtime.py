@@ -133,8 +133,12 @@ def result_mode(state, operations, reply):
 
 
 def requires_audio_verification(operations, text):
-    """Risk is tied to actual staged tools, never a made-up ASR confidence score."""
+    """Verify consequential tools and corrections that may have been missed entirely."""
     names = {op['tool'] for op in operations}
+    # A misheard correction can produce NO mutation; selecting risk only from
+    # the resulting tools would let that failure bypass acoustic verification.
+    if not names & ORDER_MUTATIONS and re.search(r'\b(?:خل|خلي|خليه|خليها|غير|بدل|صحح|اقصد)\b', normalize(text)):
+        return True
     if names & (CONSEQUENTIAL | PERMISSION_NAMES):
         return True
     if names & {'remove_item', 'replace_item', 'set_location', 'set_delivery_details'}:

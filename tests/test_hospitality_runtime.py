@@ -171,3 +171,21 @@ async def test_spoken_refund_approval_changes_ledger(engine):
     assert len(prepared.state['hospitality']['ledger'])==1
     assert prepared.state['hospitality']['ledger'][0]['amount_halalas']==3000
     assert prepared.requires_verification
+
+
+@pytest.mark.parametrize('text',['خل الخبز برمو صاج','غير الخبز للأسمر','أقصد خبز أسمر بدل الصاج'])
+def test_missed_correction_still_requires_audio_check(text):
+    assert requires_audio_verification([],text)
+
+
+def test_spacing_only_negation_reconciles_without_inventing_words():
+    from sawt.recognition import reconcile_transcripts,check_recognition
+    caption='خل الخبز برمو صاج'
+    heard='خل الخبز بر مو صاج'
+    assert reconcile_transcripts(caption,heard)==heard
+    check_recognition(caption,heard)
+    check_recognition(heard,caption)
+    p=PreparedTurn({},'',[],0,0,caption,True,'live')
+    assert verified_utterance(caption,heard,p)==heard
+    with pytest.raises(AudioWindowError):
+        verified_utterance('خل الخبز بر صاج',heard,p)

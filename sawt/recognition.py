@@ -92,6 +92,10 @@ def check_transcript_clarity(caption, verified):
 def check_recognition(caption, verified):
     """Do not silently drop a question, a negation or a differing quantity."""
     a,b=normalize(caption),normalize(verified)
+    # Identical letters with different spaces can hide a standalone negation
+    # (برمو versus بر مو). Compare the reconciled boundaries, never guessed words.
+    if not any(c.isdigit() for c in a+b) and a.replace(' ','') == b.replace(' ',''):
+        a = b = normalize(reconcile_spacing(caption, verified))
     from .conversation import requests_cancel
     if b and requests_cancel(caption) != requests_cancel(verified):
         raise AudioWindowError('Cancellation intent disagreement')
@@ -132,6 +136,9 @@ def reconcile_spacing(caption, verified):
         # Prefer an intact verified control over a caption that split a word
         # (e.g. إن تظر). Otherwise preserve caption boundaries, including
         # negations; both recognizers must agree on every letter.
+        negatives = r'\b(?:لا|مو|بدون|not|no|without|dont)\b'
+        if re.search(negatives,b) and not re.search(negatives,a):
+            return verified
         if route_transcript(verified) in ('wait','end','recover') or requests_cancel(verified):
             return verified
         return caption
