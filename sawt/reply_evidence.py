@@ -9,6 +9,12 @@ from .domain import normalize, BRANCHES
 
 def unsupported_claim(before, after, reply):
     text = normalize(reply)
+    review_claim = re.search(r'\b(?:تم رفع|رفعت|رفعنا) (?:الشكوي|الشكوى|التفاصيل|البلاغ|طلب المراجعه|المشكله)', text)
+    reviewed = any(c.get('status') == 'review_requested' and
+                   (c.get('resolution') or {}).get('kind') == 'staff_review'
+                   for c in after.get('hospitality', {}).get('cases', []))
+    if review_claim and not reviewed:
+        return 'No staff review has been accepted and saved. Do not claim the complaint was raised. If a presented proposal exists and the caller explicitly accepted it, use accept_resolution; otherwise offer or repeat the actual pending proposal and wait for separate acceptance.'
     if not after.get('customer_name') and re.search(r'(?:الطلب|طلبك) باسم\s*[:：]?\s*(?!مين\b|من\b|ايش\b|وش\b)\S+', text):
         return 'The customer name has not been saved. Use set_customer_name with the name supplied by the caller before claiming the order is under that name. If they requested the summary and all fields are complete, execute checkout next; do not ask permission to calculate the price.'
     if not after['basket'] and re.search(r'طلبك (?:فيه|يحتوي|عباره عن)|في (?:طلبك|السله)\s*[:：]', text):

@@ -16,6 +16,10 @@ def resolution_confirmation(text, kind=None):
         'أوافق على الاسترجاع': {'refund_item', 'cancel_order'},
         'نعم أوافق على التعويض': {'refund_item', 'replace_item'},
         'نعم أوافق على التحويل': {'staff_review'},
+        'نعم ارفع': {'staff_review'},
+        'نعم ارفع التفاصيل للمسؤول': {'staff_review'},
+        'ارفع التفاصيل للمسؤول': {'staff_review'},
+        'نعم ارفعها': {'staff_review'},
     }
     return any(normalize(text)==normalize(value) and (kind is None or kind in kinds)
                for value,kinds in phrases.items())

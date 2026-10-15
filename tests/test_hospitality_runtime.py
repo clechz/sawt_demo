@@ -189,3 +189,29 @@ def test_spacing_only_negation_reconciles_without_inventing_words():
     assert verified_utterance(caption,heard,p)==heard
     with pytest.raises(AudioWindowError):
         verified_utterance('خل الخبز بر صاج',heard,p)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('text',['نعم ارفع','نعم ارفع التفاصيل للمسؤول','ارفع التفاصيل للمسؤول','نعم ارفعها'])
+async def test_staff_review_approval_persists_only_after_heard_offer(engine,text):
+    from sawt.hospitality import resolution_confirmation
+    state=new_state();state['hospitality']=new_hospitality(engine)
+    adapter=HospitalityEngine(engine,state)
+    case=adapter.act(state,'open_support_case',{'category':'general','details':'أبي موظف عندي شكوى'})['case']
+    adapter.act(state,'offer_resolution',{'case_id':case['id'],'resolution':'staff_review'})
+    assert not resolution_confirmation(text,'refund_item')
+    assert not resolution_confirmation(text+' بس غير التفاصيل','staff_review')
+    unheard=await prepare_turn(engine,Scripted(),{'state':state,'epoch':0},text,conversation_mode='model_led')
+    assert not unheard.state['hospitality']['cases'][0]['resolution']
+    state['hospitality']['pending_resolution']['presented']=True
+    prepared=await prepare_turn(engine,Scripted(),{'state':state,'epoch':0},text,conversation_mode='model_led')
+    assert prepared.state['hospitality']['cases'][0]['status']=='review_requested'
+    assert prepared.state['hospitality']['cases'][0]['resolution']['simulated']
+    assert prepared.state['hospitality']['pending_resolution'] is None
+    assert prepared.requires_verification
+
+
+def test_false_staff_review_claim_is_rejected(engine):
+    from sawt.reply_evidence import unsupported_claim
+    state=new_state();state['hospitality']=new_hospitality(engine)
+    assert unsupported_claim(state,state,'تم رفع الشكوى للمسؤول لمراجعتها.')
