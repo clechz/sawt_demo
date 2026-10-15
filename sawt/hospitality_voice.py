@@ -129,12 +129,16 @@ def make_voice_class(base):
             # applies when neither speech nor backend work handled the input.
 
         async def recover_silent_request(self, generation):
-            await asyncio.sleep(3)
+            text = ''.join(self.fragments[self.consumed:]).strip()
+            # Complete lifecycle controls need no restaurant planner grace period.
+            # This schedules existing verified handling, never closes a call itself.
+            delay = .6 if route_transcript(text) in {'end', 'wait', 'recover'} else 3
+            await asyncio.sleep(delay)
             if (self.ending or self.waiting or self.reading or self.checkout_context
                     or self.explicit_playing or generation != self.input_generation
                     or self.pending and not self.pending.done()
                     or len(self.fragments) <= self.consumed
-                    or time.monotonic() - self.last_input < 3):
+                    or time.monotonic() - self.last_input < delay):
                 return
             text = ''.join(self.fragments[self.consumed:]).strip()
             # A spoken acknowledgment does not persist a business request.

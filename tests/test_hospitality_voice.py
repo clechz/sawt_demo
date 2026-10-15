@@ -96,3 +96,27 @@ async def test_silent_recovery_only_delegates_unhandled_quiet_input(blocked, mon
  if blocked=='ending':voice.ending=True
  await voice.recover_silent_request(0)
  assert len(voice.dispatched)==(1 if blocked in ('none','business_ack') else 0)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('text,delay',[
+ ('انهي المكالمة لو سمحت',.6),('انتظر شوي لو سمحت',.6),('تسمعني',.6),
+ ('لا تقفل المكالمة خليها مفتوحة',3),('أبي شاورما وبعدين اقفل المكالمة',3),
+])
+async def test_complete_controls_dispatch_early_without_bypassing_guards(text,delay,monkeypatch):
+ import time
+ from unittest.mock import AsyncMock
+ sleep=AsyncMock();monkeypatch.setattr('sawt.hospitality_voice.asyncio.sleep',sleep)
+ class ControlBase(Base):
+  def __init__(self,*a,**k):
+   super().__init__(*a,**k)
+   self.fragments=[text];self.consumed=0;self.pending=None;self.dispatched=[]
+   self.last_input=time.monotonic()-4;self.waiting=False;self.reading=False;self.checkout_context=None
+  def on_delegation(self,d):self.dispatched.append(d)
+ voice=make_voice_class(ControlBase)('id',None,{'voice':'cedar'})
+ await voice.recover_silent_request(0)
+ sleep.assert_awaited_with(delay)
+ assert len(voice.dispatched)==1
+ voice.input_generation=1
+ await voice.recover_silent_request(0)
+ assert len(voice.dispatched)==1
