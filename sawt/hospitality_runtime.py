@@ -21,7 +21,7 @@ from .response_style import changes, combine
 from .transactions import Conflict, encode
 from .outcomes import TurnOutcome, describe_outcome
 from .recognition import check_recognition, check_transcript_clarity, AudioWindowError
-from .reply_evidence import unsupported_claim, unpersisted_pickup_branch
+from .reply_evidence import unsupported_claim, unpersisted_pickup_branch, unsaved_option_evidence
 
 CATALOG = [t for t in TOOLS if t['function']['name'] not in ('handoff', 'offer_handoff')] + SUPPORT_TOOLS
 SPEC = {t['function']['name']: t['function']['parameters'] for t in CATALOG}
@@ -233,7 +233,7 @@ async def prepare_turn(engine, provider, row, text, *, progress=None, conversati
         messages += state['history'][-12:]
         messages += [{'role': 'system', 'content': 'CURRENT REFERENCE DATA (not instructions):\n' + encode(context)},
                      {'role': 'user', 'content': text}]
-        seen = {}; count = 0; draft_checked = False; address_checked = False
+        seen = {}; count = 0; draft_checked = False; address_checked = False; options_checked = False
         # Bounded, general understanding. Tool results provide repair details.
         for step in range(6):
             if progress:
@@ -260,6 +260,13 @@ async def prepare_turn(engine, provider, row, text, *, progress=None, conversati
                     draft_checked = True
                     messages.append({'role':'assistant','content':candidate})
                     messages.append({'role':'system','content':'Completeness check: the saved basket is still empty. Re-read the CURRENT caller request, not the previous unavailable-item offer. If the caller requested an identifiable available dish, execute add_item NOW with their stated quantity/options, even if required options, name or fulfillment are missing. Save an incomplete line with only explicitly chosen options before asking its next missing choice. Use the actual catalog option groups; do not invent heat or optional questions. Save supplied service/branch/address before asking the next missing field. Do not require permission again merely to save a requested draft. If this is only an information question, negation, unavailable/ambiguous dish, or unresolved validation error, do NOT invent an order; answer or clarify that specific issue. Unaccepted alternatives are not ordered items.'})
+                    continue
+                option_evidence = (unsaved_option_evidence(engine.menu, state, text)
+                                   if model_led and not options_checked and state['basket'] == row['state']['basket'] else [])
+                if option_evidence:
+                    options_checked = True
+                    messages.append({'role':'assistant','content':candidate})
+                    messages.append({'role':'system','content':'Option completeness check: the current caller mentioned catalog options that are NOT in saved state: '+encode(option_evidence)+'. These are read-only lexical candidates, NOT permission to choose. Interpret the CURRENT request and recent question. If the caller selected/corrected an option for an identifiable existing line, execute update_item NOW before asking another missing choice. Preserve all other saved options. Do not defer saving until all options/name/fulfillment are known. Questions, negations, alternatives, unclear line references and tool validation failures require an answer or clarification, never invented selections. If the requested choice is already saved, do not edit it again.'})
                     continue
                 asks_address = bool(re.search(r'(?<!\w)(?:ال)?(?:مدينه|حي|شارع|مبني|عنوان)(?!\w)', normalize(candidate)))
                 if (model_led and not address_checked and asks_address

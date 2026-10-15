@@ -458,3 +458,33 @@ async def test_size_selection_claim_requires_saved_option(engine,tmp_path):
     assert len(saved['basket'])==1
     assert saved['basket'][0]['options']=={'size':['large']}
     assert not saved['order_id']
+
+
+@pytest.mark.asyncio
+async def test_size_answer_saved_even_without_completion_claim(engine,tmp_path):
+    tx=Transactions(tmp_path/'calls.db',engine);sid,_=tx.create()
+    tx.execute(sid,'seed',0,0,'add_item',{'item_id':'pizza_flatbread_07','quantity':1,'options':{},'notes':''})
+    row=tx.load(sid);line=row['state']['basket'][0]['line_id']
+    planner=Scripted({'content':'أي نوع عجينة تفضل؟'},
+        calls(call('update_item',line_id=line,options={'size':['large']})),
+        {'content':'أي نوع عجينة تفضل؟'})
+    p=await prepare_turn(engine,planner,row,'خلّي كبير',conversation_mode='model_led')
+    await commit_turn(tx,sid,'size-answer',p)
+    assert tx.load(sid)['state']['basket'][0]['options']=={'size':['large']}
+
+
+@pytest.mark.asyncio
+async def test_option_question_does_not_authorize_option_edit(engine):
+    state=rice(engine,item_id='pizza_flatbread_07')
+    planner=Scripted({'content':'الكبير حجمه أكبر.'},{'content':'الكبير حجمه أكبر.'})
+    p=await turn(engine,state,planner,'وش الفرق بين كبير ووسط؟')
+    assert not p.operations
+
+
+def test_option_evidence_is_read_only_and_excludes_saved_or_negated(engine):
+    from sawt.reply_evidence import unsaved_option_evidence
+    state=rice(engine,item_id='pizza_flatbread_07',options={'size':['large']})
+    before=copy.deepcopy(state)
+    assert not unsaved_option_evidence(engine.menu,state,'خلي كبير')
+    assert not unsaved_option_evidence(engine.menu,state,'مو صغير')
+    assert state==before

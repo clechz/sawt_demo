@@ -57,3 +57,23 @@ def unpersisted_pickup_branch(text, state):
     if state.get('service') != 'pickup' or state.get('branch') != matches[0]:
         return 'The caller explicitly selected pickup from ' + matches[0] + '. Persist set_service(pickup) and set_branch for that supplied branch before asking for the customer name or another missing field. Name is required at checkout, not before saving fulfillment. If a tool rejects the selection, explain its actual validation error; do not claim or defer the change.'
     return None
+
+
+def unsaved_option_evidence(menu, state, text):
+    """Read-only candidates for a completeness check, never choice authority.
+
+    Questions and ambiguous references can mention these labels too; the planner
+    must interpret the current utterance before calling a validated edit tool.
+    """
+    from .choices import matches
+    if state.get('order_id'):
+        return []
+    result = []
+    for line in state['basket']:
+        for gid, group in menu.get(line['item_id'])['groups'].items():
+            mentioned = {oid for _, _, oid in matches(text, gid, group['options'])}
+            missing = mentioned - set(line['options'].get(gid, []))
+            if missing:
+                result.append({'line_id':line['line_id'], 'group':gid,
+                               'mentioned_not_saved':sorted(missing)})
+    return result
