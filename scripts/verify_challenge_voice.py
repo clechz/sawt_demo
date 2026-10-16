@@ -68,6 +68,12 @@ async def main():
                             while True:
                                 snapshot=await call.state()
                                 if any(e['sequence']>floor and e['kind']=='voice.result_playout' and e['payload'].get('completed') for e in snapshot['events']):break
+                                # Live questions have no exact-TTS completion event.
+                                # Wait for received speech and its silence boundary.
+                                mode = next((e['payload'].get('speech_mode') for e in reversed(events) if e['kind']=='delegation.completed'), None)
+                                audible = [at for at, rms in call.output if at > started and rms > .01]
+                                if mode == 'live' and len(audible) >= 5 and time.monotonic()-audible[-1] > .8:
+                                    break
                                 await asyncio.sleep(.2)
                         floor=call.cursor
                         for i in range(0,len(name_audio),4800):await call.queue.put(name_audio[i:i+4800].ljust(4800,b'\0'))
