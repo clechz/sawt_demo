@@ -214,6 +214,9 @@ async def test_complete_quote_stays_exact_and_needs_separate_consent(engine):
     p.state['quote']['presented'] = True
     confirmed = await turn(engine, p.state, Scripted(), 'نعم')
     assert confirmed.state['order_id'] and confirmed.requires_verification
+    saved = confirmed.state['hospitality']['orders'][confirmed.state['order_id']]
+    assert f"الاستلام خلال {saved['eta_minutes']} دقيقة" in confirmed.reply
+    assert saved['eta_minutes'] > 0
 
 
 @pytest.mark.asyncio

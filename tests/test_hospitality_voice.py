@@ -120,3 +120,27 @@ async def test_complete_controls_dispatch_early_without_bypassing_guards(text,de
  voice.input_generation=1
  await voice.recover_silent_request(0)
  assert len(voice.dispatched)==1
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('interrupted', [False, True])
+async def test_confirmed_close_preserves_order_and_yields_to_new_speech(interrupted, monkeypatch, tmp_path):
+ from unittest.mock import AsyncMock
+ import sawt.v2_runtime as runtime
+ from sawt.transactions import Transactions
+ tx=Transactions(tmp_path/'calls.db',runtime.engine);sid,_=tx.create()
+ import json
+ row=tx.load(sid);row['state']['order_id']='S-TEST'
+ with tx.connect() as db:db.execute('UPDATE calls SET state=? WHERE id=?',(json.dumps(row['state']),sid))
+ monkeypatch.setattr(runtime,'tx',tx)
+ monkeypatch.setattr('sawt.hospitality_voice.asyncio.sleep',AsyncMock())
+ room=SimpleNamespace(disconnect=AsyncMock())
+ voice=make_voice_class(Base)(sid,room,{'voice':'cedar'})
+ voice.sid=sid;voice.room=room
+ voice.session=SimpleNamespace(aclose=AsyncMock());voice.send=AsyncMock()
+ if interrupted:voice.input_generation=1
+ await voice.finish_confirmed_call('S-TEST',0)
+ saved=tx.load(sid)
+ assert bool(saved['closed']) is (not interrupted)
+ assert saved['state']['order_id']=='S-TEST'
+ assert voice.session.aclose.await_count==(0 if interrupted else 1)

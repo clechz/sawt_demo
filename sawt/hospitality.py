@@ -115,7 +115,12 @@ class HospitalityEngine(StagedEngine):
             if action == 'confirm' and state.get('order_id'):
                 ensure_current_order(state, self.engine)
                 # No repeated developer disclaimer inside the disclosed simulation.
-                result['reply'] = 'تأكد طلبك، يعطيك العافية.'
+                order = state['hospitality']['orders'][state['order_id']]
+                eta = order.get('eta_minutes')
+                service = order.get('fulfillment', {}).get('service')
+                estimate = (f" الاستلام خلال {eta} دقيقة تقريبًا." if service == 'pickup' else
+                            f" التوصيل خلال {eta} دقيقة تقريبًا.") if eta and service in ('pickup', 'delivery') else ''
+                result['reply'] = 'تأكد طلبك.' + estimate + ' يعطيك العافية.'
                 self.operations[-1]['result'] = copy.deepcopy(result)
             return result
         h = ensure_current_order(state, self.engine)

@@ -10,6 +10,7 @@ export function receiptModel(state){
   items:order?.items||state.basket||[],total:order?.total_halalas??state.total,
   service:fulfillment.service,branch:fulfillment.branch?.name||'',address:fulfillment.location?.address||'',
   deliveryFee:fulfillment.service==='delivery'?fulfillment.delivery_fee:0,
+  etaMinutes:order?order.eta_minutes:state.eta_minutes,
   refunded:order?.refunded_halalas||0};
 }
 export function createCompletionView(root=document){
@@ -25,8 +26,8 @@ export function createCompletionView(root=document){
    }
    orderId=receipt.id;
    const heading=el('header','receipt-heading');
-   const title=el('h2','',receipt.cancelled?'الطلب ملغي':`طلبك ${receipt.id}`);title.id='completion-title';
-   const intro=el('div','');intro.append(title);if(receipt.customerName)intro.append(el('p','receipt-options',`باسم ${receipt.customerName}`));heading.append(intro);
+   const title=el('h2','',receipt.cancelled?'الطلب ملغي':'تم تأكيد طلبك');title.id='completion-title';
+   const intro=el('div','');intro.append(title,el('p','receipt-options',receipt.id));if(receipt.customerName)intro.append(el('p','receipt-options',`باسم ${receipt.customerName}`));heading.append(intro);
    const items=el('div','receipt-items');
    for(const line of receipt.items){
     const row=el('article','receipt-line');const description=el('div','');
@@ -39,6 +40,7 @@ export function createCompletionView(root=document){
    const service=receipt.service==='pickup'?'استلام من الفرع':receipt.service==='delivery'?'توصيل':'';
    fulfillment.append(el('p','',[service,receipt.branch].filter(Boolean).join(' · ')));
    if(receipt.service==='delivery'&&receipt.address)fulfillment.append(el('p','receipt-address',receipt.address));
+   if(!receipt.cancelled&&Number.isFinite(receipt.etaMinutes)&&receipt.etaMinutes>0)fulfillment.append(el('p','receipt-options',`${receipt.service==='delivery'?'التوصيل المتوقع':'الاستلام المتوقع'} خلال ${receipt.etaMinutes} دقيقة تقريبًا`));
    const total=el('div','receipt-total');total.append(el('span','','الإجمالي'),el('bdi','',price(receipt.total)));
    const nodes=[heading,items,fulfillment];
    nodes.push(total);

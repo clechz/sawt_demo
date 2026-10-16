@@ -112,7 +112,14 @@ async def main():
                     else:
                         assert state['order_id'] and state['total']==5400
                         report['order_id']=state['order_id'];report['final_state']=state
-                        await asyncio.sleep(5)
+                        # The worker must finish audible success before closing the call.
+                        async with asyncio.timeout(35):
+                            while True:
+                                snapshot=await call.state()
+                                if snapshot.get('closed'):break
+                                await asyncio.sleep(.2)
+                        report['automatic_close_verified']=True
+                        assert any(e['sequence']>floor and e['kind']=='call.confirmed_completed' for e in snapshot['events'])
                         audible=next((at-started for at,rms in call.output if at>started and rms>.01),None)
                         assert audible is not None,'No audible confirmation'
                         row['first_received_audio_seconds']=round(audible,2)
@@ -124,6 +131,8 @@ async def main():
                         from sawt.domain import normalize
                         assert 'تاكد طلبك' in normalize(row['received_success_transcript'])
                         assert 'يعطيك العافيه' in normalize(row['received_success_transcript'])
+                        assert 'استلام' in normalize(row['received_success_transcript'])
+                        assert state['hospitality']['orders'][state['order_id']]['eta_minutes'] > 0
                         snapshot=await call.state()
                         assert any(e['sequence']>floor and e['kind']=='voice.result_playout' and e['payload'].get('completed') for e in snapshot['events'])
                         assert ''.join(state['customer_name'].split())=='عبدالله'

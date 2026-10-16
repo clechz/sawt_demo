@@ -65,3 +65,12 @@ test('real Arabic call final state renders the confirmed receipt and keeps it af
  walk(root.panel);assert.ok(text.includes('باسم عبدالله'));assert.ok(text.includes('54 ر.س'));
  assert.ok(text.some(x=>x.includes(evidence.order_id)));assert.equal(root.panel.hidden,false);
 });
+
+
+test('confirmed title and saved ETA are minimal and survive draft changes',()=>{
+ const s=state(),root=rootFixture(),view=createCompletionView(root);
+ s.eta_minutes=999;s.hospitality={orders:{'S-123':{id:'S-123',items:[line],total_halalas:13500,eta_minutes:20,fulfillment:{service:'pickup',branch:{name:'النرجس'}}}}};
+ view.render(s);const text=[];function walk(n){if(n.textContent)text.push(n.textContent);for(const c of n.children||[])walk(c);}walk(root.panel);
+ assert.ok(text.includes('تم تأكيد طلبك'));assert.ok(text.includes('S-123'));
+ assert.ok(text.some(t=>t.includes('20 دقيقة')));assert.ok(!text.some(t=>t.includes('999')));
+});

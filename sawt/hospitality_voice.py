@@ -196,6 +196,30 @@ def make_voice_class(base):
                         self.audio_gate.allow_model(True)
                         self.audio_gate.set_enabled(True, at_boundary=True)
 
+        async def finish_confirmed_call(self, order_id, generation):
+            # Give the caller a short opportunity to interrupt with a question.
+            # Never close on merely generated/partial success speech.
+            from .v2_runtime import tx
+            await asyncio.sleep(2)
+            if self.ending or generation != self.input_generation:
+                return
+            row = await asyncio.to_thread(tx.load, self.sid)
+            if row['closed'] or row['state'].get('order_id') != order_id:
+                return
+            if generation != self.input_generation:
+                return
+            self.ending = True
+            session = self.session
+            await asyncio.to_thread(tx.interrupt, self.sid, close=True)
+            self.audit('call.confirmed_completed', {'order_id': order_id})
+            try:
+                await self.send('ended')
+            finally:
+                try:
+                    await session.aclose()
+                finally:
+                    await self.room.disconnect()
+
         async def work(self, delegation_id):
             from .v2_runtime import tx, engine
             started = time.perf_counter()
@@ -322,6 +346,9 @@ def make_voice_class(base):
                         heard = 'The application finished playing this exact reply: ' if completed else 'The application reply was interrupted; do not assume its final words were heard: '
                         for chunk in context_chunks(heard + result['reply']):
                             self.duplex_session.append_thinking(chunk)
+                        if (completed and await current() and prepared.state.get('order_id')
+                                and any(op['tool'] == 'confirm' for op in prepared.operations)):
+                            self.spawn(self.finish_confirmed_call(prepared.state['order_id'], generation))
                         proposal = prepared.state.get('hospitality', {}).get('pending_resolution')
                         if completed and proposal and not proposal['presented'] and await current():
                             await asyncio.to_thread(mark_proposal_presented, tx, self.sid, proposal['id'], prepared.epoch)
