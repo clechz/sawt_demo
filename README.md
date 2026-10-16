@@ -23,15 +23,28 @@ Full coverage of the challenge's spoken explanation requirements has not been ve
 | What was tested, and what remains uncertain? | [TESTING.md](TESTING.md), [submission checks](SUBMISSION-CHECK.txt) |
 | What does the assistant say? | [37 reusable phrases and request map](CALL-EXPERIENCE.txt) |
 
-## Release audit — 2026-10-13
+## Release audit — 2026-10-16
 
-**Latest live retest failed; do not infer readiness from CI.** See [current results and blockers](SUBMISSION-READINESS.md#latest-retest-release-gate-failed).
+The current runtime includes the 16 October confirmation/ETA, restaurant-scope
+and definite-article recognition fixes. API and worker are released together.
+The current UI uses V3, model-led conversation and Cedar. API clients that omit
+the experience still select V2. The earlier deployment-quota block is historical.
 
-Latest integration combines the Cedar voice/support fixes (`ea64d61`) with the correction, hangup and receipt regressions (`b91b0ee`). Historical [CI for f9f00ec](https://github.com/clechz/sawt_demo/actions/runs/38392581865) does not certify this integration. The current UI uses V3, model-led conversation, fixed Cedar voice. API clients that omit the experience still select V2.
+The independent production audio test on `182727b` passed corrections, repriced
+summaries, explicit confirmation, complete success speech and automatic closure
+with the saved order intact. The next run encountered a provider readback timeout;
+incomplete playback was correctly rejected, without creating an order. The
+subsequent phrase-cache change does not remove upstream readback failures.
+Its readback completion acknowledgments are **timed test
+simulations**, not proof of playback on a user's browser. A human browser call then exposed a false pickup-wording disagreement and
+repeated expired-audio recovery. Both have regression fixes; the complete human
+microphone/speaker ending remains a separate release gate until retested.
 
-**Not ready for final submission recording.** The candidate passed offline and real-provider text/state checks, but Vercel rejected production deployment with `api-deployments-free-per-day` (more than 100 deployments). The new LiveKit worker was rolled back to `TKcMfpvSprXd` to stay matched to the existing website. Latest source is on main; it is not the hosted release. Saved recording access returned HTTP 403, so the recent human call was diagnosed from persisted events/transcripts, not a fresh audio listen.
-
-See [CHALLENGE-AUDIT.md](CHALLENGE-AUDIT.md) for evidence, coverage, limitations and exact remaining release steps. Older V2/V30/V31 results below are historical and do not certify this candidate.
+The success reply includes the saved pickup/delivery estimate. Current estimates
+use independently transcribed synthetic phrase assets to avoid a fresh TTS wait;
+other wording falls back to speech generation. Detailed call evidence stays local.
+Do not infer universal scenario coverage or accent quality from these checks.
+See [verification limits](SUBMISSION-READINESS.md). Older evidence below is historical.
 
 ## Hosted demo
 
@@ -142,10 +155,13 @@ The caller sees an orb, a call action and order details. Debugging information s
 
 The call asks “الطلب باسم مين؟” before checkout and persists the supplied name.
 It reads the current priced summary, waits for explicit confirmation after playback,
-then saves the simulated order and says “تأكد طلبك، يعطيك العافية.” Cedar uses a
-verified fixed recording for that short success phrase, avoiding a fresh TTS request.
-The final receipt keeps the saved name, order ID, items/options, total and fulfillment
-after hangup. [Latest local voice evidence](evidence/v3/cedar-order-ending.json)
+then saves the simulated order and speaks success with its saved time estimate.
+After complete success playback, it closes the call unless new caller speech
+interrupts the short closing window. Cedar uses verified synthetic assets for
+current estimates, avoiding a fresh TTS request. The minimal final receipt keeps
+the saved name, order ID, items/options, total, fulfillment and estimate after hangup.
+Unrelated homework/coding requests redirect to restaurant help; mixed requests
+keep the restaurant portion. [Historical local voice evidence](evidence/v3/cedar-order-ending.json)
 and [verification limits](SUBMISSION-READINESS.md) distinguish local from hosted checks.
 
 With the local API/worker running and funded credentials configured, the paid

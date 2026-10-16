@@ -144,3 +144,34 @@ async def test_confirmed_close_preserves_order_and_yields_to_new_speech(interrup
  assert bool(saved['closed']) is (not interrupted)
  assert saved['state']['order_id']=='S-TEST'
  assert voice.session.aclose.await_count==(0 if interrupted else 1)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('superseded',[False,True])
+async def test_unverifiable_request_is_not_replayed_forever_or_committed(tmp_path,monkeypatch,superseded):
+ import time
+ from unittest.mock import AsyncMock,Mock
+ import sawt.v2_runtime as runtime
+ from sawt.transactions import Transactions
+ from sawt.recognition import AudioWindowError
+ tx=Transactions(tmp_path/'recovery.db',runtime.engine);sid,_=tx.create()
+ monkeypatch.setattr(runtime,'tx',tx)
+ voice=make_voice_class(Base)(sid,None,{'voice':'cedar'})
+ voice.sid=sid;voice.fragments=['أبي شاورما'];voice.fragment_spans=[{'captured_ms':1000}]
+ voice.consumed=0;voice.last_input=time.monotonic()-2;voice.input_boundary=None
+ voice.waiting=False;voice.checkout_context=None;voice.duplex_session=Mock()
+ voice.play_message=AsyncMock()
+ def expired(*a,**k):
+  if superseded:
+   voice.input_generation+=1;voice.fragments.append(' لا أبي كبسة')
+  raise AudioWindowError('Audio window expired')
+ voice.input_audio=SimpleNamespace(wav=expired)
+ before=tx.load(sid)['state']
+ await voice.work('test')
+ assert tx.load(sid)['state']==before
+ assert voice.consumed==(0 if superseded else 1)
+ assert voice.play_message.await_count==(0 if superseded else 1)
+ if not superseded:
+  await voice.work('retry')
+  assert voice.play_message.await_count==1
+  assert voice.delegation_start==voice.consumed

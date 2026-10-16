@@ -134,7 +134,10 @@ async def main():
                         assert 'استلام' in normalize(row['received_success_transcript'])
                         assert state['hospitality']['orders'][state['order_id']]['eta_minutes'] > 0
                         snapshot=await call.state()
-                        assert any(e['sequence']>floor and e['kind']=='voice.result_playout' and e['payload'].get('completed') for e in snapshot['events'])
+                        playout=next(e for e in snapshot['events'] if e['sequence']>floor and e['kind']=='voice.result_playout' and e['payload'].get('completed'))
+                        closure=next(e for e in snapshot['events'] if e['sequence']>floor and e['kind']=='call.confirmed_completed')
+                        assert playout['sequence'] < closure['sequence'], 'Call closed before complete success playout'
+                        assert not any(e['sequence']>floor and e['kind'] in ('voice.task_failed','delegation.failed','playback.failed','readback.failed') for e in snapshot['events']), 'Ending produced a runtime error'
                         assert ''.join(state['customer_name'].split())=='عبدالله'
                         assert state['hospitality']['orders'][state['order_id']]['customer_name']==state['customer_name']
                     row['passed']=True;print(json.dumps(row,ensure_ascii=False),flush=True)

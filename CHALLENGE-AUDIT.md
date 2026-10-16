@@ -1,5 +1,7 @@
 # SAWT challenge audit — 13 October 2026
 
+> Current release note — 16 October: see the [README release audit](README.md#release-audit--2026-10-16) for the deployed revision and remaining actual-browser verification. The dated runs below are historical evidence, not a blanket certification of today's version. Private new call evidence is deliberately excluded from this public repository.
+
 Latest local order ending passed with required customer name, corrected summary,
 explicit spoken consent, saved order, received Cedar success audio (1.84 seconds),
 and receipt rendering from the actual saved state. See

@@ -327,3 +327,12 @@ def test_dual_arabic_number_is_same_quantity(word):
     check_recognition(word+' شاورما','اثنين شاورما')
     with pytest.raises(AudioWindowError):
         check_recognition(word+' شاورما','ثلاثة شاورما')
+
+
+@pytest.mark.parametrize('plain,definite', [('استلام','الاستلام'),('توصيل','التوصيل')])
+def test_fulfillment_definite_article_is_not_a_change_of_intent(plain,definite):
+    check_recognition(f'أبي شاورما بدون حار {plain} من النرجس',f'أبي شاورما بدون حار {definite} من النرجس')
+    check_recognition(definite,plain)
+    other='التوصيل' if plain=='استلام' else 'الاستلام'
+    with pytest.raises(AudioWindowError):check_recognition(plain,other)
+    with pytest.raises(AudioWindowError):check_recognition('لا '+definite,definite)

@@ -363,7 +363,13 @@ def make_voice_class(base):
                 self.processed = ''
             except AudioWindowError as exc:
                 self.audit('transcript.unverified', {'reason': 'unclear_critical_audio', 'detail': str(exc)})
-                await recover('الجزء الأخير ما وضح لي، تعيده؟')
+                if await still_current():
+                    # The rejected request was not committed. Do not keep
+                    # redelegating its expiring PCM when the caller answers.
+                    self.consumed = max(self.consumed, end)
+                    self.delegation_start = self.consumed
+                    self.duplex_session.append_thinking('The last request was not saved because its audio could not be verified. Ask the caller to repeat the whole request; do not replay it from old captions.')
+                    await recover('ما وضح لي طلبك كامل، تعيده لي؟')
             except RuleError as exc:
                 await recover(str(exc))
             except Exception as exc:

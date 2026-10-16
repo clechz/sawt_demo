@@ -108,8 +108,8 @@ def check_recognition(caption, verified):
     negatives=r'\b(?:لا|مو|بدون|not|no|without|dont)\b'
     if re.search(negatives,a) and b and not re.search(negatives,b):
         raise AudioWindowError('Negation disagreement')
-    pickup = r'\b(?:استلام|بستلم|باستلم|استلم|بستلمه|pickup)\b'
-    delivery = r'\b(?:توصيل|delivery)\b'
+    pickup = r'\b(?:(?:ال)?استلام|بستلم|باستلم|استلم|بستلمه|pickup)\b'
+    delivery = r'\b(?:(?:ال)?توصيل|delivery)\b'
     for intent in (pickup, delivery):
         if b and bool(re.search(intent,a)) != bool(re.search(intent,b)):
             raise AudioWindowError('Fulfillment intent disagreement')

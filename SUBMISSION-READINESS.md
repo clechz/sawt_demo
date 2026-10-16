@@ -1,5 +1,7 @@
 # Submission gates — 13 October 2026
 
+> Current release note — 16 October: see the [README release audit](README.md#release-audit--2026-10-16) for the deployed revision and remaining actual-browser verification. The dated runs below are historical evidence, not a blanket certification of today's version. Private new call evidence is deliberately excluded from this public repository.
+
 This is an evidence checklist, not a declaration that the hosted release is ready.
 
 ## Hosted verification update — 13 October
