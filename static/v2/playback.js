@@ -1,10 +1,19 @@
 // One owner for exact readback audio, including stale async callbacks.
 export class ReadbackPlayer {
-  constructor({api, createAudio=()=>new Audio(), releaseAudio=()=>{}, mute, phase, failure, retry, setTimer=(...args)=>globalThis.setTimeout(...args), clearTimer=id=>globalThis.clearTimeout(id)}) {
-    Object.assign(this,{api,createAudio,releaseAudio,mute,phase,failure,retry,setTimer,clearTimer});
+  constructor({api, createAudio=()=>new Audio(), releaseAudio=()=>{}, attachAudio=()=>{}, mute, phase, failure, retry, setTimer=(...args)=>globalThis.setTimeout(...args), clearTimer=id=>globalThis.clearTimeout(id)}) {
+    Object.assign(this,{api,createAudio,releaseAudio,attachAudio,mute,phase,failure,retry,setTimer,clearTimer});
     this.generation=0;
     this.audio=null;
     this.active=false;
+  }
+  // Unlock this exact media element during the caller's start-button gesture.
+  // Creating a new element after async checkout can lose autoplay permission.
+  unlock() {
+    if(!this.unlockedAudio)this.unlockedAudio=this.createAudio();
+    const audio=this.unlockedAudio;
+    audio.src='data:audio/wav;base64,UklGRiYAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YQIAAAAAAA==';
+    const attempt=audio.play();
+    return Promise.resolve(attempt).catch(()=>{});
   }
   cancel() {
     this.clearTimer(this.stallTimer);
@@ -26,14 +35,16 @@ export class ReadbackPlayer {
     this.active=true;
     const generation=this.generation;
     const current=()=>generation===this.generation;
+    let receiptId;
     this.mute(true);
     this.phase('preparing');
     const fail=e=>{
       if(!current())return;
+      if(receiptId)void this.api(`/api/calls/${callId}/playback`,{method:'POST',body:JSON.stringify({receipt_id:receiptId,phase:'failed',error_code:e.name==='NotAllowedError'?'autoplay_blocked':e.code==='readback_incomplete'?'incomplete':e.status===409?'superseded':'media_or_network'})}).catch(()=>{});
       this.cancel();
       const incomplete=e.code==='readback_incomplete';
       const changed=e.status===409&&!incomplete;
-      this.failure(incomplete?'الملخص ما اكتمل. اضغط إعادة الملخص ونسمعه من البداية.':changed?'طلبك تغيّر. بنراجع التعديل قبل الملخص الجديد.':e.message||'تعذر تشغيل الملخص. اضغط إعادة التشغيل.');
+      this.failure(e.name==='NotAllowedError'?'اضغط تشغيل الصوت عشان تسمع ملخص طلبك. الطلب ما تأكد بعد.':incomplete?'الملخص ما اكتمل. اضغط إعادة الملخص ونسمعه من البداية.':changed?'طلبك تغيّر. بنراجع التعديل قبل الملخص الجديد.':e.message||'تعذر تشغيل الملخص. اضغط إعادة التشغيل.');
       this.retry(!changed);
       this.phase('paused');
     };
@@ -46,8 +57,10 @@ export class ReadbackPlayer {
     try {
       const response=await this.api(`/api/calls/${callId}/readback`,{method:'POST'});
       const receipt=await response.json();
+      receiptId=receipt.receipt_id;
       if(!current())return;
-      const audio=this.createAudio();
+      const audio=this.unlockedAudio||this.createAudio();
+      this.attachAudio(audio);
       this.audio=audio;
       let started;
       audio.preload='none';

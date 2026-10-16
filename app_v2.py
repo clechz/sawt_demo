@@ -265,14 +265,18 @@ async def readback_stream(sid: str, receipt_id: str):
 
 class Playback(BaseModel):
     receipt_id: str = Field(max_length=64)
-    phase: Literal['started', 'completed']
+    phase: Literal['started', 'completed', 'failed']
+    error_code: Literal['autoplay_blocked', 'incomplete', 'superseded', 'media_or_network'] | None = None
     position: float = Field(default=0, ge=0, le=600)
 
 
 @app.post('/api/calls/{sid}/playback')
 def playback(sid: str, body: Playback, request: Request):
     authorized(sid, request)
-    tx.playback(sid, body.receipt_id, body.phase, body.position)
+    if body.phase == 'failed':
+        tx.event(sid, 'playback.failed', {'receipt_id': body.receipt_id, 'error_code': body.error_code})
+    else:
+        tx.playback(sid, body.receipt_id, body.phase, body.position)
     return {'acknowledged': True}
 
 

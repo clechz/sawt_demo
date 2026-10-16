@@ -118,7 +118,7 @@ def parse_call(call, *, model_led=False):
     return name, args
 
 
-def result_mode(state, operations, reply):
+def result_mode(state, operations, reply, *, model_led=False):
     if state.get('quote') and not state['quote']['presented']:
         return 'checkout'
     pending = state.get('hospitality', {}).get('pending_resolution')
@@ -126,8 +126,8 @@ def result_mode(state, operations, reply):
         return 'exact'
     names = {op['tool'] for op in operations}
     # Questions binding a later yes and all consequential statements stay exact.
-    if (names & (ORDER_MUTATIONS | TERMINAL | PERMISSION_NAMES) or names & {'open_support_case'}
-            or re.search(r'\d|ريال|حساسي|رقم|سجلت|رجعت|لغيت|تأكد|مبلغ', reply)):
+    if (names & (({'replace_item', 'remove_item'} if model_led else ORDER_MUTATIONS) | TERMINAL | PERMISSION_NAMES) or names & {'open_support_case'}
+            or re.search(r'\d|ريال|حساسي|مو متوفر|رقم|سجلت|رجعت|لغيت|تأكد|مبلغ', reply)):
         return 'exact'
     return 'live'
 
@@ -393,7 +393,7 @@ async def prepare_turn(engine, provider, row, text, *, progress=None, conversati
         adapter.engine.touch(state)
     state['history'] = (state['history'] + [{'role': 'user', 'content': text}, {'role': 'assistant', 'content': reply}])[-12:]
     state['events'] = (state['events'] + adapter.operations)[-80:]
-    mode = result_mode(state, adapter.operations, reply)
+    mode = result_mode(state, adapter.operations, reply, model_led=model_led)
     outcome = describe_outcome(row['state'], state, adapter.operations, reply, mode,
                                has_choice_guard=bool(adapter.choice_questions))
     return PreparedTurn(state, reply, adapter.operations, row['epoch'], start_revision, text,

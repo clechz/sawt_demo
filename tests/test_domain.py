@@ -213,3 +213,10 @@ def test_customer_name_required_blocks_checkout_and_correction_invalidates_quote
     assert 'باسم عبدالله' in engine.act(s,'checkout',{})['reply']
     engine.act(s,'set_customer_name',{'name':'محمد'})
     assert s['quote'] is None and s['customer_name']=='محمد' and not s['order_id']
+
+
+def test_manakish_names_rank_before_shared_pizza_category(menu):
+    results = menu.search('مناقيش')['items']
+    assert results
+    assert 'منقوشة' in results[0]['name']
+    assert any('زعتر' in i['name'] for i in results)

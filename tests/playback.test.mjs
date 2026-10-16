@@ -27,7 +27,7 @@ test('cancel while prepare is pending discards late response',async()=>{
 });
 test('audio error restores conversational audio and never confirms',async()=>{
  const f=fixture();await f.player.play('s');f.audio.onerror();
- assert.equal(f.muting.at(-1),false);assert.equal(f.phases.at(-1),'paused');assert.equal(f.calls.length,1);
+ assert.equal(f.muting.at(-1),false);assert.equal(f.phases.at(-1),'paused');assert.equal(f.calls.length,2);assert.equal(JSON.parse(f.calls[1][1].body).phase,'failed');
 });
 test('start acknowledgment failure prevents completion',async()=>{
  const f=fixture({api:async(path,options)=>{if(options.body)throw new Error('offline');return{json:async()=>({receipt_id:'r',url:'/audio'})};}});
@@ -68,4 +68,18 @@ test('old stall timer cannot cancel a later playback generation',async()=>{
  await f.player.play('s');oldTimeout();
  assert.equal(f.player.active,true);assert.equal(f.phases.at(-1),'preparing');assert.equal(f.errors.length,0);
  f.player.cancel();assert.equal(f.timers.size,0);
+});
+
+
+test('readback reuses the media element unlocked during the user gesture',async()=>{
+ const f=fixture();await f.player.unlock();const unlocked=f.audio;
+ await f.player.play('s');assert.equal(f.player.audio,unlocked);
+ f.player.cancel();await f.player.play('s');assert.equal(f.player.audio,unlocked);
+ unlocked.onplaying();await unlocked.onended();assert.equal(f.phases.at(-1),'confirm');
+});
+test('autoplay rejection explains that no order was confirmed',async()=>{
+ const f=fixture({createAudio:()=>({play:async()=>{throw Object.assign(new Error('blocked'),{name:'NotAllowedError'});},pause(){},removeAttribute(){},load(){}})});
+ await f.player.unlock();await f.player.play('s');
+ assert.match(f.errors.at(-1),/الطلب ما تأكد/);assert.equal(f.retries.at(-1),true);
+ assert.ok(!f.calls.some(([,o])=>o.body&&JSON.parse(o.body).phase==='completed'));
 });

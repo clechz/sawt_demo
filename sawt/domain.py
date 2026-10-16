@@ -67,19 +67,23 @@ class Menu:
     def search(self, query, branch=None, limit=5, offset=0):
         # Saudi category words should reach the same catalog, not look absent.
         query_text = normalize(query).replace('sweet tooth', 'desserts')
-        aliases = {'حلا':'حلويات', 'حلي':'حلويات', 'حلو':'حلويات',
+        aliases = {'مناقيش':'manakish', 'منقوشه':'manakish', 'حلا':'حلويات', 'حلي':'حلويات', 'حلو':'حلويات',
                    'ساندوتش':'sandwiches', 'سندوتش':'sandwiches'}
-        words = [aliases.get(word, word) for word in query_text.split()]
+        words = [aliases.get(word, word) for word in query_text.split() if word not in {'شي', 'شيء'}]
         ranked = []
         for item in self.items.values():
             text = normalize(' '.join([item['name'], item['name_en'], item['category'], item['category_id']]))
             score = sum(1 for word in words if word in text)
             if not words or score:
-                ranked.append((score, item))
-        ranked.sort(key=lambda x: (-x[0], x[1]['id']))
+                # Prefer dish names over a shared category label: a search for
+                # manakish must not fill the first page with pizzas.
+                name_text = normalize(item['name'] + ' ' + item['name_en'])
+                name_score = sum(1 for word in words if word in name_text)
+                ranked.append((score, name_score, item))
+        ranked.sort(key=lambda x: (-x[0], -x[1], x[2]['id']))
         return {'total_matches': len(ranked),
-                'partial_matches_only': bool(words) and not any(score == len(words) for score, _ in ranked),
-                'items': [dict(copy.deepcopy(i), available_here=branch in i['available'] if branch else None) for _, i in ranked[offset:offset + min(limit, 5)]]}
+                'partial_matches_only': bool(words) and not any(score == len(words) for score, _, _ in ranked),
+                'items': [dict(copy.deepcopy(i), available_here=branch in i['available'] if branch else None) for _, _, i in ranked[offset:offset + min(limit, 5)]]}
 
     def categories(self):
         categories = {}

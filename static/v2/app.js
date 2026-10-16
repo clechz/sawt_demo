@@ -24,7 +24,7 @@ async function api(path,options={}){
  const response=await fetch(path,{...options,headers:{'Content-Type':'application/json',...(call?{Authorization:`Bearer ${call.token}`} : {}),'X-Access-Code':accessCode,...options.headers}});
  if(!response.ok){const body=await response.json().catch(()=>({detail:'تعذر الاتصال'}));const e=new Error(body.detail);e.status=response.status;e.code=body.code;throw e;}return response;
 }
-const player=new ReadbackPlayer({api,createAudio:()=>{const audio=new Audio();playbackMeter.attach(audio);return audio;},releaseAudio:()=>playbackMeter.detach(),mute:value=>{readbackMuted=value;audioElements.forEach(a=>a.muted=value||!workerVerified);},phase:setPhase,failure:error,retry:value=>{$('retry-audio').hidden=!value;}});
+const player=new ReadbackPlayer({api,createAudio:()=>{const audio=new Audio();playbackMeter.attach(audio);return audio;},releaseAudio:()=>playbackMeter.detach(),attachAudio:audio=>playbackMeter.attach(audio),mute:value=>{readbackMuted=value;audioElements.forEach(a=>a.muted=value||!workerVerified);},phase:setPhase,failure:error,retry:value=>{$('retry-audio').hidden=!value;}});
 const experienceControls=createExperienceControls(document);
 const lab=location.pathname==='/lab';let fixture,fixtureContext,fixtureDestination;
 if(lab){const panel=document.createElement('section');panel.innerHTML='<p>Local test lab · synthetic file input, no microphone</p><label>Caller fixture <input id="fixture-file" type="file" accept="audio/*"></label><audio id="fixture-player" controls></audio><button id="send-fixture" class="secondary" disabled>Send synthetic speech</button>';document.querySelector('main').append(panel);fixture=$('fixture-player');$('send-fixture').onclick=()=>fixture.play();$('fixture-file').onchange=e=>{if(e.target.files[0]){if(fixture.src)URL.revokeObjectURL(fixture.src);fixture.src=URL.createObjectURL(e.target.files[0]);}};}
@@ -48,7 +48,7 @@ function animate(time=0){if(!room)return;if(time-lastMeterTime>=25){const local=
 async function start(){
  if(room||$('start').disabled)return;
  completion.reset();$('new-call').hidden=true;$('call-ended-note').hidden=true;
- playbackMeter.prepare();microphoneMeter.prepare();lastMeterTime=0;
+ playbackMeter.prepare();microphoneMeter.prepare();void player.unlock();lastMeterTime=0;
  workerVerified=false;clearTimeout(workerReadyTimer);
  callStatus.reset();$('start').disabled=true;error('');setPhase('connecting');closing=false;quoteSeen=null;currentState=null;call=null;refreshing=false;
  $('order-button').hidden=true;$('order-note').textContent='';

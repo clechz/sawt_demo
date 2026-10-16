@@ -183,3 +183,15 @@ def test_invalid_playback_phase_is_validation_error(client):
     call=start(client).json()
     assert client.post('/api/calls/'+call['id']+'/playback',headers={'Authorization':'Bearer '+call['token']},
         json={'receipt_id':'invalid','phase':'anything','position':0}).status_code==422
+
+
+def test_playback_failure_is_diagnostic_only_and_requires_call_token(client):
+    call = start(client).json()
+    path = '/api/calls/' + call['id'] + '/playback'
+    body = {'receipt_id':'failed-browser-receipt', 'phase':'failed', 'error_code':'autoplay_blocked'}
+    before = app_v2.tx.load(call['id'])['state']
+    assert client.post(path, json=body).status_code == 404
+    response = client.post(path, headers={'Authorization':'Bearer '+call['token']}, json=body)
+    assert response.status_code == 200
+    assert app_v2.tx.load(call['id'])['state'] == before
+    assert any(e['kind']=='playback.failed' and e['payload']['error_code']=='autoplay_blocked' for e in app_v2.tx.events(call['id']))

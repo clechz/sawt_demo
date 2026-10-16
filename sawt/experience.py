@@ -64,4 +64,4 @@ def call_experience(state):
 
 def voice_instructions():
     p = profile()
-    return p["voice_instructions"] + "\nالافتتاحية مرة واحدة: " + p["greeting"]
+    return (p["voice_instructions"] + "\nThe menu is a real CSV accessed through tools, and orders are persisted in a real database. Only restaurant fulfillment and money are simulated. Never claim no data or backend exists. Offer two dishes at most, not a list of all modifiers. A playback error is a failure, not an intended simulation feature.") + "\nالافتتاحية مرة واحدة: " + p["greeting"]

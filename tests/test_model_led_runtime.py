@@ -582,3 +582,21 @@ async def test_price_question_rejects_planner_addition_and_persists_empty_basket
 def test_mixed_price_and_order_keeps_planner_authority(text):
     from sawt.reply_evidence import price_only_question
     assert not price_only_question(text)
+
+
+@pytest.mark.asyncio
+async def test_routine_pizza_size_edit_keeps_live_voice_and_persists_options(engine, tmp_path):
+    tx = Transactions(tmp_path/'pizza.db', engine)
+    sid, _ = tx.create()
+    tx.execute(sid, 'seed', 0, 0, 'add_item', {'item_id':'pizza_flatbread_05',
+        'quantity':1, 'options':{'size':['small'],'crust':['classic'],'spice_level':['hot']}, 'notes':''})
+    row = tx.load(sid); line = row['state']['basket'][0]['line_id']
+    planner = Scripted(calls(call('update_item', line_id=line, options={'size':['large']})),
+                       {'content':'خليتها كبيرة. باقي شي تضيفه؟'})
+    prepared = await prepare_turn(engine, planner, row, 'خل البيتزا كبير والباقي نفسه', conversation_mode='model_led')
+    result = await commit_turn(tx, sid, 'size-edit', prepared)
+    assert result['speech_mode'] == 'live'
+    saved = tx.load(sid)['state']
+    assert saved['basket'][0]['options'] == {'size':['large'],'crust':['classic'],'spice_level':['hot']}
+    assert engine.view(saved)['total'] == 6200
+    assert not saved['order_id'] and not saved['quote']
