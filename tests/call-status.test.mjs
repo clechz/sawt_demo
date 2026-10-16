@@ -1,10 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createCallStatus} from '../static/v2/call-status.js';
-test('quiet progress never exposes individual tool or reasoning stages',()=>{
+test('progress describes actual work and rejects superseded stages',()=>{
  const updates=[];const s=createCallStatus((...x)=>updates.push(x));
  s.phase('listening');s.progress({stage:'search_menu',epoch:3});
- assert.deepEqual(updates.at(-1),['processing','جاري الرد']);
+ assert.deepEqual(updates.at(-1),['processing','أشوف المنيو']);
  s.interrupt({epoch:4});s.progress({stage:'saving',epoch:3});
  assert.deepEqual(updates.at(-1),['listening','نسمعك']);
 });

@@ -134,7 +134,7 @@ def make_voice_class(base):
             # This schedules existing verified handling, never closes a call itself.
             delay = .6 if route_transcript(text) in {'end', 'wait', 'recover'} else 3
             await asyncio.sleep(delay)
-            if (self.ending or self.waiting or self.reading or self.checkout_context
+            if (self.ending or self.waiting or self.reading
                     or self.explicit_playing or generation != self.input_generation
                     or self.pending and not self.pending.done()
                     or len(self.fragments) <= self.consumed

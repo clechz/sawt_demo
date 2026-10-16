@@ -1,7 +1,7 @@
 // One owner for exact readback audio, including stale async callbacks.
 export class ReadbackPlayer {
-  constructor({api, createAudio=()=>new Audio(), releaseAudio=()=>{}, attachAudio=()=>{}, mute, phase, failure, retry, setTimer=(...args)=>globalThis.setTimeout(...args), clearTimer=id=>globalThis.clearTimeout(id)}) {
-    Object.assign(this,{api,createAudio,releaseAudio,attachAudio,mute,phase,failure,retry,setTimer,clearTimer});
+  constructor({fetchAudio=(url,options)=>fetch(url,options), createURL=blob=>URL.createObjectURL(blob), revokeURL=url=>URL.revokeObjectURL(url), api, createAudio=()=>new Audio(), releaseAudio=()=>{}, attachAudio=()=>{}, mute, phase, failure, retry, setTimer=(...args)=>globalThis.setTimeout(...args), clearTimer=id=>globalThis.clearTimeout(id)}) {
+    Object.assign(this,{fetchAudio,createURL,revokeURL,api,createAudio,releaseAudio,attachAudio,mute,phase,failure,retry,setTimer,clearTimer});
     this.generation=0;
     this.audio=null;
     this.active=false;
@@ -19,6 +19,8 @@ export class ReadbackPlayer {
     this.clearTimer(this.stallTimer);
     this.generation++;
     this.active=false;
+    this.transfer?.abort();
+    this.transfer=null;
     if(this.audio) {
       this.audio.onplaying=this.audio.onended=this.audio.onerror=this.audio.onwaiting=this.audio.onstalled=null;
       try { this.releaseAudio(this.audio); } catch { /* Optional visuals cannot block cancellation. */ }
@@ -27,6 +29,8 @@ export class ReadbackPlayer {
       this.audio.load();
       this.audio=null;
     }
+    if(this.objectURL)this.revokeURL(this.objectURL);
+    this.objectURL=null;
     this.mute(false);
     this.retry(false);
   }
@@ -48,23 +52,31 @@ export class ReadbackPlayer {
       this.retry(!changed);
       this.phase('paused');
     };
-    const watchStall=()=>{
+    const watchStall=(timeout=10000)=>{
       if(!current())return;
       this.clearTimer(this.stallTimer);
-      this.stallTimer=this.setTimer(()=>fail(new Error('الصوت تأخر. اضغط إعادة الملخص، طلبك محفوظ.')),10000);
+      this.stallTimer=this.setTimer(()=>fail(new Error('تعذر إكمال الصوت. المسودة محفوظة والطلب ما تأكد. تقدر تعيد الملخص أو تكلمنا.')),timeout);
     };
-    watchStall();
+    watchStall(30000);
     try {
       const response=await this.api(`/api/calls/${callId}/readback`,{method:'POST'});
       const receipt=await response.json();
       receiptId=receipt.receipt_id;
       if(!current())return;
+      // Fetch the one-use stream exactly once. Media elements may issue range
+      // probes/retries, which cannot safely claim the same synthesis stream.
+      this.transfer=new AbortController();
+      const media=await this.fetchAudio(receipt.url,{cache:'no-store',signal:this.transfer.signal});
+      if(!media.ok)throw new Error('تعذر تحميل الملخص. الطلب ما تأكد، تقدر تعيد المحاولة.');
+      const blob=await media.blob();
+      if(!current())return;
+      this.objectURL=this.createURL(blob);
       const audio=this.unlockedAudio||this.createAudio();
       this.attachAudio(audio);
       this.audio=audio;
       let started;
       audio.preload='none';
-      audio.src=receipt.url;
+      audio.src=this.objectURL;
       audio.onplaying=()=>{
         if(!current())return;
         this.clearTimer(this.stallTimer);
@@ -86,7 +98,7 @@ export class ReadbackPlayer {
         }catch(e){fail(e);}
       };
       audio.onerror=()=>fail(new Error('تعذر تشغيل الملخص. اضغط إعادة التشغيل، أو قل لنا وش تبي تعدّل.'));
-      audio.onwaiting=audio.onstalled=watchStall;
+      audio.onwaiting=audio.onstalled=()=>watchStall();
       await audio.play();
     }catch(e){fail(e);}
   }

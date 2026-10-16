@@ -147,8 +147,8 @@ def test_shawarma_spice_question_and_spoken_readback_use_saudish_shatta():
     line = state['basket'][0]
     engine.act(state, 'update_item', {'line_id':line['line_id'], 'options':{'meal':['sandwich'],'bread':['saj']}})
     question = next_question(engine.menu, state)
-    assert question == 'والشطة؟ بدون، خفيفة، وسط، ولا قوية؟'
-    assert 'الحار' not in question and 'درجة الحرارة' not in question
+    assert question == 'كيف تبي درجة الحرارة؟'
+    assert 'ولا' not in question
     from sawt.clarification import answer
     chosen = answer(engine.menu, state, 'بدون')
     assert chosen is not None and chosen[0]['options'] == {'spice_level':['not_spicy']}

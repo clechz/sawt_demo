@@ -95,7 +95,7 @@ async def test_silent_recovery_only_delegates_unhandled_quiet_input(blocked, mon
  if blocked=='consumed':voice.consumed=1
  if blocked=='ending':voice.ending=True
  await voice.recover_silent_request(0)
- assert len(voice.dispatched)==(1 if blocked in ('none','business_ack') else 0)
+ assert len(voice.dispatched)==(1 if blocked in ('none','business_ack','checkout') else 0)
 
 
 @pytest.mark.asyncio

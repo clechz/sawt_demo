@@ -4,7 +4,7 @@ import {ReadbackPlayer} from '../static/v2/playback.js';
 
 function fixture(override={}){
  const calls=[],phases=[],muting=[],errors=[],retries=[],timers=new Map();let audio,id=0;
- const player=new ReadbackPlayer({api:async(path,options)=>{calls.push([path,options]);return{json:async()=>({receipt_id:'r',url:'/audio'})};},createAudio:()=>audio={play:async()=>{},pause(){},removeAttribute(){},load(){},currentTime:12},mute:x=>muting.push(x),phase:x=>phases.push(x),failure:x=>errors.push(x),retry:x=>retries.push(x),setTimer:fn=>{timers.set(++id,fn);return id;},clearTimer:id=>timers.delete(id),...override});
+ const player=new ReadbackPlayer({fetchAudio:async()=>({ok:true,blob:async()=>({})}),createURL:()=> 'blob:readback',revokeURL:()=>{},api:async(path,options)=>{calls.push([path,options]);return{json:async()=>({receipt_id:'r',url:'/audio'})};},createAudio:()=>audio={play:async()=>{},pause(){},removeAttribute(){},load(){},currentTime:12},mute:x=>muting.push(x),phase:x=>phases.push(x),failure:x=>errors.push(x),retry:x=>retries.push(x),setTimer:fn=>{timers.set(++id,fn);return id;},clearTimer:id=>timers.delete(id),...override});
  return{player,calls,phases,muting,errors,retries,timers,get audio(){return audio;}};
 }
 test('completion uses actual playback position, after the start acknowledgment',async()=>{
@@ -82,4 +82,20 @@ test('autoplay rejection explains that no order was confirmed',async()=>{
  await f.player.unlock();await f.player.play('s');
  assert.match(f.errors.at(-1),/الطلب ما تأكد/);assert.equal(f.retries.at(-1),true);
  assert.ok(!f.calls.some(([,o])=>o.body&&JSON.parse(o.body).phase==='completed'));
+});
+
+
+test('one fetch supplies a local media URL and download alone never acknowledges playback',async()=>{
+ const fetched=[],revoked=[];const f=fixture({fetchAudio:async(...args)=>{fetched.push(args);return{ok:true,blob:async()=>({})};},revokeURL:x=>revoked.push(x)});
+ await f.player.play('s');assert.equal(fetched.length,1);assert.equal(f.audio.src,'blob:readback');assert.equal(f.calls.length,1);
+ f.player.cancel();assert.deepEqual(revoked,['blob:readback']);assert.equal(fetched[0][1].signal.aborted,true);
+});
+test('cancellation while downloading discards the late body without playing',async()=>{
+ let resolve,signal;const f=fixture({fetchAudio:async(url,options)=>{signal=options.signal;return{ok:true,blob:()=>new Promise(r=>resolve=r)};}});
+ const pending=f.player.play('s');while(!resolve)await Promise.resolve();f.player.cancel();resolve({});await pending;
+ assert.equal(signal.aborted,true);assert.equal(f.audio,undefined);assert.equal(f.calls.length,1);
+});
+test('HTTP audio failure never grants playback or confirmation',async()=>{
+ const f=fixture({fetchAudio:async()=>({ok:false})});await f.player.play('s');assert.equal(f.audio,undefined);
+ assert.equal(f.phases.at(-1),'paused');assert.equal(JSON.parse(f.calls[1][1].body).phase,'failed');
 });

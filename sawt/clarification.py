@@ -17,7 +17,7 @@ def question_targets(menu, state, text):
             keyword = re.sub(r'^ال', '', normalize(group['name']).split()[-1])
             mentions = [keyword]
             if gid == 'spice_level':
-                mentions.append('شطه')
+                mentions.extend(['شطه', 'حراره', 'سبايسي'])
             if group['required'] and not line['options'].get(gid) and any(word in normalized for word in mentions):
                 result.append((line['line_id'], gid))
     return result
@@ -45,9 +45,7 @@ def ask(menu, state, line_id, group_id, option_id=None, utterance=''):
             question = say('karak_ice')
     else:
         if group_id == 'spice_level':
-            labels = [SPICE_QUESTION_LABELS.get(oid, option['name']) for oid, option in group['options'].items()]
-            alternatives = '، '.join(labels[:-1]) + ('، ولا ' if len(labels) > 2 else ' ولا ') + labels[-1] if len(labels)>1 else labels[0]
-            question = 'والشطة؟ ' + alternatives + '؟'
+            question = 'كيف تبي درجة الحرارة؟'
         else:
             question = say('choice_question',item=item['name'],group=GROUPS.get(group_id,group['name']),options=' ولا '.join(x['name'] for x in group['options'].values()))
     if len(state['basket'])>1 and not (item['id']=='beverages_09' and group_id=='ice'):
