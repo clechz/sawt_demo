@@ -6,19 +6,27 @@ from sawt.conversation import say
 from sawt.domain import normalize
 from sawt.fixed_voice import assets,fixed_pcm,ROOT
 from sawt.v2_provider import V2Provider
+from sawt.spoken_numbers import integer_words
+
+ETA_PHRASES = {f"cedar_confirmed_{service}_{eta}": f"تأكد طلبك. {kind} خلال {eta} دقيقة تقريبًا. يعطيك العافية."
+    for service,kind,eta in [("pickup","الاستلام",20),("delivery","التوصيل",30),("delivery","التوصيل",35),("delivery","التوصيل",40)]}
 
 
 def test_fixed_assets_match_the_current_words_and_independent_transcription():
     rows=json.loads((ROOT/'manifest.json').read_text(encoding='utf8'))
-    assert {r['key'] for r in rows}=={'audio_check','unclear','goodbye_empty','goodbye_draft','goodbye_handoff','cedar_confirmed','cedar_staff_offer'}
+    assert {r['key'] for r in rows}=={'audio_check','unclear','goodbye_empty','goodbye_draft','goodbye_handoff','cedar_confirmed','cedar_staff_offer'} | set(ETA_PHRASES)
     for row in rows:
         expected={'cedar_confirmed':'تأكد طلبك، يعطيك العافية.','cedar_staff_offer':'أرفع التفاصيل للمسؤول يراجعها؟'}
+        expected.update(ETA_PHRASES)
         assert row['text']==(expected[row['key']] if row['key'] in expected else say(row['key']))
-        assert normalize(row['independent_transcription'])==normalize(row['text'])
+        spoken=row['text']
+        if row['key'] in ETA_PHRASES:
+            eta=int(row['key'].rsplit('_',1)[1]);spoken=spoken.replace(str(eta),integer_words(eta))
+        assert normalize(row['independent_transcription'])==normalize(spoken)
         data=fixed_pcm(row['text'],row['voice'],row['model'])
         assert data and len(data)==row['bytes'] and len(data)%2==0
         assert hashlib.sha256(data).hexdigest()==row['sha256']
-        assert len(data)/48000<6
+        assert len(data)/48000<(9 if row['key'] in ETA_PHRASES else 6)
 
 
 @pytest.mark.parametrize('key',['audio_check','unclear','goodbye_empty','goodbye_draft','goodbye_handoff','goodbye_confirmed'])
@@ -48,10 +56,10 @@ def test_corrupt_cached_audio_is_rejected(tmp_path,monkeypatch):
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize('text',['تأكد طلبك، يعطيك العافية.','أرفع التفاصيل للمسؤول يراجعها؟'])
+@pytest.mark.parametrize('text',['تأكد طلبك، يعطيك العافية.','أرفع التفاصيل للمسؤول يراجعها؟',*ETA_PHRASES.values()])
 async def test_cedar_fixed_audio_requires_no_provider_request(monkeypatch,text):
     monkeypatch.setattr('sawt.v2_provider.config',lambda:{'tts':'gpt-4o-mini-tts'})
     provider=V2Provider(voice='cedar');provider.client=Mock(side_effect=AssertionError('No network'))
     data=b''.join([chunk async for chunk in provider.speech_chunks(text,'pcm')])
-    assert data and len(data)/48000<6
+    assert data and len(data)/48000<9
     provider.client.assert_not_called()
