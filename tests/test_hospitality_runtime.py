@@ -215,3 +215,29 @@ def test_false_staff_review_claim_is_rejected(engine):
     from sawt.reply_evidence import unsupported_claim
     state=new_state();state['hospitality']=new_hospitality(engine)
     assert unsupported_claim(state,state,'تم رفع الشكوى للمسؤول لمراجعتها.')
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('acceptance',['إي أكد','إي، أكد الطلب','أيوه أكد'])
+async def test_saudi_acceptance_after_readback_persists_one_order(engine,tmp_path,acceptance):
+    tx=Transactions(tmp_path/'acceptance.db',engine)
+    sid,_=tx.create(require_customer_name=True)
+    row=tx.load(sid);s=row['state']
+    for action,args in [('set_service',{'service':'pickup'}),('set_branch',{'branch_id':'ruh_narjis'}),('set_customer_name',{'name':'عبدالله'}),('add_item',{'item_id':'sandwiches_07','quantity':1,'options':{'bread':['saj'],'meal':['sandwich'],'spice_level':['not_spicy']},'notes':'بدون ثوم'})]:
+        engine.act(s,action,args)
+    engine.act(s,'checkout',{})
+    s['quote']['presented']=True
+    with tx.connect() as db:db.execute('UPDATE calls SET state=? WHERE id=?',(json.dumps(s),sid))
+    revision=s['revision'];planner=Scripted()
+    prepared=await prepare_turn(engine,planner,tx.load(sid),acceptance,conversation_mode='model_led')
+    assert planner.calls==0
+    assert [op['tool'] for op in prepared.operations]==['confirm']
+    assert prepared.requires_verification
+    assert verified_utterance(acceptance,'إيه أكد',prepared)=='إيه أكد'
+    await commit_turn(tx,sid,'accept',prepared)
+    saved=tx.load(sid)['state']
+    assert saved['order_id'] and saved['revision']==revision
+    assert saved['basket'][0]['notes']=='بدون ثوم'
+    assert saved['customer_name']=='عبدالله'
+    assert saved['hospitality']['orders'][saved['order_id']]['total_halalas']==1800
+    with tx.connect() as db:assert db.execute('SELECT COUNT(*) FROM placed_orders WHERE session_id=?',(sid,)).fetchone()[0]==1
