@@ -218,7 +218,7 @@ def test_false_staff_review_claim_is_rejected(engine):
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize('acceptance',['إي أكد','إي، أكد الطلب','أيوه أكد','إيي أكد','إيييه أكد الطلب'])
+@pytest.mark.parametrize('acceptance',['إي أكد','إي، أكد الطلب','أيوه أكد','إيي أكد','إيييه أكد الطلب','إي أكيد','إيه أكيد','أيوه أكيد','نعم أكيد'])
 async def test_saudi_acceptance_after_readback_persists_one_order(engine,tmp_path,acceptance):
     tx=Transactions(tmp_path/'acceptance.db',engine)
     sid,_=tx.create(require_customer_name=True)
@@ -234,6 +234,7 @@ async def test_saudi_acceptance_after_readback_persists_one_order(engine,tmp_pat
     assert [op['tool'] for op in prepared.operations]==['confirm']
     assert prepared.requires_verification
     assert verified_utterance(acceptance,'إيه أكد',prepared)=='إيه أكد'
+    assert verified_utterance(acceptance,'إي، أكيد.',prepared)=='إي، أكيد.'
     await commit_turn(tx,sid,'accept',prepared)
     saved=tx.load(sid)['state']
     assert saved['order_id'] and saved['revision']==revision
