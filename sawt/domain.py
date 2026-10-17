@@ -347,7 +347,10 @@ class Engine:
 
 def explicit_confirmation(text):
     # Exact normalized expressions prevent a model from confirming 'yes, but remove...'.
-    return normalize(text) in {normalize(x) for x in ['نعم', 'اي', 'إيه', 'ايوه', 'أيوه', 'تمام', 'موافق', 'أكد الطلب', 'أؤكد الطلب', 'نعم أكد الطلب', 'نعم اعتمد الطلب', 'نعم اعتمد', 'اعتمد', 'اعتمد الطلب', 'ايه اكد', 'ايه اكد الطلب', 'إي أكد', 'إي أكد الطلب', 'أيوه أكد', 'أيوه أكد الطلب', 'نعم أكد']}
+    # STT can spell a stretched Saudi yes as إيي / إيييه. Normalize only
+    # this leading word, never discard corrections or negation that follow it.
+    text = re.sub(r'^اي{2,}(ه)?(?=\s|$)', lambda m: 'اي' + (m.group(1) or ''), normalize(text))
+    return text in {normalize(x) for x in ['نعم', 'اي', 'إيه', 'ايوه', 'أيوه', 'تمام', 'موافق', 'أكد الطلب', 'أؤكد الطلب', 'نعم أكد الطلب', 'نعم اعتمد الطلب', 'نعم اعتمد', 'اعتمد', 'اعتمد الطلب', 'ايه اكد', 'ايه اكد الطلب', 'إي أكد', 'إي أكد الطلب', 'أيوه أكد', 'أيوه أكد الطلب', 'نعم أكد']}
 
 def requests_human(text):
     text = normalize(text)

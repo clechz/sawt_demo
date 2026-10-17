@@ -118,10 +118,10 @@ def test_handoff_anytime(engine,phase):
     assert result['terminal'] and s['handoff'] and s['quote'] is None
     with pytest.raises(RuleError):engine.act(s,'add_item',{'item_id':'chicken_01','quantity':1,'options':{}})
 
-@pytest.mark.parametrize('text',['نعم','إيه','موافق','أكد الطلب','اعتمد الطلب','نعم، اعتمد الطلب.','نعم، اعتمد.','إي أكد','إي، أكد الطلب','أيوه أكد'])
+@pytest.mark.parametrize('text',['نعم','إيه','موافق','أكد الطلب','اعتمد الطلب','نعم، اعتمد الطلب.','نعم، اعتمد.','إي أكد','إي، أكد الطلب','أيوه أكد','إيي أكد','إيييه أكد الطلب'])
 def test_clear_confirmations(text):assert explicit_confirmation(text)
 
-@pytest.mark.parametrize('text',['نعم بس احذف وجبة','لا','ممكن','تمام غير العنوان','لا تؤكد الطلب','yes remove one'])
+@pytest.mark.parametrize('text',['نعم بس احذف وجبة','لا','ممكن','تمام غير العنوان','لا تؤكد الطلب','yes remove one','إيي أكد بس احذف اللحم','إيي لا تأكد','إيييه غير العنوان'])
 def test_ambiguous_or_modified_confirmations(text):assert not explicit_confirmation(text)
 
 def test_arabic_normalization_and_search(menu):

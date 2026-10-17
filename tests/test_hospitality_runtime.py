@@ -218,7 +218,7 @@ def test_false_staff_review_claim_is_rejected(engine):
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize('acceptance',['إي أكد','إي، أكد الطلب','أيوه أكد'])
+@pytest.mark.parametrize('acceptance',['إي أكد','إي، أكد الطلب','أيوه أكد','إيي أكد','إيييه أكد الطلب'])
 async def test_saudi_acceptance_after_readback_persists_one_order(engine,tmp_path,acceptance):
     tx=Transactions(tmp_path/'acceptance.db',engine)
     sid,_=tx.create(require_customer_name=True)
