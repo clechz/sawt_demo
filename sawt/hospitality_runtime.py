@@ -52,6 +52,9 @@ brioche. Use ask_choice to record a specific option interpretation before asking
 answer applies only to the current pending question. Use replacements atomically. For an option
 error, repair using its actual catalog, never fabricate another valid ID. Tool failures never imply
 success. Changes stay staged until the app commits them.
+Free-text item notes must be explicit preparation instructions (for example بدون ثوم). Never
+store greetings, uncertain fragments, customer names or fulfillment wording as kitchen notes.
+An incomplete exclusion such as بدون without its object requires clarification, not deleting notes.
 
 Batch independent KNOWN edits and finish_draft in one response. Batches run in order, not concurrently.
 Don't search again when the exact definition is supplied. Newly generated IDs need their tool result

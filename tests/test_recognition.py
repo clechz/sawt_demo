@@ -336,3 +336,12 @@ def test_fulfillment_definite_article_is_not_a_change_of_intent(plain,definite):
     other='التوصيل' if plain=='استلام' else 'الاستلام'
     with pytest.raises(AudioWindowError):check_recognition(plain,other)
     with pytest.raises(AudioWindowError):check_recognition('لا '+definite,definite)
+
+
+@pytest.mark.parametrize('a,b',[
+ ('بدون ثوم','بدون'),('بدون','بدون ثوم'),
+ ('without garlic','without'),('بدون بصل','بدون')])
+def test_dangling_exclusion_is_not_equivalent_to_named_exclusion(a,b):
+    from sawt.recognition import check_recognition,AudioWindowError
+    with pytest.raises(AudioWindowError,match='Incomplete exclusion'):
+        check_recognition(a,b)

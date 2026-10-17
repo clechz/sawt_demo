@@ -241,3 +241,16 @@ async def test_saudi_acceptance_after_readback_persists_one_order(engine,tmp_pat
     assert saved['customer_name']=='عبدالله'
     assert saved['hospitality']['orders'][saved['order_id']]['total_halalas']==1800
     with tx.connect() as db:assert db.execute('SELECT COUNT(*) FROM placed_orders WHERE session_id=?',(sid,)).fetchone()[0]==1
+
+
+@pytest.mark.asyncio
+async def test_truncated_garlic_verification_cannot_commit_note_deletion(engine,tmp_path):
+    tx=Transactions(tmp_path/'garlic.db',engine);sid,_=tx.create()
+    row=tx.load(sid);s=row['state']
+    engine.act(s,'add_item',{'item_id':'sandwiches_07','quantity':1,'options':{},'notes':'بدون ثوم'})
+    with tx.connect() as db:db.execute('UPDATE calls SET state=? WHERE id=?',(json.dumps(s),sid))
+    before=copy.deepcopy(tx.load(sid)['state'])
+    p=PreparedTurn({},'', [{'tool':'update_item','args':{'notes':''}}],0,s['revision'],'',True,'live')
+    with pytest.raises(AudioWindowError,match='Incomplete exclusion'):
+        verified_utterance('لا أبغى أحط ملاحظة بدون ثوم','لا بروح حط ملاحظة بدون',p)
+    assert tx.load(sid)['state']==before

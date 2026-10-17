@@ -92,6 +92,13 @@ def check_transcript_clarity(caption, verified):
 def check_recognition(caption, verified):
     """Do not silently drop a question, a negation or a differing quantity."""
     a,b=normalize(caption),normalize(verified)
+    # A trailing "without" is incomplete evidence, not permission to erase a
+    # concrete exclusion heard by the other recognizer (e.g. without garlic).
+    exclusion = r'\b(?:بدون|بلا|without|no)\s+\S+'
+    dangling = r'\b(?:بدون|بلا|without|no)$'
+    if ((re.search(exclusion, a) and re.search(dangling, b))
+            or (re.search(exclusion, b) and re.search(dangling, a))):
+        raise AudioWindowError('Incomplete exclusion disagreement; ask what to leave out')
     # Identical letters with different spaces can hide a standalone negation
     # (برمو versus بر مو). Compare the reconciled boundaries, never guessed words.
     if not any(c.isdigit() for c in a+b) and a.replace(' ','') == b.replace(' ',''):
@@ -130,6 +137,13 @@ def reconcile_spacing(caption, verified):
     Never join/split digits or replace words based on a guessed intent.
     """
     a,b=normalize(caption),normalize(verified)
+    # A trailing "without" is incomplete evidence, not permission to erase a
+    # concrete exclusion heard by the other recognizer (e.g. without garlic).
+    exclusion = r'\b(?:بدون|بلا|without|no)\s+\S+'
+    dangling = r'\b(?:بدون|بلا|without|no)$'
+    if ((re.search(exclusion, a) and re.search(dangling, b))
+            or (re.search(exclusion, b) and re.search(dangling, a))):
+        raise AudioWindowError('Incomplete exclusion disagreement; ask what to leave out')
     if not any(c.isdigit() for c in a+b) and a.replace(' ','')==b.replace(' ',''):
         from .voice_routing import route_transcript
         from .conversation import requests_cancel
