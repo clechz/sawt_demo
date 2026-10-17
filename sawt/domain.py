@@ -195,14 +195,14 @@ class Engine:
         view = self.view(state)
         lines = []
         for x in view['basket']:
-            notes = f"، ملاحظات: {x['notes']}" if x['notes'] else ''
+            notes = f"، {x['notes']}" if x['notes'] else ''
             item = self.menu.get(x['item_id'])
             # Speak natural option names; keep catalog data and validated totals intact.
             spoken_names = [spoken_option(gid, oid, group['options'][oid]['name'])
                             for gid, group in item['groups'].items()
                             if not (x['item_id'] == 'beverages_03' and gid == 'sweetness')
                             for oid in x['options'].get(gid, [])]
-            lines.append(f"{x['quantity']} من {x['name']}، " + '، '.join(spoken_names) + notes + f"، بسعر {money(x['line_total'])} ريال")
+            lines.append(f"{x['quantity']} {x['name']}، " + '، '.join(spoken_names) + notes + f"، بسعر {money(x['line_total'])} ريال")
         fulfillment = ('التوصيل إلى ' + state['location']['city'] + '، حي ' + state['location']['zone'] + '، ' + state['location']['address'] + ' من ' if state['service']=='delivery' else 'استلام من ') + view['branch']['name'] + '.'
         fee_sentence = f"رسوم التوصيل {money(view['delivery_fee'])} ريال. " if state['service']=='delivery' else ''
         return (('الطلب باسم ' + state['customer_name'] + '. ') if state.get('customer_name') else '') + say('summary',items='؛ '.join(lines),fulfillment=fulfillment,fee_sentence=fee_sentence,total=money(view['total']),eta=view['eta_minutes'])

@@ -76,7 +76,7 @@ async def test_false_removed_claim_is_repaired_by_a_real_tool_then_committed(sav
     engine,tx,sid=saved;line=tx.load(sid)['state']['basket'][0]['line_id']
     planner=Planner({'content':'تم استبعاده من الطلب.'},tools(('remove_item',{'line_id':line})),{'content':'شلت شاورما الدجاج.'})
     p=await prepare_turn(engine,planner,tx.load(sid),'احذف شاورما الدجاج',conversation_mode='model_led')
-    assert p.requires_verification and p.speech_mode=='exact'
+    assert p.requires_verification and p.speech_mode=='live'
     await commit_turn(tx,sid,'delete',p)
     assert [x['item_id'] for x in tx.load(sid)['state']['basket']]==['sandwiches_08']
     assert len(p.operations)==1 and p.operations[0]['tool']=='remove_item'

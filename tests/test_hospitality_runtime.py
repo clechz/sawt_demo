@@ -254,3 +254,25 @@ async def test_truncated_garlic_verification_cannot_commit_note_deletion(engine,
     with pytest.raises(AudioWindowError,match='Incomplete exclusion'):
         verified_utterance('لا أبغى أحط ملاحظة بدون ثوم','لا بروح حط ملاحظة بدون',p)
     assert tx.load(sid)['state']==before
+
+
+@pytest.mark.parametrize('action,reply',[
+ ('remove_item','شلت شاورما اللحم.')])
+def test_saved_simple_corrections_keep_live_voice(action,reply):
+    assert result_mode(new_state(),[{'tool':action}],reply,model_led=True)=='live'
+
+@pytest.mark.parametrize('action,reply',[
+ ('confirm','تأكد طلبك.'),('replace_item','بدلت اللحم بالدجاج.'),('remove_item','المجموع 54 ريال.'),
+ ('ask_choice','كيف تبي درجة الحرارة؟'),('accept_resolution','رجعت المبلغ.')])
+def test_natural_voice_never_relaxes_exact_commitments(action,reply):
+    assert result_mode(new_state(),[{'tool':action}],reply,model_led=True)=='exact'
+
+def test_conversational_summary_preserves_all_order_facts(engine):
+    s=new_state()
+    for action,args in [('set_service',{'service':'pickup'}),('set_branch',{'branch_id':'ruh_narjis'}),('set_customer_name',{'name':'عبدالله'}),('add_item',{'item_id':'sandwiches_07','quantity':2,'options':{'bread':['saj'],'meal':['sandwich'],'spice_level':['not_spicy']},'notes':'بدون ثوم'})]:
+        engine.act(s,action,args)
+    before=copy.deepcopy(s);summary=engine.summary(s)
+    assert s==before
+    for detail in ['عبدالله','2 شاورما دجاج','صاج','بدون شطة','بدون ثوم','36.00','النرجس','20','نأكد الطلب؟']:
+        assert detail in summary
+    assert 'ملاحظات:' not in summary and '2 من' not in summary

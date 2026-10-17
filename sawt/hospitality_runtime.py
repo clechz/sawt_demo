@@ -129,7 +129,7 @@ def result_mode(state, operations, reply, *, model_led=False):
         return 'exact'
     names = {op['tool'] for op in operations}
     # Questions binding a later yes and all consequential statements stay exact.
-    if (names & (({'replace_item', 'remove_item'} if model_led else ORDER_MUTATIONS) | TERMINAL | PERMISSION_NAMES) or names & {'open_support_case'}
+    if (names & (({'replace_item'} if model_led else ORDER_MUTATIONS) | TERMINAL | PERMISSION_NAMES) or names & {'open_support_case'}
             or re.search(r'\d|ريال|حساسي|مو متوفر|رقم|سجلت|رجعت|لغيت|تأكد|مبلغ', reply)):
         return 'exact'
     return 'live'
